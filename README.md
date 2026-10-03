@@ -1,13 +1,10 @@
-> **Pulpo Preview — The Mad Lads Playground**
-> Explore upcoming features, share experiments, and help test what comes next.
-> This is spikediegel-prog's unofficial testing snapshot (2026-10-03) of unreleased PRs awaiting upstream review.
-> Read [preview contents, test evidence, and limitations](PREVIEW.md) before testing.
-> Includes `pulpo setup` bootstrap and a verified local Windows Dark Mirror repair; the full Windows suite still has known failures.
-> Official Pulpo development/releases: https://github.com/Ironnember/Pulpo1.0.
+# Pulpo Preview — The Mad Lads Playground
 
-# PULPO
-
-[Windows preview executable: download and instructions](docs/WINDOWS_PREVIEW_EXE.md)
+> **Unofficial Pulpo preview and tester branch maintained in `spikediegel-prog/Pulpo-Preview`.**
+>
+> Explore upcoming Pulpo features, combined PR work, performance improvements, Windows packaging, and governance proofs before upstream release.
+>
+> **This is not the official Pulpo release branch and does not modify `Ironnember/Pulpo1.0`.**
 
 ### Give AI intelligence. Never give it authority.
 
@@ -15,33 +12,163 @@
 
 > **Intelligence proposes. Governance disposes. Execution obeys. Evidence reports.**
 
-Pulpo puts a deterministic governance boundary between AI reasoning and real-world consequences. Policies, authority, approvals, one-use permits, execution, evidence, and reconciliation remain separate from the intelligence making recommendations.
+Pulpo Preview is the testing ground for work that extends that model while preserving the core invariant: **learning, performance, memory, successful execution, or added capability never grants authority.**
 
-**Built for consequential AI:** autonomous agents · robotics · drones · infrastructure · on-prem systems · governed commerce
+## ⭐ Featured: Windows Preview Installer Experience
 
-### Why Pulpo?
+Pulpo Preview now includes a **portable Windows x64 setup executable** designed to make testing much easier.
 
-Most AI systems ask: **“What should the AI do?”**
+Instead of requiring testers to manually prepare a Python environment just to try the setup path, the Windows preview packages the setup CLI and Python runtime into:
 
-Pulpo asks a different question:
+```text
+pulpo-preview.exe
+```
 
-**“Even if the AI wants to do it, who gave it the authority?”**
+### Quick start
 
-Learning does not grant authority.<br>
-Success does not grant authority.<br>
-Memory does not grant authority.<br>
-Intelligence does not grant authority.
+1. Open the [Windows Preview Executable workflow](https://github.com/spikediegel-prog/Pulpo-Preview/actions/workflows/windows-preview-exe.yml).
+2. Select a successful run for the preview commit you want to test.
+3. Download the `pulpo-preview-windows-x64-<commit>` artifact.
+4. Extract the ZIP.
+5. Double-click **`pulpo-preview.exe`**.
 
-**Capability without authority is just a proposal.**
+Quick start performs Pulpo's conservative setup self-check and writes:
 
-Pulpo turns explicit intent into deterministic governance, binds allowed work to narrowly scoped one-use permits, and preserves durable evidence for verification and reconciliation.
+```text
+%LOCALAPPDATA%\PulpoPreview\setup-report.json
+```
 
-This repository is the clean canonical Pulpo project. The older `Iron-Ember/pulpo` repository remains historical reference material; its accumulated plans, generated evidence, machine-specific scripts, and CI workarounds are intentionally not imported here.
+The executable verifies that a valid synthetic audit is accepted and a tampered stored hash is rejected. Quick start does **not** request an authority change.
 
-## Quick test drive
+For the full setup interface:
 
-For testers and developers, Pulpo can bootstrap a machine-bound performance profile
-without changing governance semantics.
+```powershell
+.\pulpo-preview.exe --help
+.\pulpo-preview.exe setup --json-report setup-report.json
+```
+
+The artifact includes the executable, instructions, source commit, SHA-256 checksum, and smoke-test evidence.
+
+**Verified local prototype:** Windows 11 x64, bundled Python 3.12.10, PyInstaller 6.22.3, with **7 executable smoke checks passing** while project source and the host Python installation were removed from the search path.
+
+The current executable is an **unsigned portable preview build**, not an MSI, Windows service, production deployment, or publisher-signed release. See [Windows Preview Executable](docs/WINDOWS_PREVIEW_EXE.md) for build reproduction, evidence, and limitations.
+
+---
+
+## What's in Pulpo Preview
+
+The current `preview` branch combines selected upstream PR work plus preview-specific validation and repair work.
+
+The snapshot manifest records exact PR heads, checks, inclusion state, conflicts, and provenance. See [PREVIEW.md](PREVIEW.md) and [PREVIEW_MANIFEST.json](PREVIEW_MANIFEST.json).
+
+### Combined preview PRs
+
+The recorded 2026-10-03 combined preview includes:
+
+**#230 · #235 · #237 · #238 · #249 · #275 · #276 · #277 · #289 · #293 · #294 · #295**
+
+PRs **#219, #236, #239, #250, #258, and #267** are retained as separate `preview-pr-<number>` testing branches because their exact passing heads conflicted with the combined preview. Their conflicts were recorded rather than silently resolved by inventing code.
+
+This branch is currently **88 commits ahead of this fork's `main` branch**.
+
+## Major improvements represented in the preview
+
+### Performance and adaptive verification
+
+Pulpo Preview adds performance paths intended to increase throughput without moving governance authority away from the canonical kernel:
+
+- multi-core audit verification;
+- bounded audit digest caching;
+- parallel read-only evidence collection;
+- sharded evidence-digest caching;
+- machine-bound performance profiles;
+- adaptive worker-count and batch-size selection;
+- memory-scaling benchmarks;
+- SQLite state benchmarks;
+- performance-profile generation;
+- recorded benchmark and comparison artifacts.
+
+Workers can accelerate immutable calculations, but they do **not** issue permits, change policy, grant authority, bypass replay protection, reconcile consequences, or append canonical evidence.
+
+Historical development measurements recorded roughly **2.7× faster** verification on a 10,000-record synthetic audit using four warm workers. That is a recorded development measurement, not a universal performance guarantee.
+
+### SQLite persistence and evidence work
+
+The preview contains extensive SQLite persistence work and evidence, including:
+
+- restart-safe governance state;
+- approval-ID, nonce and permit persistence;
+- durable audit history;
+- transactional commerce state;
+- spend and reservation persistence;
+- audit-chain tamper detection;
+- SQLite benchmarking and reconciliation artifacts;
+- conservative connection cleanup;
+- replay, restart, rollback and tamper-focused testing.
+
+The preview-specific **Dark Mirror Windows repair** closes commerce budget SQLite connections after transaction handling while preserving WAL, FULL synchronization, `BEGIN IMMEDIATE`, replay protection, budget limits, and transaction semantics.
+
+The focused repaired Windows path passed **32 tests** with warnings treated as errors.
+
+### Governance and authority hardening
+
+The preview carries work around:
+
+- exact-intent permit binding;
+- one-use permit semantics;
+- verifier-backed approval envelopes;
+- pinned verifier/key/algorithm/deployment constraints;
+- bounded authority lifetimes;
+- bounded agent action/resource/cost grants;
+- execution-context binding;
+- capability derivation versus capability-use separation;
+- external authority-service composition;
+- authority request limits;
+- explicit transport and execution boundaries.
+
+The core rule remains unchanged:
+
+**Intelligence can improve a proposal. It cannot promote itself into greater authority.**
+
+### MCP and execution-boundary work
+
+The preview includes additional MCP and execution-boundary work such as:
+
+- MCP boundary hardening;
+- Secure MCP Tunnel binding;
+- trusted frozen MCP snapshot behavior;
+- execution-context checks;
+- network exposure inspection;
+- transport-security controls;
+- provider-route isolation proofs;
+- Windows MCP-related preview work.
+
+These surfaces do not make MCP, plugins, workers, models, shells, or providers sources of canonical authority.
+
+### Consequence, reconciliation and governed memory
+
+Pulpo Preview extends the consequence path with:
+
+- effect reconciliation;
+- bounded commerce execution;
+- outcome-memory gating;
+- canonical custody evidence requirements;
+- uncertain-consequence handling;
+- external execution/evidence proofs;
+- Redsys sandbox governance work;
+- Dark Mirror proof tooling.
+
+Pulpo preserves uncertainty rather than converting it into permission:
+
+```text
+AUTHORIZED / ATTEMPTED / CONSEQUENCE UNKNOWN
+```
+
+An unknown consequence does not automatically create retry authority.
+
+## Setup from source
+
+The preview also includes the `pulpo setup` bootstrap path.
 
 After installing the package in your environment:
 
@@ -49,110 +176,65 @@ After installing the package in your environment:
 pulpo setup --json-report perf-results\pulpo-setup-report.json
 ```
 
-`pulpo setup`:
+Or directly from the source checkout:
 
-- detects the current OS, Python version, and logical CPU count;
-- reuses an existing matching performance profile when available;
-- rejects stale or mismatched profiles;
-- otherwise runs bounded local calibration over synthetic audit data;
-- verifies that a valid audit passes and a tampered hash fails;
-- saves the local performance profile for later adaptive verification.
+```powershell
+python -m pulpo.cli setup --json-report perf-results\pulpo-preview-setup.json
+```
 
-If you already have a benchmark artifact, setup can build from that instead of
-recalibrating:
+Setup can:
+
+- detect OS, Python version, and logical CPU count;
+- reuse a matching machine performance profile;
+- reject stale or mismatched profiles;
+- run bounded local calibration over synthetic audit data;
+- verify valid and deliberately tampered audit cases;
+- persist a local performance profile for later adaptive verification.
+
+An existing benchmark can also seed setup:
 
 ```powershell
 pulpo setup --benchmark perf-results\memory-scaling-ddr4-3200-cl14-batched.json
 ```
 
-The setup path reports `Authority changes ........ NONE`. It is a test/developer
-bootstrap and does not claim production readiness.
+The setup path reports:
 
-## How Pulpo changes the model
+```text
+Authority changes ........ NONE
+```
 
-Pulpo separates three responsibilities that are often collapsed into one AI system:
+Performance configuration is not an authority credential.
+
+## Test the preview
+
+```powershell
+git clone --branch preview https://github.com/spikediegel-prog/Pulpo-Preview.git Pulpo-preview
+cd Pulpo-preview
+python -W error -m unittest discover -s tests -v
+python -m pulpo.cli setup --json-report perf-results/pulpo-preview-setup.json
+```
+
+### Recorded validation
+
+The combined preview has recorded clean Linux/WSL validation of **445 tests passing with warnings treated as errors** on Python 3.14.4.
+
+The Windows Dark Mirror repair has a separate focused validation of **32 passing tests**. The full Windows suite still has known pre-existing failures and therefore is **not** claimed as fully passing.
+
+See [PREVIEW.md](PREVIEW.md) for the exact tested commits, logs, hosted-run boundary, Windows results, and remaining unknowns.
+
+## Pulpo's three-plane model
 
 | Plane | Responsibility |
 | --- | --- |
-| **Intelligence** | Reasons, plans, learns, and proposes. It does not create authority. |
-| **Governance** | Resolves identity, policy, budget, approval, permits, evidence, reconciliation, and governed memory. |
+| **Intelligence** | Reasons, plans, learns, and proposes. It cannot create authority. |
+| **Governance** | Resolves identity, authority, policy, budget, approvals, permits, evidence, reconciliation, and governed memory. |
 | **Execution** | Performs only the exact consequence authorized by a valid permit. |
 
 The lifecycle is explicit:
 
-`Purpose → Intent → Authority → Policy → Decision → Permit → Execution → Evidence → Reconciliation → Memory → Adaptation → Purpose`
-
-The invariant is simple: **better intelligence can improve a proposal, but it cannot promote itself into greater authority.**
-
-## What the repository proves
-
-The executable test and proof surfaces cover controls including:
-
-- fail-closed handling of unknown, incomplete, over-budget, expired, revoked, mismatched, and replayed requests;
-- exact-intent binding and one-use permits;
-- verifier-backed approval envelopes with pinned trust, key, algorithm, deployment, and lifetime constraints;
-- restart-safe SQLite governance state for approval IDs, nonces, permits, audit history, commerce state, and reconciliation;
-- persisted audit-chain tamper detection;
-- bounded agent grants that cannot exceed configured action, resource, or cost scope;
-- bounded commerce objects tied to request, quote, reserved budget, exact target, and permit;
-- independent custody/evidence paths for consequential execution proofs;
-- reconciliation that distinguishes verified consequences from failure and unresolved external reality;
-- governed outcome memory that records evidence without converting learning into authority.
-
-PulpoGit also provides a read-only clarity projection for local source state. It distinguishes canonical, proposal, stale, diverged, detached, and dirty checkouts without inferring tests or authority. See the [PulpoGit clarity proof](proofs/git_clarity/README.md).
-
-```bash
-python -m unittest discover -s tests -v
+```text
+Purpose → Intent → Authority → Policy → Decision → Permit → Execution → Evidence → Reconciliation → Memory → Adaptation → Purpose
 ```
-
-## Performance without moving the trust boundary
-
-Pulpo's governance boundary does not require every read-only calculation to remain single-core.
-
-This branch adds opt-in performance paths for:
-
-- **multi-core audit verification** — worker processes can decode immutable audit payloads and calculate expected hashes;
-- **bounded audit digest caching** — exact-input calculations can be reused while current chain links and stored hashes are still checked;
-- **parallel evidence collection** — independent read-only evidence surfaces can be collected concurrently;
-- **sharded evidence-digest caching** — identical canonical snapshot calculations can be reused without treating cached data as fresh observation.
-- **bounded self-tuning** — a machine-bound performance profile can select worker count and batch size by workload without changing governance semantics.
-
-Workers do **not** issue permits, change policy, grant authority, bypass replay protection, reconcile consequences, or append canonical evidence.
-
-Historical development measurements recorded about **2.7× faster** verification for a 10,000-record synthetic audit with four warm workers, plus lower repeated-check latency with caching. Those figures are development measurements, not universal performance guarantees. See [multi-core audit verification](docs/AUDIT_CPU_WORKERS.md).
-
-### Performance engineering
-
-**Proposed engineering standard:** benchmarks are Pulpo's feedback loop for
-determining whether SQL, memory, audit, batching, serialization, concurrency,
-and other component changes improve overall system efficiency. The core measure
-is how efficiently Pulpo converts CPU, memory, storage, and I/O into governed
-record processing while preserving governance guarantees.
-
-Evaluate changes against comparable workloads and record these dimensions:
-
-- **Throughput:** records or operations processed per second.
-- **CPU efficiency:** CPU time per record or per 1,000 records.
-- **Memory efficiency:** peak memory and memory growth as record history increases.
-- **Latency:** typical latency and p95/p99 tail latency under load.
-- **Scaling:** capacity across increasing record histories and hardware/core configurations.
-- **Governance/evidence overhead:** CPU, memory, storage, and I/O cost of governance and audit evidence per record.
-- **Correctness under load:** preservation of governance invariants, including restart and failure behavior.
-
-An optimization can be worthwhile even if one operation consumes slightly more
-resources when overall governed processing capacity improves. No performance
-gain counts if replay protection, durability, rollback, permit semantics,
-audit-chain verification, tamper detection, or other governance invariants are
-weakened. Report measured gains with their workload, configuration, and evidence
-boundaries; unverified gains remain **Unknown**.
-
-## Designed for consequential systems
-
-Pulpo's architecture is intended for systems where an AI recommendation can eventually reach something that matters: infrastructure, autonomous agents, robotics, drones, governed transactions, APIs, databases, and on-prem execution.
-
-The point is not to make the model less capable.
-
-The point is to make **capability and authority different things**.
 
 ## Minimal example
 
@@ -173,45 +255,41 @@ if decision.outcome == "allow":
     assert kernel.consume(decision.permit, intent)
 ```
 
-## Boundary
+## Evidence before claims
 
-Pulpo is an active technical governance proof and implementation, not a claim that every production deployment is automatically contained. Repository tests and bounded provider proofs establish specific controls in their tested topology; they do not by themselves prove universal cloud, model-provider, operating-system, hardware, or external-world custody.
+Pulpo Preview intentionally keeps proof boundaries visible.
 
-Production deployments still require their own trusted bootstrap, capability isolation, credential custody, durable storage guarantees, independent observation, provider-specific integration, and exact-topology validation.
+Repository tests and bounded provider proofs establish controls only in their tested topology. They do not automatically prove universal cloud containment, operating-system integrity, model-provider custody, hardware trust, hostile-code isolation, or production readiness.
 
-That distinction is intentional: **architecture is not proof, execution is not authority, and evidence is not permission.**
+**Architecture is not proof. Execution is not authority. Evidence is not permission.**
+
+For the current preview evidence and limitations, start with:
+
+- [Preview status and validation](PREVIEW.md)
+- [Machine-readable preview manifest](PREVIEW_MANIFEST.json)
+- [Windows preview executable](docs/WINDOWS_PREVIEW_EXE.md)
+- [Audit CPU workers and performance](docs/AUDIT_CPU_WORKERS.md)
+- [Current state](docs/CURRENT_STATE.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Governance](docs/GOVERNANCE.md)
+- [Persistence](docs/PERSISTENCE.md)
 
 ## Host bound and Pulpo bound
-Pulpo is only as secure as the host it is running on. The kernel, permit store, and evidence journal assume that host is still the host that was installed and that it is still enforcing process, file, and boot policy. Pulpo does not own the boot chain, firmware, NVRAM, unused or hidden partitions, storage-controller firmware, the management controller, service-account privileges, or the decision to keep operating a machine that can no longer be measured. An OS reimage, snapshot, or rollback does not restore those layers. A compromised host can skip the process, replace local state, or omit a record. That is an operator incident, not a Pulpo control failure.
-Pulpo is accountable for the contract it states, on a host that is still enforcing it: unknown, incomplete, and over-budget intents fail closed; a permit is bound to one exact intent and cannot be replayed; loss of contact does not widen a grant; uncertain execution remains unknown and does not become retry authority; a visible broken audit chain fails closed. A defect in that contract is a Pulpo failure. Survival of host compromise, rollback-proof storage, trusted verifier bootstrap, network isolation, and hostile-code sandboxing are not part of that contract.
 
-See [project source baseline](docs/PROJECT_SOURCE_BASELINE.md), [architecture](docs/ARCHITECTURE.md), [project governance](docs/GOVERNANCE.md),
-[current state](docs/CURRENT_STATE.md), [canonicalization](docs/CANONICALIZATION.md),
-and [agents and plugins](docs/AGENTS_AND_PLUGINS.md).
-The bounded transaction proof and its remaining live-execution gates are in
-[commerce proof](docs/COMMERCE_PROOF.md).
-The external approval contract and its still-open signer boundary are in
-[authority](docs/AUTHORITY.md).
-The mandatory deployment tests before claiming independent human authority are
-in [independent authority proof](docs/INDEPENDENT_AUTHORITY_PROOF.md).
-The selected founder-passkey boundary and the worker-visible external service
-contract are in [authority boundary decision](docs/AUTHORITY_BOUNDARY_DECISION.md)
-and [authority service contract](docs/AUTHORITY_SERVICE_CONTRACT.md).
-The separately packaged executable reference and its remaining production gate
-are in [authority service proof](docs/AUTHORITY_SERVICE_PROOF.md).
-The restart-safe state proof and its storage boundary are in
-[persistence](docs/PERSISTENCE.md).
-The governed success-and-failure learning rules are in the
-[outcome learning protocol](docs/OUTCOME_LEARNING_PROTOCOL.md), including the
-[legacy migration regression case](docs/OUTCOME_CASE_LEGACY_MIGRATION_REGRESSION.md).
+Pulpo is only as secure as the host enforcing it. The kernel, permit store, and evidence journal assume the host remains the host that was installed and continues enforcing its process, file, and boot policy.
 
+Pulpo does not own firmware, the boot chain, hidden storage, management controllers, host administrator privileges, or the operator's decision to continue running a machine that can no longer be trusted.
 
-## Current development status
+Pulpo remains accountable for the contract it states on a host that is still enforcing it: fail-closed governance, exact permit binding, replay protection, bounded grants, uncertain-consequence handling, and visible audit-chain integrity.
 
-The capabilities above describe the current `main` branch. Recent pull requests show the next development direction, but the following work is still proposed and is not part of `main` while its PR remains open:
+Survival of arbitrary host compromise, rollback-proof storage, trusted verifier bootstrap, network isolation, and hostile-code sandboxing require separately established deployment controls.
 
-- [#250 — Consolidate recent governance, security, portability, and performance hardening](https://github.com/Ironnember/Pulpo1.0/pull/250) proposes a reviewed integration of bounded permit expiry, constrained local intelligence execution, bounded untrusted inputs, narrower custody packaging, HTTP admission controls, MCP portability, canonical delta logging, and faster audit verification. Its linked implementation PRs are not independently treated here as landed changes.
-- [#258 — Feature/gpu governance audit](https://github.com/Ironnember/Pulpo1.0/pull/258) proposes custody approval-envelope compatibility, descriptor-relative MCP snapshot publication, repaired constitutional mutation checks, and isolated KMS and Cloud SQL probe-container proofs. These probes are verification artifacts; they do not establish production service deployment.
-- [#267 — Portable GPU audit integrity acceleration](https://github.com/Ironnember/Pulpo1.0/pull/267) proposes PyTorch eager and Triton implementations for recomputing audit-record SHA-256 hashes on ROCm/HIP and CUDA. CPU remains authoritative for chain linkage, final verification, governance, permits, and durable state. The PR reports correctness-checked RX 7900 XT measurements near CPU parity, not a speedup; canonicalization and host-side work remain performance bottlenecks.
+---
 
-These PRs make the current direction explicit: strengthen governance and custody boundaries, make audit and benchmark evidence more reproducible, and evaluate optional acceleration without moving authorization or canonical evidence authority off the CPU. Recheck PR status before treating any proposed item as part of the released/current branch.
+## Preview status
+
+**Pulpo Preview is for testing, validation, benchmarking, experimentation, and early access to selected work.**
+
+It is not an official Pulpo release and should not be represented as production-ready merely because a test, benchmark, executable, or individual PR check passes.
+
+For official Pulpo development and releases, see [Ironnember/Pulpo1.0](https://github.com/Ironnember/Pulpo1.0).
