@@ -3,6 +3,7 @@ from hashlib import sha256
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from scripts.prove_dark_mirror_v0 import CASES, build_packet, canonical
@@ -32,11 +33,21 @@ class DarkMirrorProofV0Tests(unittest.TestCase):
         self.assertFalse(packet["effects"]["external_consequence_claimed"])
 
     def test_packet_hash_detects_result_substitution(self):
-        packet = build_packet()
-        tampered = copy.deepcopy(packet)
-        claimed = tampered.pop("evidence_hash")
-        tampered["cases"][0]["outcome"] = "fail"
-        self.assertNotEqual(sha256(canonical(tampered)).hexdigest(), claimed)
+        for outcome in ("pass", "fail"):
+            with self.subTest(outcome=outcome):
+                def result(case):
+                    return {**case, "outcome": outcome, "exit_code": 0 if outcome == "pass" else 1}
+
+                with patch("scripts.prove_dark_mirror_v0.run_case", side_effect=result):
+                    packet = build_packet()
+                self.assertEqual(
+                    "Verified" if outcome == "pass" else "Blocked",
+                    packet["claim_classification"],
+                )
+                tampered = copy.deepcopy(packet)
+                claimed = tampered.pop("evidence_hash")
+                tampered["cases"][0]["outcome"] = "fail" if outcome == "pass" else "pass"
+                self.assertNotEqual(sha256(canonical(tampered)).hexdigest(), claimed)
 
 
 if __name__ == "__main__":
