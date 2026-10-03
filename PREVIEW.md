@@ -1,4 +1,6 @@
-# Pulpo Preview — unofficial testing snapshot
+# Pulpo Preview — The Mad Lads Playground
+
+Explore upcoming features, share experiments, and help shape what comes next. The Mad Lads Playground is our unofficial preview channel for testing and building excitement before official releases.
 
 This branch in **spikediegel-prog/Pulpo-Preview** is an unofficial preview for testers. It contains unreleased upstream PRs awaiting review. It is not an official Pulpo release or a production-readiness claim. Source PRs remain open upstream, and their review/admission status is unchanged.
 

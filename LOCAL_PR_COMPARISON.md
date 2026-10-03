@@ -1,5 +1,7 @@
 # Local Pulpo vs preview and open PRs
 
+Preview channel: **Pulpo Preview — The Mad Lads Playground**. This comparison records the contents and limits of our unofficial testing snapshot.
+
 Audit date: 2026-10-03. Draft PRs excluded.
 
 ## Result

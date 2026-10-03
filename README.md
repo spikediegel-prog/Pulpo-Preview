@@ -1,5 +1,6 @@
-> **Unofficial Pulpo Preview — testing snapshot, 2026-10-03.**
-> This is spikediegel-prog's preview of unreleased PRs awaiting upstream review.
+> **Pulpo Preview — The Mad Lads Playground**
+> Explore upcoming features, share experiments, and help test what comes next.
+> This is spikediegel-prog's unofficial testing snapshot (2026-10-03) of unreleased PRs awaiting upstream review.
 > Read [preview contents, test evidence, and limitations](PREVIEW.md) before testing.
 > Official Pulpo development/releases: https://github.com/Ironnember/Pulpo1.0.
 
