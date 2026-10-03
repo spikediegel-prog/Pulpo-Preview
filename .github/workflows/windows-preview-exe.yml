@@ -1,0 +1,47 @@
+name: Windows Preview Executable
+
+on:
+  push:
+    branches: [preview]
+    paths:
+      - "pulpo/**"
+      - "scripts/windows_launcher.py"
+      - "scripts/build_windows_exe.ps1"
+      - "scripts/check_windows_exe.py"
+      - "scripts/requirements-windows-build.txt"
+      - ".github/workflows/windows-preview-exe.yml"
+      - "docs/WINDOWS_PREVIEW_EXE.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: x64
+      - name: Build standalone preview CLI
+        shell: pwsh
+        run: ./scripts/build_windows_exe.ps1
+      - name: Test bundled executable
+        shell: pwsh
+        run: python scripts/check_windows_exe.py dist/windows-preview/pulpo-preview.exe --output dist/windows-preview/smoke-test-report.json --work-dir work/windows-exe-smoke
+      - name: Add tester instructions and provenance
+        shell: pwsh
+        run: |
+          Copy-Item docs/WINDOWS_PREVIEW_EXE.md dist/windows-preview/README.md
+          $exeHash = (Get-FileHash dist/windows-preview/pulpo-preview.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$exeHash  pulpo-preview.exe" | Set-Content dist/windows-preview/SHA256SUMS.txt -Encoding utf8
+          "Source commit: $env:GITHUB_SHA" | Set-Content dist/windows-preview/SOURCE.txt -Encoding utf8
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pulpo-preview-windows-x64-${{ github.sha }}
+          path: dist/windows-preview/
+          retention-days: 30
+          if-no-files-found: error

@@ -7,6 +7,8 @@
 
 # PULPO
 
+[Windows preview executable: download and instructions](docs/WINDOWS_PREVIEW_EXE.md)
+
 ### Give AI intelligence. Never give it authority.
 
 **Pulpo is a governance and execution-control layer for AI and autonomous systems—built so intelligence can propose actions without gaining the authority to execute them.**

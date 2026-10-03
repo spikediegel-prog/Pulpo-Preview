@@ -54,7 +54,7 @@ python -m pip install -e .
 pulpo setup --json-report perf-results/pulpo-preview-setup.json
 ```
 
-Python 3.11 or later is required. Setup detects the host, validates or builds a machine-bound performance profile, and checks a valid and tampered synthetic audit. It does not deploy production authority, install a Windows service, or claim production readiness. No standalone Windows `.exe`/`.msi` installer is tracked in this branch.
+Python 3.11 or later is required. Setup detects the host, validates or builds a machine-bound performance profile, and checks a valid and tampered synthetic audit. It does not deploy production authority, install a Windows service, or claim production readiness. A portable Windows `.exe` build is now available through the [Windows executable workflow and tester guide](docs/WINDOWS_PREVIEW_EXE.md). It bundles this setup CLI; it is not an MSI installer or a full Windows feature-validation claim.
 
 For an isolated PR, choose its snapshot at clone time, for example:
 

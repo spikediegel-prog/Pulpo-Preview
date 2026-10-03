@@ -1,0 +1,54 @@
+{
+  "classification": "Verified local Windows executable smoke tests",
+  "source_base": "a54e78e4cc0833a307e65f0758942bcdcde26a3b",
+  "packaging_sources_uncommitted": true,
+  "exe_sha256": "b6d5cca161768d2f7c50aea37eaf11bf9ca8f8d6da1b554ac4ebd965e6d021f4",
+  "size_bytes": 10534241,
+  "runtime": "Bundled Python 3.12.10; PyInstaller 6.22.3; Windows x64",
+  "source_and_external_python_not_on_search_path": true,
+  "tests": [
+    {
+      "case": "help",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "setup-help",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "quick-start",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "fallback",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "calibration",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "reuse",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "invalid-command",
+      "exit_code": 2,
+      "result": "PASS"
+    }
+  ],
+  "unknowns": [
+    "independent clean-machine reproduction",
+    "code signing",
+    "full Windows suite success",
+    "optional MCP/cryptography extras",
+    "production readiness"
+  ],
+  "boundary": "Portable setup CLI, not a Windows service or MSI installer. Quick start writes only local setup report; authority unchanged."
+}

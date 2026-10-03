@@ -506,5 +506,16 @@
     "claim": "Verified",
     "result": "success",
     "run_url": "https://github.com/spikediegel-prog/Pulpo-Preview/actions/runs/37142797818"
+  },
+  "windows_executable": {
+    "type": "portable Windows x64 setup CLI",
+    "workflow": ".github/workflows/windows-preview-exe.yml",
+    "guide": "docs/WINDOWS_PREVIEW_EXE.md",
+    "local_smoke_evidence": "perf-results/windows-exe-smoke.json",
+    "local_smoke_checks": 7,
+    "signing": "Verified unsigned local prototype",
+    "authority_effect": "none",
+    "hosted_build": "Unknown until matching workflow completes",
+    "boundary": "Not MSI, full Windows suite success, independent deployment or production proof"
   }
 }
