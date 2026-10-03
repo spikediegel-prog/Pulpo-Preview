@@ -475,5 +475,36 @@
       "elapsed_seconds": 20.995,
       "log": "perf-results/preview-fork-tests-20261003.log"
     }
+  },
+  "preview_repairs": [
+    {
+      "code_sha": "3195479663a837f66b2fda58bc43fb9992812767",
+      "description": "Close commerce budget SQLite connections; cover pass and blocked packet tampering",
+      "authority_effect": "none",
+      "focused_windows_validation": {
+        "claim": "Verified",
+        "tests": 32,
+        "result": "OK",
+        "seconds": 3.204
+      },
+      "full_windows_validation": {
+        "claim": "Verified local execution",
+        "tests": 446,
+        "failures": 9,
+        "errors": 54,
+        "skipped": 5,
+        "seconds": 51.481,
+        "log": "perf-results/dark-mirror-windows-full-tests.log"
+      },
+      "source_boundary": "Executed uncommitted identical patch on base 60d0a196da44702e3876143e6268e16a9b825257 before repair commit; not a clean-checkout execution claim",
+      "hosted_validation": "Unknown until exact repaired preview head run completes",
+      "performance_impact": "Unknown"
+    }
+  ],
+  "historical_hosted_validation": {
+    "sha": "60d0a196da44702e3876143e6268e16a9b825257",
+    "claim": "Verified",
+    "result": "success",
+    "run_url": "https://github.com/spikediegel-prog/Pulpo-Preview/actions/runs/37142797818"
   }
 }

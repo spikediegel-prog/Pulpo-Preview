@@ -2,6 +2,7 @@
 > Explore upcoming features, share experiments, and help test what comes next.
 > This is spikediegel-prog's unofficial testing snapshot (2026-10-03) of unreleased PRs awaiting upstream review.
 > Read [preview contents, test evidence, and limitations](PREVIEW.md) before testing.
+> Includes `pulpo setup` bootstrap and a verified local Windows Dark Mirror repair; the full Windows suite still has known failures.
 > Official Pulpo development/releases: https://github.com/Ironnember/Pulpo1.0.
 
 # PULPO

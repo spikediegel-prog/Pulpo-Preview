@@ -1,0 +1,58 @@
+Dark Mirror Windows repair - local proposed change
+Base: 60d0a196da44702e3876143e6268e16a9b825257, mad-lads-preview. The tested source includes uncommitted changes in pulpo/commerce.py, tests/test_commerce.py and tests/test_dark_mirror_proof_v0.py; this is not evidence for the unchanged GitHub head.
+
+Verified diagnosis: the eight Dark Mirror cases previously failed because SQLiteBudgetAccount connection context managers did not close connections. Windows cleanup raised WinError 32. The tampering test also substituted fail for fail on an already blocked packet, leaving its hash unchanged.
+Proposed repair: explicitly close every per-operation commerce budget connection after its existing transaction context exits; close connections if synchronous pragma setup fails. Preserve WAL, FULL synchronization, BEGIN IMMEDIATE, existing commits/rollbacks and all budget/admission rules. The hash test toggles the outcome and covers both Verified and Blocked synthetic packets. The real eight-case packet test still requires all cases to pass.
+Verified focused Windows execution: python -W error -m unittest tests.test_dark_mirror_proof_v0 tests.test_commerce tests.test_custody_executor tests.test_custody_reconcile -v; 32 tests passed in 3.204s. Coverage includes restart, concurrent budget reservation, replay, uncertainty, substitution, connection release on success/denial, and both packet classifications.
+
+Eight-pass adversarial transformation review (analytical only)
+Flip: hostile case results cannot become Verified merely because cleanup is fixed; the runner classification rule is unchanged.
+Reverse: an invalid promotion would require overriding failed cases or swallowing errors; neither is introduced.
+Invert: the new hash test covers blocked packets too, without treating them as success.
+Inside-Out: no verifier, approval, credential, execution route or source-of-truth capability is added.
+Darken: connection closure can raise and block an operation; errors remain visible rather than ignored. Existing transaction exit runs before close.
+Lighten: bounded reproduction shows open budget connections explain this Windows cleanup symptom; no external provider or governance failure is inferred from it.
+Amplify: repeated calls now release their per-operation resources instead of depending on garbage collection. Concurrent reservation and restart checks pass.
+Negate: explicit resource release fixes the cause without skips, disabled assertions, garbage-collection timing workarounds, or weakened invariants.
+
+Authority effect: none. Canonical state mutation: no new mutation or writer; existing reserve, attempt and reconcile transitions remain governed by existing boundaries. Temporary software-test databases only; no live provider effects.
+Unknown: performance impact, physical-hardware testing beyond this host, independent tester reproduction, hosted validation of this uncommitted patch and production containment. This is a bounded repair, not a reusable organizational lesson or temporal-transfer claim; no historical replay is claimed.
+Verified complete Windows suite: Ran 446 tests in 51.481s; FAILED (failures=9, errors=54, skipped=5)
+Compared with the pasted preview run: 73 diagnostic blocks removed; new diagnostic identities: [(('ERROR', 'test_committed_obligation_blocks_next_transition_until_projection (test_custody_evidence.CustodyEvidenceConvergenceTests.test_committed_obligation_blocks_next_transition_until_projection)'), 1), (('ERROR', 'test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical (test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical)'), 3), (('FAIL', 'test_detached_head_is_explicit (test_git_clarity.GitClarityTests.test_detached_head_is_explicit)'), 1)]. Remaining identities:
+3 ('ERROR', 'test_abort_before_custody_commit_creates_neither_mutation_nor_obligation (test_custody_evidence.CustodyEvidenceConvergenceTests.test_abort_before_custody_commit_creates_neither_mutation_nor_obligation)')
+3 ('ERROR', 'test_committed_obligation_blocks_next_transition_until_projection (test_custody_evidence.CustodyEvidenceConvergenceTests.test_committed_obligation_blocks_next_transition_until_projection)')
+3 ('ERROR', 'test_crash_during_projection_restarts_without_duplicate_canonical_event (test_custody_evidence.CustodyEvidenceConvergenceTests.test_crash_during_projection_restarts_without_duplicate_canonical_event)')
+3 ('ERROR', 'test_duplicate_projection_is_idempotent_by_transition_hash (test_custody_evidence.CustodyEvidenceConvergenceTests.test_duplicate_projection_is_idempotent_by_transition_hash)')
+3 ('ERROR', 'test_tampered_obligation_is_denied_and_blocks_custody (test_custody_evidence.CustodyEvidenceConvergenceTests.test_tampered_obligation_is_denied_and_blocks_custody)')
+1 ('ERROR', 'test_parent_revocation_keeps_child_permit_invalid_after_restart (test_directives.DirectiveProofTests.test_parent_revocation_keeps_child_permit_invalid_after_restart)')
+1 ('ERROR', 'test_preissued_permit_stays_invalid_after_revocation_and_restart (test_directives.DirectiveProofTests.test_preissued_permit_stays_invalid_after_revocation_and_restart)')
+1 ('ERROR', 'test_revocation_requires_new_authority_and_survives_restart (test_directives.DirectiveProofTests.test_revocation_requires_new_authority_and_survives_restart)')
+1 ('ERROR', 'test_sqlite_existing_permit_directive_table_migrates_parent_hash_column (test_directives.DirectiveProofTests.test_sqlite_existing_permit_directive_table_migrates_parent_hash_column)')
+1 ('ERROR', 'test_revocation_after_issue_prevents_effect_and_survives_restart (test_expense_workflow.FieldExpenseGovernedEffectProofTests.test_revocation_after_issue_prevents_effect_and_survives_restart)')
+3 ('ERROR', 'test_01_valid_directive_exact_permit_and_observation_reconcile_verified_success (test_issue_153_consequence_reconciliation_v0.Issue153ConsequenceReconciliationV0.test_01_valid_directive_exact_permit_and_observation_reconcile_verified_success)')
+3 ('ERROR', 'test_02_executor_success_plus_substituted_observation_is_mismatch_and_nonreusable_memory (test_issue_153_consequence_reconciliation_v0.Issue153ConsequenceReconciliationV0.test_02_executor_success_plus_substituted_observation_is_mismatch_and_nonreusable_memory)')
+3 ('ERROR', 'test_03_executor_success_plus_incomplete_evidence_is_unknown_and_nonreusable_memory (test_issue_153_consequence_reconciliation_v0.Issue153ConsequenceReconciliationV0.test_03_executor_success_plus_incomplete_evidence_is_unknown_and_nonreusable_memory)')
+3 ('ERROR', 'test_04_mismatch_and_unknown_state_and_memory_survive_restart_without_retry_authority (test_issue_153_consequence_reconciliation_v0.Issue153ConsequenceReconciliationV0.test_04_mismatch_and_unknown_state_and_memory_survive_restart_without_retry_authority)')
+3 ('ERROR', 'test_07_outcome_memory_rejects_result_substitution_and_conflicting_replacement (test_issue_153_consequence_reconciliation_v0.Issue153ConsequenceReconciliationV0.test_07_outcome_memory_rejects_result_substitution_and_conflicting_replacement)')
+3 ('ERROR', 'test_08_independently_observed_provider_failure_is_failure_class_memory_not_success (test_issue_153_consequence_reconciliation_v0.Issue153ConsequenceReconciliationV0.test_08_independently_observed_provider_failure_is_failure_class_memory_not_success)')
+3 ('ERROR', 'test_09_successful_outcome_memory_cannot_authorize_an_otherwise_denied_intent (test_issue_153_consequence_reconciliation_v0.Issue153ConsequenceReconciliationV0.test_09_successful_outcome_memory_cannot_authorize_an_otherwise_denied_intent)')
+3 ('ERROR', 'test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical (test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical)')
+3 ('ERROR', 'test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event (test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event)')
+1 ('ERROR', 'test_loads_exact_private_frozen_snapshot (test_mcp_plugin.MCPPluginTests.test_loads_exact_private_frozen_snapshot)')
+1 ('ERROR', 'test_binding_fails_closed_without_runtime_key (test_mcp_tunnel.MCPTunnelBindingTests.test_binding_fails_closed_without_runtime_key)')
+1 ('ERROR', 'test_binding_uses_exact_tunnel_and_sanitized_environment (test_mcp_tunnel.MCPTunnelBindingTests.test_binding_uses_exact_tunnel_and_sanitized_environment)')
+1 ('ERROR', 'test_stdio_command_targets_only_existing_projection (test_mcp_tunnel.MCPTunnelBindingTests.test_stdio_command_targets_only_existing_projection)')
+1 ('ERROR', 'test_stale_pre_revocation_projection_cannot_restore_authority_after_restart (test_projection_non_elevation.ProjectionNonElevationTests.test_stale_pre_revocation_projection_cannot_restore_authority_after_restart)')
+1 ('ERROR', 'test_completion_of_one_version_does_not_complete_another (test_target_reconcile.TargetReconciliationTests.test_completion_of_one_version_does_not_complete_another)')
+1 ('ERROR', 'test_nonempty_artifact_records_exact_completion_without_authority_effect (test_target_reconcile.TargetReconciliationTests.test_nonempty_artifact_records_exact_completion_without_authority_effect)')
+1 ('FAIL', 'test_clean_canonical_report_is_deterministic_and_self_verifying (test_git_clarity.GitClarityTests.test_clean_canonical_report_is_deterministic_and_self_verifying)')
+1 ('FAIL', 'test_clean_proposal_reports_ahead_commit_and_paths (test_git_clarity.GitClarityTests.test_clean_proposal_reports_ahead_commit_and_paths)')
+1 ('FAIL', 'test_detached_head_is_explicit (test_git_clarity.GitClarityTests.test_detached_head_is_explicit)')
+1 ('FAIL', 'test_divergence_is_not_mislabeled_as_a_proposal (test_git_clarity.GitClarityTests.test_divergence_is_not_mislabeled_as_a_proposal)')
+1 ('FAIL', 'test_environment_drops_secret_like_variables_and_pins_codex_home (test_local_intelligence_effect_proof.LocalIntelligenceEffectProofScriptTests.test_environment_drops_secret_like_variables_and_pins_codex_home)')
+1 ('FAIL', 'test_seatbelt_denies_global_writes_and_allows_only_runtime (test_local_intelligence_effect_proof.LocalIntelligenceEffectProofScriptTests.test_seatbelt_denies_global_writes_and_allows_only_runtime)')
+1 ('FAIL', 'test_fire_stages_private_auth_copy_inside_runtime (test_local_intelligence_effect_proof_v2.LocalIntelligenceEffectProofV2Tests.test_fire_stages_private_auth_copy_inside_runtime)')
+1 ('FAIL', 'test_rejects_extra_missing_invalid_or_duplicate_snapshot_fields (test_mcp_plugin.MCPPluginTests.test_rejects_extra_missing_invalid_or_duplicate_snapshot_fields)')
+1 ('FAIL', 'test_rejects_relative_path_and_symlinked_parent_or_file (test_mcp_plugin.MCPPluginTests.test_rejects_relative_path_and_symlinked_parent_or_file)')
+
+Verified remaining failure/error identities versus original Windows baseline: set() are absent in baseline. The five additional diagnostic occurrences versus the pasted preview run are in pre-existing baseline identities; counts fluctuate and are not claimed fixed.

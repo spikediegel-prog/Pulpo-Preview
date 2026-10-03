@@ -22,7 +22,17 @@ The [machine-readable manifest](PREVIEW_MANIFEST.json) records PR titles, upstre
 
 The first attempt in a Windows-created worktree had three Linux Git metadata errors; its result was not promoted to passing evidence. A separate Linux-native clone corrected the checkout boundary without changing source.
 
-The preview adds only identification, provenance, and a fork preview CI trigger to the selected code. Full hosted preview workflows, Docker/container isolation, independent authority-service tests on this combination, physical hardware performance, external tester reproduction, and production containment remain **Unknown** until their own evidence exists. Passing individual-head checks do not prove interactions between PRs; 445 unit tests do not replace all workflow proofs.
+**Verified historical hosted execution:** [run 37142797818](https://github.com/spikediegel-prog/Pulpo-Preview/actions/runs/37142797818) completed successfully at `60d0a196da44702e3876143e6268e16a9b825257`, before the Dark Mirror repair below. This evidence does not cover later commits. Passing individual-head checks do not prove interactions between PRs; unit tests do not replace all workflow proofs. Physical hardware performance, independent tester reproduction, and production containment remain **Unknown**.
+
+## Dark Mirror Windows repair
+
+The preview now also includes the local repair committed at `3195479663a837f66b2fda58bc43fb9992812767`. It is a preview-specific change, separate from the exact upstream PR snapshot branches.
+
+**Verified diagnosis and repair:** SQLiteBudgetAccount's connection context managers handled transaction exit but left database handles open. Every per-operation connection now closes after its existing transaction context exits, including denial paths; setup failures close the connection too. The Dark Mirror tampering test now actually changes the result for both passing and blocked packets. The runner still requires all eight real cases to pass before producing a Verified claim. Budget limits, replay protections, WAL, FULL synchronization, BEGIN IMMEDIATE, and transaction commit/rollback semantics are preserved; no new authority or canonical writer is introduced.
+
+**Verified Windows execution of the repaired source:** Python 3.12.10, warnings treated as errors. All 32 focused Dark Mirror/commerce/custody execution/reconciliation tests passed in 3.204s, including all three Dark Mirror tests. The full suite ran 446 tests in 51.481s: **9 failures, 54 errors, 5 skips**. The preceding tester run recorded 445 tests with 10 failures, 121 errors, and 5 skips. Diagnostic counts fluctuate; every remaining failing/erroring test identity was already present in the original stored Windows baseline. Windows MCP, artifact access, temporary-file/SQLite cleanup, path/mode and Git-cleanliness issues remain unresolved. This is not a passing full Windows suite.
+
+The execution happened before the code commit, against its identical three-file patch on base `60d0a196da44702e3876143e6268e16a9b825257`. See the [full Windows log](perf-results/dark-mirror-windows-full-tests.log) and [repair review](perf-results/dark-mirror-fix-review.txt). Hosted validation of the repaired head must be checked independently. Performance impact and external reproduction of this repair remain **Unknown**.
 
 The [Unofficial Preview Validation workflow](.github/workflows/preview-validation.yml) runs the existing CI jobs for pushes to `preview`; fork Actions may require enabling from the repository Actions tab. Consult this fork's latest run rather than assuming upstream results cover this combined head.
 
@@ -34,6 +44,17 @@ cd Pulpo-preview
 python -W error -m unittest discover -s tests -v
 python -m pulpo.cli setup --json-report perf-results/pulpo-preview-setup.json
 ```
+
+## Setup/bootstrap included in this branch
+
+**Verified source presence:** this preview contains `pulpo/setup.py`, the `pulpo setup` console command, and `tests/test_setup.py`. Install the Python package from the cloned preview, then run the bootstrap:
+
+```powershell
+python -m pip install -e .
+pulpo setup --json-report perf-results/pulpo-preview-setup.json
+```
+
+Python 3.11 or later is required. Setup detects the host, validates or builds a machine-bound performance profile, and checks a valid and tampered synthetic audit. It does not deploy production authority, install a Windows service, or claim production readiness. No standalone Windows `.exe`/`.msi` installer is tracked in this branch.
 
 For an isolated PR, choose its snapshot at clone time, for example:
 
@@ -53,4 +74,4 @@ Incremental SQL/component efficiency changes should be benchmarked and externall
 
 ## Local-copy comparison and checkpoint update
 
-See [local vs PR comparison](LOCAL_PR_COMPARISON.md). The local checkout is already included; no production source is replaced. A historical evidence-only tag supplies the exact checkpoint missing from the first hosted test run. That run failed, so consult the new hosted validation before claiming a green preview.
+See [local vs PR comparison](LOCAL_PR_COMPARISON.md). The original local SQLite checkout is included. A historical evidence-only tag supplies the exact checkpoint missing from the first hosted test run. Later hosted validation passed at the exact historical head linked above; the Dark Mirror repair has separate evidence and requires its own hosted run.
