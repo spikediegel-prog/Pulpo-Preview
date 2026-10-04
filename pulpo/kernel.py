@@ -155,7 +155,8 @@ class GovernanceKernel:
         if self._approval_verifier is not None and not self._verifier_matches_trust(self._approval_verifier):
             raise AuthorityTrustError("approval verifier does not match pinned authority trust")
         try:
-            audit_valid = self.verify_audit()
+            bootstrap = getattr(self._state, "verify_audit_bootstrap", None)
+            audit_valid = bootstrap(self._secret, self.verify_audit) if callable(bootstrap) else self.verify_audit()
         except Exception as exc:
             raise StateIntegrityError("kernel state audit chain is invalid") from exc
         if not audit_valid:

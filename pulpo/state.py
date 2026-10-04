@@ -9,11 +9,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
+import hmac
 import json
 from os import PathLike
 import sqlite3
 from threading import RLock
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 
 def _canonical(value: Any) -> bytes:
@@ -190,6 +191,7 @@ class SQLiteKernelState:
             CREATE TABLE IF NOT EXISTS directives (directive_id TEXT NOT NULL, version INTEGER NOT NULL, directive_hash TEXT NOT NULL, revoked INTEGER NOT NULL DEFAULT 0 CHECK (revoked IN (0, 1)), PRIMARY KEY (directive_id, version));
             CREATE TABLE IF NOT EXISTS permit_directives (permit TEXT PRIMARY KEY REFERENCES permits(permit) ON DELETE CASCADE, directive_id TEXT NOT NULL, directive_version INTEGER NOT NULL, directive_hash TEXT NOT NULL, directive_issued_at_ns INTEGER NOT NULL, directive_expires_at_ns INTEGER NOT NULL, parent_directive_hash TEXT);
             CREATE TABLE IF NOT EXISTS audit (sequence INTEGER PRIMARY KEY, event TEXT NOT NULL, payload_json TEXT NOT NULL, previous_hash TEXT NOT NULL, timestamp_ns INTEGER NOT NULL, hash TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS audit_verification_checkpoint (id INTEGER PRIMARY KEY CHECK (id = 1), checkpoint_json TEXT NOT NULL);
         """)
         # Opt in for event-heavy histories: the index speeds filtered reads but
         # adds maintenance to every durable audit insert. Existing indexes stay.
@@ -213,6 +215,74 @@ class SQLiteKernelState:
             (str(event), str(payload_json), str(previous_hash), int(timestamp_ns), str(digest))
             for event, payload_json, previous_hash, timestamp_ns, digest in rows
         ]
+
+    def verify_audit_bootstrap(self, secret: bytes, full_verify: Callable[[], bool]) -> bool:
+        """Use a disposable authenticated cache, never a source of authority.
+
+        Read *all* prefix bytes on every restart. A head-only checkpoint cannot
+        detect historical edits. The MAC uses the existing kernel secret with
+        a separate domain; neither the secret nor new authority is persisted.
+        BEGIN IMMEDIATE keeps validation and cache publication in one snapshot.
+        """
+        with self._connection:
+            self._connection.execute("BEGIN IMMEDIATE")
+            rows = self._connection.execute(
+                "SELECT sequence, event, payload_json, previous_hash, timestamp_ns, hash "
+                "FROM audit ORDER BY sequence"
+            ).fetchall()
+            cached = self._connection.execute(
+                "SELECT checkpoint_json FROM audit_verification_checkpoint WHERE id = 1"
+            ).fetchone()
+            prefix_length = 0
+            previous = "0" * 64
+            if cached is not None:
+                try:
+                    checkpoint = json.loads(cached[0])
+                    if set(checkpoint) != {"schema", "sequence", "head", "prefix_digest", "mac"}:
+                        raise ValueError("checkpoint fields")
+                    if checkpoint["schema"] != "pulpo.audit-checkpoint.v1":
+                        raise ValueError("checkpoint version")
+                    sequence = checkpoint["sequence"]
+                    if type(sequence) is not int or sequence < 1:
+                        raise ValueError("checkpoint sequence")
+                    for field in ("head", "prefix_digest", "mac"):
+                        value = checkpoint[field]
+                        if not isinstance(value, str) or len(value) != 64 or any(c not in "0123456789abcdef" for c in value):
+                            raise ValueError("checkpoint digest")
+                    body = {k: v for k, v in checkpoint.items() if k != "mac"}
+                    expected = hmac.new(secret, b"pulpo.audit-checkpoint.v1\0" + _canonical(body), sha256).hexdigest()
+                    if not hmac.compare_digest(checkpoint["mac"], expected):
+                        raise ValueError("checkpoint authentication")
+                    prefix_length = next(i + 1 for i, row in enumerate(rows) if row[0] == sequence)
+                    prefix = rows[:prefix_length]
+                    if prefix[-1][-1] != checkpoint["head"] or sha256(_canonical(prefix)).hexdigest() != checkpoint["prefix_digest"]:
+                        raise ValueError("checkpoint prefix changed")
+                    previous = checkpoint["head"]
+                except (ValueError, TypeError, KeyError, StopIteration):
+                    prefix_length = 0
+                    previous = "0" * 64
+            if prefix_length:
+                if prefix_length == len(rows):
+                    return True
+                for _, event, payload_json, link, timestamp, digest in rows[prefix_length:]:
+                    if link != previous or not hmac.compare_digest(
+                        digest, _audit_record(link, event, json.loads(payload_json), timestamp)["hash"]
+                    ):
+                        return False
+                    previous = digest
+            elif not full_verify():
+                return False
+            if rows:
+                body = {"schema": "pulpo.audit-checkpoint.v1", "sequence": rows[-1][0],
+                        "head": rows[-1][-1], "prefix_digest": sha256(_canonical(rows)).hexdigest()}
+                checkpoint = {**body, "mac": hmac.new(
+                    secret, b"pulpo.audit-checkpoint.v1\0" + _canonical(body), sha256
+                ).hexdigest()}
+                self._connection.execute(
+                    "INSERT OR REPLACE INTO audit_verification_checkpoint VALUES (1, ?)",
+                    (_canonical(checkpoint).decode(),),
+                )
+            return True
 
     def approval_replay_reason(self, approval_id: str, nonce: str) -> str | None: return self._approval_replay_reason(approval_id, nonce)
     def _approval_replay_reason(self, approval_id: str, nonce: str) -> str | None:
