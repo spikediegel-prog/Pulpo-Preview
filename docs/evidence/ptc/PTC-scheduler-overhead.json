@@ -1,0 +1,394 @@
+{
+  "classification": "Recorded synthetic fixture measurement",
+  "python": "3.12.14",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "count": 1000,
+  "repeats": 15,
+  "limitations": "Simulated service costs; no real provider/SQL throughput claim.",
+  "cases": {
+    "mixed_sql_burst_then_api": {
+      "fifo": {
+        "samples": [
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.013600599995697848,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.012424599997757468,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.012616499996511266,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.01269000000320375,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.012277299996640068,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.013161399998352863,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.012904299997899216,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.01328250000369735,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.012351600002148189,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.011799100000644103,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.0117443999988609,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.011772099998779595,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.011837199999717996,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.01179509999928996,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2499,
+            "mean_completion_service_units": 876.75,
+            "host_dispatch_seconds": 0.01222330000018701,
+            "completed": 1000
+          }
+        ],
+        "median_host_dispatch_seconds": 0.012351600002148189
+      },
+      "ptc": {
+        "samples": [
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.0213108000025386,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.024442999994789716,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.021595400001388043,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.022197400001459755,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.020031899999594316,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.020083899995370302,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.01998260000254959,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.020062800002051517,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.019956399999500718,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.020421000001078937,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.020206699999107514,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.02032570000301348,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.02051519999804441,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.020412699996086303,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 2000,
+            "mean_completion_service_units": 627.25,
+            "host_dispatch_seconds": 0.020341499999631196,
+            "completed": 1000
+          }
+        ],
+        "median_host_dispatch_seconds": 0.020341499999631196
+      }
+    },
+    "sql_only_control": {
+      "fifo": {
+        "samples": [
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.01204660000075819,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.012011999999231193,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.012122200001613237,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.011980800001765601,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.01224460000230465,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.012095999998564366,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.01232220000383677,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.012060200002451893,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.012507999999797903,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.012620800000149757,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.012795000002370216,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.011837599995487835,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.01195910000387812,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.011913299997104332,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.011913299997104332,
+            "completed": 1000
+          }
+        ],
+        "median_host_dispatch_seconds": 0.012060200002451893
+      },
+      "ptc": {
+        "samples": [
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.019461099996988196,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.019513799998094328,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.02000419999967562,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.020084400006453507,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.02075929999409709,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.02061120000144001,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.02076649999798974,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.018834000002243556,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.019430299995292444,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.019421999997575767,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.019659199999296106,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.019600899999204557,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.02021950000198558,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.020517999997537117,
+            "completed": 1000
+          },
+          {
+            "makespan_service_units": 1000,
+            "mean_completion_service_units": 500.5,
+            "host_dispatch_seconds": 0.02123600000049919,
+            "completed": 1000
+          }
+        ],
+        "median_host_dispatch_seconds": 0.02000419999967562
+      }
+    }
+  }
+}

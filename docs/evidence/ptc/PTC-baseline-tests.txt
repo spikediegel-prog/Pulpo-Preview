@@ -1,0 +1,160 @@
+test_agent_budget_is_stricter_than_global_budget (tests.test_kernel.GovernanceKernelTests.test_agent_budget_is_stricter_than_global_budget) ... ok
+test_agent_grants_fail_closed_for_unknown_principal (tests.test_kernel.GovernanceKernelTests.test_agent_grants_fail_closed_for_unknown_principal) ... ok
+test_agent_role_cannot_expand_its_action_or_resource (tests.test_kernel.GovernanceKernelTests.test_agent_role_cannot_expand_its_action_or_resource) ... ok
+test_allowed_intent_gets_bound_one_use_permit (tests.test_kernel.GovernanceKernelTests.test_allowed_intent_gets_bound_one_use_permit) ... ok
+test_approval_is_explicit (tests.test_kernel.GovernanceKernelTests.test_approval_is_explicit) ... ok
+test_audit_chain_detects_tampering (tests.test_kernel.GovernanceKernelTests.test_audit_chain_detects_tampering) ... ok
+test_default_profiles_do_not_create_an_approver_agent (tests.test_kernel.GovernanceKernelTests.test_default_profiles_do_not_create_an_approver_agent) ... ok
+test_fail_closed_policy_boundaries (tests.test_kernel.GovernanceKernelTests.test_fail_closed_policy_boundaries) ... ok
+test_github_access_is_read_only_and_role_scoped (tests.test_kernel.GovernanceKernelTests.test_github_access_is_read_only_and_role_scoped) ... ok
+test_malformed_or_duplicate_agent_grants_are_rejected (tests.test_kernel.GovernanceKernelTests.test_malformed_or_duplicate_agent_grants_are_rejected) ... ok
+test_permit_cannot_be_used_for_different_intent (tests.test_kernel.GovernanceKernelTests.test_permit_cannot_be_used_for_different_intent) ... ok
+test_plugin_profiles_are_declarations_not_connection_claims (tests.test_kernel.GovernanceKernelTests.test_plugin_profiles_are_declarations_not_connection_claims) ... ok
+test_activation_requires_verified_external_authority (tests.test_directives.DirectiveProofTests.test_activation_requires_verified_external_authority) ... ok
+test_active_directive_bound_permit_consumes_once_with_identity_evidence (tests.test_directives.DirectiveProofTests.test_active_directive_bound_permit_consumes_once_with_identity_evidence) ... ok
+test_approval_is_bound_to_exact_directive_digest (tests.test_directives.DirectiveProofTests.test_approval_is_bound_to_exact_directive_digest) ... ok
+test_authorized_directive_constrains_but_does_not_replace_kernel (tests.test_directives.DirectiveProofTests.test_authorized_directive_constrains_but_does_not_replace_kernel) ... ok
+test_chat_or_retrieval_cannot_create_authority (tests.test_directives.DirectiveProofTests.test_chat_or_retrieval_cannot_create_authority) ... ok
+test_delegated_scope_cannot_be_broadened_by_substitution (tests.test_directives.DirectiveProofTests.test_delegated_scope_cannot_be_broadened_by_substitution) ... ok
+test_derived_directive_can_only_narrow_parent_scope (tests.test_directives.DirectiveProofTests.test_derived_directive_can_only_narrow_parent_scope) ... ok
+test_derived_directive_requires_exact_active_parent_before_authority_use (tests.test_directives.DirectiveProofTests.test_derived_directive_requires_exact_active_parent_before_authority_use) ... ok
+test_directive_components_reject_parallel_state_and_clock_injection (tests.test_directives.DirectiveProofTests.test_directive_components_reject_parallel_state_and_clock_injection) ... ok
+test_model_summary_or_retrieval_score_cannot_raise_authority (tests.test_directives.DirectiveProofTests.test_model_summary_or_retrieval_score_cannot_raise_authority) ... ok
+test_narrow_derived_directive_activates_and_records_parent_hash (tests.test_directives.DirectiveProofTests.test_narrow_derived_directive_activates_and_records_parent_hash) ... ok
+test_parent_revocation_invalidates_child_and_preissued_child_permit (tests.test_directives.DirectiveProofTests.test_parent_revocation_invalidates_child_and_preissued_child_permit) ... ok
+test_parent_revocation_keeps_child_permit_invalid_after_restart (tests.test_directives.DirectiveProofTests.test_parent_revocation_keeps_child_permit_invalid_after_restart) ... ERROR
+test_preissued_permit_stays_invalid_after_revocation_and_restart (tests.test_directives.DirectiveProofTests.test_preissued_permit_stays_invalid_after_revocation_and_restart) ... ERROR
+test_revocation_requires_new_authority_and_survives_restart (tests.test_directives.DirectiveProofTests.test_revocation_requires_new_authority_and_survives_restart) ... ERROR
+test_revoked_directive_invalidates_previously_issued_permit (tests.test_directives.DirectiveProofTests.test_revoked_directive_invalidates_previously_issued_permit) ... ok
+test_sqlite_existing_permit_directive_table_migrates_parent_hash_column (tests.test_directives.DirectiveProofTests.test_sqlite_existing_permit_directive_table_migrates_parent_hash_column) ... ERROR
+test_untrusted_issuer_is_denied_even_with_valid_approval (tests.test_directives.DirectiveProofTests.test_untrusted_issuer_is_denied_even_with_valid_approval) ... ok
+test_directive_path_uses_kernel_canonical_state_only (tests.test_orchestrator.OrchestratorProofTests.test_directive_path_uses_kernel_canonical_state_only) ... ok
+test_exact_purchase_executes_once_and_substitution_fails_before_provider (tests.test_orchestrator.OrchestratorProofTests.test_exact_purchase_executes_once_and_substitution_fails_before_provider) ... ok
+test_exact_target_authority_request_is_hash_bound_and_one_use (tests.test_orchestrator.OrchestratorProofTests.test_exact_target_authority_request_is_hash_bound_and_one_use) ... ok
+test_orchestrator_rejects_parallel_governance_and_executor_injection (tests.test_orchestrator.OrchestratorProofTests.test_orchestrator_rejects_parallel_governance_and_executor_injection) ... ok
+test_pending_or_denied_authority_never_reaches_permit_issuance (tests.test_orchestrator.OrchestratorProofTests.test_pending_or_denied_authority_never_reaches_permit_issuance) ... ok
+test_target_mismatch_stops_before_authority_poll (tests.test_orchestrator.OrchestratorProofTests.test_target_mismatch_stops_before_authority_poll) ... ok
+test_bound_resource_carries_exact_context_hash (tests.test_execution_context_binding.ExecutionContextBindingTests.test_bound_resource_carries_exact_context_hash) ... ok
+test_context_retargeting_changes_intent_and_invalidates_existing_permit (tests.test_execution_context_binding.ExecutionContextBindingTests.test_context_retargeting_changes_intent_and_invalidates_existing_permit) ... ok
+test_exact_observed_context_consumes_one_use_permit (tests.test_execution_context_binding.ExecutionContextBindingTests.test_exact_observed_context_consumes_one_use_permit) ... ok
+test_missing_observation_fails_closed_without_spending_permit (tests.test_execution_context_binding.ExecutionContextBindingTests.test_missing_observation_fails_closed_without_spending_permit) ... ok
+test_same_owner_and_connection_do_not_expand_workspace_authority (tests.test_execution_context_binding.ExecutionContextBindingTests.test_same_owner_and_connection_do_not_expand_workspace_authority) ... ok
+test_surface_substitution_fails_closed (tests.test_execution_context_binding.ExecutionContextBindingTests.test_surface_substitution_fails_closed) ... ok
+test_unbound_resource_is_not_accepted_by_context_gate (tests.test_execution_context_binding.ExecutionContextBindingTests.test_unbound_resource_is_not_accepted_by_context_gate) ... ok
+test_wrong_authority_scope_denies_before_permit_consumption (tests.test_execution_context_binding.ExecutionContextBindingTests.test_wrong_authority_scope_denies_before_permit_consumption) ... ok
+test_absent_deleted_and_changed_secret_fall_back (tests.test_audit_checkpoint.AuditCheckpointTests.test_absent_deleted_and_changed_secret_fall_back) ... ok
+test_bootstrap_snapshot_blocks_overlapping_append_until_publication (tests.test_audit_checkpoint.AuditCheckpointTests.test_bootstrap_snapshot_blocks_overlapping_append_until_publication) ... ok
+test_historical_tamper_including_checkpoint_row_fails_closed (tests.test_audit_checkpoint.AuditCheckpointTests.test_historical_tamper_including_checkpoint_row_fails_closed) ... ok
+test_malformed_audit_before_and_after_checkpoint_fails_closed (tests.test_audit_checkpoint.AuditCheckpointTests.test_malformed_audit_before_and_after_checkpoint_fails_closed) ... ok
+test_malformed_corrupt_mismatched_and_stale_cache_fall_back (tests.test_audit_checkpoint.AuditCheckpointTests.test_malformed_corrupt_mismatched_and_stale_cache_fall_back) ... ok
+test_recomputed_unkeyed_prefix_digest_cannot_hide_tamper (tests.test_audit_checkpoint.AuditCheckpointTests.test_recomputed_unkeyed_prefix_digest_cannot_hide_tamper) ... ok
+test_reopen_uses_cache_and_forced_verify_still_reads_full_chain (tests.test_audit_checkpoint.AuditCheckpointTests.test_reopen_uses_cache_and_forced_verify_still_reads_full_chain) ... ok
+test_suffix_verification_and_refresh (tests.test_audit_checkpoint.AuditCheckpointTests.test_suffix_verification_and_refresh) ... ok
+test_tamper_after_checkpoint_fails_closed (tests.test_audit_checkpoint.AuditCheckpointTests.test_tamper_after_checkpoint_fails_closed) ... ok
+test_truncation_and_sequence_changes_invalidate_cache (tests.test_audit_checkpoint.AuditCheckpointTests.test_truncation_and_sequence_changes_invalidate_cache) ... ok
+test_unavailable_checkpoint_write_fails_closed_and_rolls_back (tests.test_audit_checkpoint.AuditCheckpointTests.test_unavailable_checkpoint_write_fails_closed_and_rolls_back) ... ok
+test_approval_and_permit_replay_remain_denied_after_restart (tests.test_persistence.IndexedRestartSafeStateTests.test_approval_and_permit_replay_remain_denied_after_restart) ... ok
+test_concurrent_consumption_succeeds_once (tests.test_persistence.IndexedRestartSafeStateTests.test_concurrent_consumption_succeeds_once) ... ok
+test_concurrent_identical_approval_allows_exactly_once (tests.test_persistence.IndexedRestartSafeStateTests.test_concurrent_identical_approval_allows_exactly_once) ... ok
+test_existing_database_gets_index_without_changing_audit (tests.test_persistence.IndexedRestartSafeStateTests.test_existing_database_gets_index_without_changing_audit) ... ok
+test_failed_audit_write_rolls_back_approval_and_permit (tests.test_persistence.IndexedRestartSafeStateTests.test_failed_audit_write_rolls_back_approval_and_permit) ... ok
+test_failed_commit_rolls_back_approval_permit_and_audit (tests.test_persistence.IndexedRestartSafeStateTests.test_failed_commit_rolls_back_approval_permit_and_audit) ... ok
+test_failed_consumption_audit_rolls_back_spent_permit (tests.test_persistence.IndexedRestartSafeStateTests.test_failed_consumption_audit_rolls_back_spent_permit) ... ok
+test_failed_second_audit_insert_rolls_back_entire_issuance (tests.test_persistence.IndexedRestartSafeStateTests.test_failed_second_audit_insert_rolls_back_entire_issuance) ... ok
+test_issuance_reads_tip_once_and_preserves_event_order (tests.test_persistence.IndexedRestartSafeStateTests.test_issuance_reads_tip_once_and_preserves_event_order) ... ok
+test_malformed_persisted_audit_raises_integrity_error_at_restart (tests.test_persistence.IndexedRestartSafeStateTests.test_malformed_persisted_audit_raises_integrity_error_at_restart) ... ok
+test_overlapping_connections_serialize_audit_tip_selection (tests.test_persistence.IndexedRestartSafeStateTests.test_overlapping_connections_serialize_audit_tip_selection) ... ok
+test_replay_reason_uses_one_snapshot_with_id_precedence (tests.test_persistence.IndexedRestartSafeStateTests.test_replay_reason_uses_one_snapshot_with_id_precedence) ... ok
+test_tampered_persisted_audit_fails_closed_at_restart (tests.test_persistence.IndexedRestartSafeStateTests.test_tampered_persisted_audit_fails_closed_at_restart) ... ok
+test_verified_approval_and_permit_are_committed_with_one_transaction (tests.test_persistence.IndexedRestartSafeStateTests.test_verified_approval_and_permit_are_committed_with_one_transaction) ... ok
+test_approval_and_permit_replay_remain_denied_after_restart (tests.test_persistence.RestartSafeStateTests.test_approval_and_permit_replay_remain_denied_after_restart) ... ok
+test_concurrent_consumption_succeeds_once (tests.test_persistence.RestartSafeStateTests.test_concurrent_consumption_succeeds_once) ... ok
+test_concurrent_identical_approval_allows_exactly_once (tests.test_persistence.RestartSafeStateTests.test_concurrent_identical_approval_allows_exactly_once) ... ok
+test_existing_database_gets_index_without_changing_audit (tests.test_persistence.RestartSafeStateTests.test_existing_database_gets_index_without_changing_audit) ... ok
+test_failed_audit_write_rolls_back_approval_and_permit (tests.test_persistence.RestartSafeStateTests.test_failed_audit_write_rolls_back_approval_and_permit) ... ok
+test_failed_commit_rolls_back_approval_permit_and_audit (tests.test_persistence.RestartSafeStateTests.test_failed_commit_rolls_back_approval_permit_and_audit) ... ok
+test_failed_consumption_audit_rolls_back_spent_permit (tests.test_persistence.RestartSafeStateTests.test_failed_consumption_audit_rolls_back_spent_permit) ... ok
+test_failed_second_audit_insert_rolls_back_entire_issuance (tests.test_persistence.RestartSafeStateTests.test_failed_second_audit_insert_rolls_back_entire_issuance) ... ok
+test_issuance_reads_tip_once_and_preserves_event_order (tests.test_persistence.RestartSafeStateTests.test_issuance_reads_tip_once_and_preserves_event_order) ... ok
+test_malformed_persisted_audit_raises_integrity_error_at_restart (tests.test_persistence.RestartSafeStateTests.test_malformed_persisted_audit_raises_integrity_error_at_restart) ... ok
+test_overlapping_connections_serialize_audit_tip_selection (tests.test_persistence.RestartSafeStateTests.test_overlapping_connections_serialize_audit_tip_selection) ... ok
+test_replay_reason_uses_one_snapshot_with_id_precedence (tests.test_persistence.RestartSafeStateTests.test_replay_reason_uses_one_snapshot_with_id_precedence) ... ok
+test_tampered_persisted_audit_fails_closed_at_restart (tests.test_persistence.RestartSafeStateTests.test_tampered_persisted_audit_fails_closed_at_restart) ... ok
+test_verified_approval_and_permit_are_committed_with_one_transaction (tests.test_persistence.RestartSafeStateTests.test_verified_approval_and_permit_are_committed_with_one_transaction) ... ok
+test_approval_id_and_nonce_are_each_single_use (tests.test_authority.VerifiedApprovalTests.test_approval_id_and_nonce_are_each_single_use) ... ok
+test_approval_path_rejects_actions_that_do_not_need_approval (tests.test_authority.VerifiedApprovalTests.test_approval_path_rejects_actions_that_do_not_need_approval) ... ok
+test_caller_boolean_bypass_is_removed_for_every_kernel (tests.test_authority.VerifiedApprovalTests.test_caller_boolean_bypass_is_removed_for_every_kernel) ... ok
+test_clock_failure_and_rollback_fail_closed_with_evidence (tests.test_authority.VerifiedApprovalTests.test_clock_failure_and_rollback_fail_closed_with_evidence) ... ok
+test_envelope_bindings_fail_closed_even_with_valid_authority_signature (tests.test_authority.VerifiedApprovalTests.test_envelope_bindings_fail_closed_even_with_valid_authority_signature) ... ok
+test_every_intent_field_is_bound_by_the_signed_envelope (tests.test_authority.VerifiedApprovalTests.test_every_intent_field_is_bound_by_the_signed_envelope) ... ok
+test_invalid_or_missing_signature_fails_closed (tests.test_authority.VerifiedApprovalTests.test_invalid_or_missing_signature_fails_closed) ... ok
+test_issued_at_ttl_and_verification_time_fail_closed (tests.test_authority.VerifiedApprovalTests.test_issued_at_ttl_and_verification_time_fail_closed) ... ok
+test_malformed_envelope_is_rejected_before_verification (tests.test_authority.VerifiedApprovalTests.test_malformed_envelope_is_rejected_before_verification) ... ok
+test_malformed_envelope_object_fails_closed (tests.test_authority.VerifiedApprovalTests.test_malformed_envelope_object_fails_closed) ... ok
+test_old_envelope_is_invalid_after_separately_configured_key_rotation (tests.test_authority.VerifiedApprovalTests.test_old_envelope_is_invalid_after_separately_configured_key_rotation) ... ok
+test_policy_hash_is_canonical (tests.test_authority.VerifiedApprovalTests.test_policy_hash_is_canonical) ... ok
+test_policy_requires_and_hashes_pinned_authority_trust (tests.test_authority.VerifiedApprovalTests.test_policy_requires_and_hashes_pinned_authority_trust) ... ok
+test_session_and_time_are_not_caller_controlled (tests.test_authority.VerifiedApprovalTests.test_session_and_time_are_not_caller_controlled) ... ok
+test_substituted_verifier_fails_at_bootstrap (tests.test_authority.VerifiedApprovalTests.test_substituted_verifier_fails_at_bootstrap) ... ok
+test_truthy_non_boolean_verifier_result_is_rejected (tests.test_authority.VerifiedApprovalTests.test_truthy_non_boolean_verifier_result_is_rejected) ... ok
+test_valid_external_envelope_issues_one_bound_permit (tests.test_authority.VerifiedApprovalTests.test_valid_external_envelope_issues_one_bound_permit) ... ok
+test_verified_evidence_records_pinned_public_trust (tests.test_authority.VerifiedApprovalTests.test_verified_evidence_records_pinned_public_trust) ... ok
+test_verifier_exception_fails_closed (tests.test_authority.VerifiedApprovalTests.test_verifier_exception_fails_closed) ... ok
+test_verifier_is_configured_at_kernel_boundary (tests.test_authority.VerifiedApprovalTests.test_verifier_is_configured_at_kernel_boundary) ... ok
+test_verifier_replacement_after_bootstrap_fails_closed (tests.test_authority.VerifiedApprovalTests.test_verifier_replacement_after_bootstrap_fails_closed) ... ok
+test_crash_after_transmission_release_never_releases_second_network_right (tests.test_custody_executor.CustodyExecutorTests.test_crash_after_transmission_release_never_releases_second_network_right) ... ok
+test_crash_before_transmission_can_resume_same_executor_identity_only (tests.test_custody_executor.CustodyExecutorTests.test_crash_before_transmission_can_resume_same_executor_identity_only) ... ok
+test_lost_provider_response_is_unknown_and_cannot_retry_or_release_budget (tests.test_custody_executor.CustodyExecutorTests.test_lost_provider_response_is_unknown_and_cannot_retry_or_release_budget) ... ok
+test_preflight_failure_releases_no_network_transmission_right (tests.test_custody_executor.CustodyExecutorTests.test_preflight_failure_releases_no_network_transmission_right) ... ok
+test_provider_success_is_only_a_claim_and_still_requires_reconciliation (tests.test_custody_executor.CustodyExecutorTests.test_provider_success_is_only_a_claim_and_still_requires_reconciliation) ... ok
+test_substituted_order_never_reaches_credential_adapter (tests.test_custody_executor.CustodyExecutorTests.test_substituted_order_never_reaches_credential_adapter) ... ok
+
+======================================================================
+ERROR: test_parent_revocation_keeps_child_permit_invalid_after_restart (tests.test_directives.DirectiveProofTests.test_parent_revocation_keeps_child_permit_invalid_after_restart)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an\work\PTC-baseline\tests\test_directives.py", line 328, in test_parent_revocation_keeps_child_permit_invalid_after_restart
+    state = SQLiteKernelState(handle.name)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an\work\PTC-baseline\pulpo\state.py", line 185, in __init__
+    self._connection = sqlite3.connect(path)
+                       ^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: unable to open database file
+
+======================================================================
+ERROR: test_preissued_permit_stays_invalid_after_revocation_and_restart (tests.test_directives.DirectiveProofTests.test_preissued_permit_stays_invalid_after_revocation_and_restart)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an\work\PTC-baseline\tests\test_directives.py", line 429, in test_preissued_permit_stays_invalid_after_revocation_and_restart
+    state = SQLiteKernelState(handle.name)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an\work\PTC-baseline\pulpo\state.py", line 185, in __init__
+    self._connection = sqlite3.connect(path)
+                       ^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: unable to open database file
+
+======================================================================
+ERROR: test_revocation_requires_new_authority_and_survives_restart (tests.test_directives.DirectiveProofTests.test_revocation_requires_new_authority_and_survives_restart)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an\work\PTC-baseline\tests\test_directives.py", line 183, in test_revocation_requires_new_authority_and_survives_restart
+    state = SQLiteKernelState(handle.name)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an\work\PTC-baseline\pulpo\state.py", line 185, in __init__
+    self._connection = sqlite3.connect(path)
+                       ^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: unable to open database file
+
+======================================================================
+ERROR: test_sqlite_existing_permit_directive_table_migrates_parent_hash_column (tests.test_directives.DirectiveProofTests.test_sqlite_existing_permit_directive_table_migrates_parent_hash_column)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an\work\PTC-baseline\tests\test_directives.py", line 364, in test_sqlite_existing_permit_directive_table_migrates_parent_hash_column
+    connection = sqlite3.connect(handle.name)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: unable to open database file
+
+----------------------------------------------------------------------
+Ran 110 tests in 8.618s
+
+FAILED (errors=4)
