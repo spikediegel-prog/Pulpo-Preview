@@ -1,0 +1,13 @@
+Windows preview executable: bounded packaging review
+Verified local executable checks: help, setup help, no-argument quick start, conservative fallback, multiprocessing calibration, profile reuse and invalid command all passed. Existing source setup tests: 3 passed, warnings treated as errors. Local binary is unsigned.
+Authority effect: none. No new permit, policy, credential or canonical governance mutation route. Quick start can write a local setup report under LOCALAPPDATA/PulpoPreview; explicit calibration can write a machine-bound performance profile and report to requested paths. These are performance/test artifacts, not canonical authority. Existing setup CLI remains the only exposed command.
+Eight-pass review:
+Flip: hostile profile input remains subject to existing fingerprint validation and audit tamper checks; packaging grants no authority.
+Reverse: a consequential effect would still require an existing governed interface and valid authority; no live provider or service command is added.
+Invert: setup readiness is not promoted into production readiness; existing report explicitly denies that claim.
+Inside-Out: no human signer, secret, credential fixture or local profile is bundled. Build input is the launcher and its statically imported Pulpo modules; checkout extras are not collected as data.
+Darken: unsigned packaging could be substituted; checksum and provenance identify tested bytes but do not establish publisher trust. No security-warning bypass is prescribed.
+Lighten: bounded local standalone checks establish the setup CLI works on this host, not universal installer compatibility.
+Amplify: frozen multiprocessing freeze_support diverts workers before argument parsing; bounded calibration passes without recursive launcher spawning. CI uses contents:read and no secrets, never executes PR-target content.
+Negate: portable executable avoids service registration, admin installation, global PATH changes and signer/permission expansion.
+Unknown: independent clean-machine reproduction, code signing, physical-hardware performance and production containment. Existing full Windows failures remain. No temporal-transfer or reusable organizational lesson is claimed.

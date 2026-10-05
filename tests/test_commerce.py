@@ -1,7 +1,9 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Barrier, Thread
+import sqlite3
 import unittest
+from unittest.mock import patch
 
 from pulpo.commerce import (
     BudgetAccount,
@@ -420,6 +422,38 @@ class CommerceProofTests(unittest.TestCase):
 
             self.assertEqual(1, results.count("reserved"))
             self.assertEqual(1, results.count("insufficient_available_budget"))
+
+    def test_durable_budget_closes_connections_after_success_and_denial(self):
+        connections = []
+        connect = SQLiteBudgetAccount._connect
+
+        def tracked_connect(account):
+            connection = connect(account)
+            connections.append(connection)
+            return connection
+
+        order = self.assessment().order
+        with TemporaryDirectory() as directory:
+            with patch.object(SQLiteBudgetAccount, "_connect", tracked_connect):
+                budget = SQLiteBudgetAccount(Path(directory) / "commerce.sqlite3")
+                reservation = budget.reserve(order, now_ns=NOW)
+                budget.require_active(reservation.reservation_id, order, now_ns=NOW)
+                self.assertEqual(2_000, budget.reserved_cents)
+                self.assertEqual(0, budget.spent_cents)
+                with self.assertRaisesRegex(CommerceViolation, "already_reserved"):
+                    budget.reserve(order, now_ns=NOW)
+                budget.mark_attempted(reservation.reservation_id)
+                with self.assertRaisesRegex(CommerceViolation, "already_attempted"):
+                    budget.require_active(reservation.reservation_id, order, now_ns=NOW)
+                budget.reconcile(reservation.reservation_id, PaymentEvidence("payment-1", 1_950, "e" * 64))
+                with self.assertRaisesRegex(CommerceViolation, "not_attempted"):
+                    budget.reconcile(reservation.reservation_id, PaymentEvidence("payment-1", 1_950, "e" * 64))
+                with self.assertRaisesRegex(CommerceViolation, "does not match"):
+                    SQLiteBudgetAccount(budget.path, 2_000)
+            self.assertGreater(len(connections), 0)
+            for connection in connections:
+                with self.assertRaisesRegex(sqlite3.ProgrammingError, "closed database"):
+                    connection.execute("SELECT 1")
 
     def test_durable_budget_requires_stable_path_and_ceiling(self):
         with self.assertRaisesRegex(CommerceViolation, "filesystem path"):
