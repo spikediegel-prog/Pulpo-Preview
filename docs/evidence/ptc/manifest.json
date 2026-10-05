@@ -1,0 +1,37 @@
+{
+  "base_repo": "spikediegel-prog/Pulpo-Preview",
+  "base_branch": "main",
+  "base_sha": "115478fd468543ab74c6b7e96c98188b667d777d",
+  "selected_profile": {
+    "sql_slots": 1,
+    "api_slots": 2,
+    "default_queue_entries_per_lane": 16,
+    "dispatch_interval_seconds": 0
+  },
+  "verified": "127 selected regression tests passed; selected demo exact effects, permits, audits and slots checked",
+  "recorded": "Local timing/memory measurements; API-style fixture, not a live provider",
+  "limits": "Earlier matrix/spacing measurements predate final convenience profile; no production or universal optimum claim",
+  "hash_encoding": "UTF-8 text with Git-normalized LF line endings",
+  "source_sha256": {
+    "pulpo/traffic.py": "715811e2099d7e98c597e7fecd1e0e38abb21ae564f7413143cb4ea513abb36b",
+    "pulpo/orchestrator.py": "9c317993d0f6aaee8283a0945e8bfebbe5babed9f2d9e7df41d980deeb6d1279",
+    "tests/test_traffic.py": "e7b556590075d2db5e1146845e2c422768975cd835ad33c1d1f89bdd7e356c04",
+    "tests/test_directives.py": "366ca08463a58374dea74bc87a7958a792ea4cb94b7dc99ea0f7e4960939d61a",
+    "scripts/demo_traffic.py": "84ad16052a60aa012a48313d060e504efda2e75b56a82fc82f965569ec9b705b",
+    "scripts/benchmark_traffic.py": "172113d2aa86c77cfb67d742a1a3b2fc07f22accfefa651e2b3703af2043c678",
+    "scripts/benchmark_traffic_matrix.py": "a2511bf0042076d1bd00c7415b7b2792061fa99e769c300784c212daef8952d6",
+    "scripts/benchmark_sql_shaping.py": "d2e404352f4546e8c0afc113bc87e92b20d15bd714e41e11b8090702c53f54ab",
+    "scripts/Run-PTC-Tests.ps1": "86c3f82a407e4cb463b06366f7cd95cae42a58a793aa06a720fc821da4b0868f",
+    "scripts/Run-PTC-Tests.cmd": "759964d52f80e9b59d3354ca432481c52e33310b86b1b9dd652e5d851b030484"
+  },
+  "evidence_sha256": {
+    "PTC-selected-profile-tests.txt": "1c4d1804cc62b80bbf3d39321dd30d19d9fa4b0443c3c4dc33029b02c105304f",
+    "PTC-baseline-tests.txt": "c02c662a552deb9371d267b3f064b380f8df4c132b309678baf65c2f2a51be7a",
+    "PTC-regression-tests.txt": "158a6a3047454f4b9d80901f45b1422cf327e9e9dd6572a5b9e9aa2878446cdc",
+    "PTC-overall-benchmark.json": "b76f0fafe63c85313c8a5a50323a28eed73c2f909885fc8b1abfd37de898857a",
+    "PTC-benchmark-recheck.json": "223fc0dc8eda309ce620e74618752c93c160c551c571ce4b0e2ff35346ce137d",
+    "PTC-scheduler-overhead.json": "a84d8f39f4f3580f044289f928ebe9df10dae41089e2c94b7ac6b92772d44bde",
+    "PTC-sql-shaping-benchmark.json": "07c2fe1a9ab3845e9a4dcc61416838c60b9e2c736f29c94118bb338b028433d2",
+    "PTC-selected-profile-demo.json": "71b4c6d5be731a4148b291bc54397bf80c4bf809c464e730c779304052d426bf"
+  }
+}

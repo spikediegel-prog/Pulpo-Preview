@@ -1,0 +1,1689 @@
+{
+  "classification": "Recorded controlled local fixture measurements",
+  "python": "3.12.14",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "repeats": 15,
+  "cases": {
+    "sql_burst_then_api": {
+      "parameters": {
+        "sql_jobs": 24,
+        "api_jobs": 12
+      },
+      "samples": {
+        "fifo": [
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.32737120000092546,
+            "admission_seconds": 0.1474058999956469,
+            "scheduling_admission_seconds": 4.3800013372674584e-05,
+            "dispatch_cpu_seconds": 0.125,
+            "mean_completion_seconds": 0.18300418333072027,
+            "p95_completion_seconds": 0.3232856999966316,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.5067379999964032,
+            "total_cpu_seconds": 0.234375
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.34333670000341954,
+            "admission_seconds": 0.1325109999961569,
+            "scheduling_admission_seconds": 2.890000178012997e-05,
+            "dispatch_cpu_seconds": 0.125,
+            "mean_completion_seconds": 0.19221014722279506,
+            "p95_completion_seconds": 0.33926429999701213,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.5105086999974446,
+            "total_cpu_seconds": 0.1875
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.333524400004535,
+            "admission_seconds": 0.13371789999655448,
+            "scheduling_admission_seconds": 2.779997157631442e-05,
+            "dispatch_cpu_seconds": 0.109375,
+            "mean_completion_seconds": 0.1856953083349961,
+            "p95_completion_seconds": 0.3288140000004205,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.49904049999895506,
+            "total_cpu_seconds": 0.203125
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.3583978000024217,
+            "admission_seconds": 0.13812689999758732,
+            "scheduling_admission_seconds": 3.290001768618822e-05,
+            "dispatch_cpu_seconds": 0.0625,
+            "mean_completion_seconds": 0.18510886667010912,
+            "p95_completion_seconds": 0.34797910000634147,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.5296293999999762,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.3372056000007433,
+            "admission_seconds": 0.14051019999897107,
+            "scheduling_admission_seconds": 4.360001184977591e-05,
+            "dispatch_cpu_seconds": 0.09375,
+            "mean_completion_seconds": 0.18797310277760618,
+            "p95_completion_seconds": 0.3336060000001453,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.6234392000042135,
+            "total_cpu_seconds": 0.125
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.3193385999984457,
+            "admission_seconds": 0.1267678000003798,
+            "scheduling_admission_seconds": 2.559999848017469e-05,
+            "dispatch_cpu_seconds": 0.171875,
+            "mean_completion_seconds": 0.17680690833266352,
+            "p95_completion_seconds": 0.3162450000017998,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.4755474000048707,
+            "total_cpu_seconds": 0.21875
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.3305878000028315,
+            "admission_seconds": 0.12405710000166437,
+            "scheduling_admission_seconds": 2.7099988074041903e-05,
+            "dispatch_cpu_seconds": 0.078125,
+            "mean_completion_seconds": 0.18358322500070143,
+            "p95_completion_seconds": 0.3269737000009627,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.484658399996988,
+            "total_cpu_seconds": 0.1875
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.3169932000018889,
+            "admission_seconds": 0.12581990000035148,
+            "scheduling_admission_seconds": 2.7500020223669708e-05,
+            "dispatch_cpu_seconds": 0.125,
+            "mean_completion_seconds": 0.1746704083341481,
+            "p95_completion_seconds": 0.3134070000014617,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.47255759999825386,
+            "total_cpu_seconds": 0.203125
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.32410320000053616,
+            "admission_seconds": 0.12515290000010282,
+            "scheduling_admission_seconds": 2.7999994927085936e-05,
+            "dispatch_cpu_seconds": 0.15625,
+            "mean_completion_seconds": 0.17953298333446177,
+            "p95_completion_seconds": 0.32053040000027977,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.47973669999919366,
+            "total_cpu_seconds": 0.203125
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.31883879999804776,
+            "admission_seconds": 0.12514840000221739,
+            "scheduling_admission_seconds": 2.8100002964492887e-05,
+            "dispatch_cpu_seconds": 0.109375,
+            "mean_completion_seconds": 0.17607109444118882,
+            "p95_completion_seconds": 0.31524999999965075,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.6691415999957826,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.3246184999952675,
+            "admission_seconds": 0.12839480000548065,
+            "scheduling_admission_seconds": 2.859998494386673e-05,
+            "dispatch_cpu_seconds": 0.109375,
+            "mean_completion_seconds": 0.1792786249968938,
+            "p95_completion_seconds": 0.31935069999599364,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.48272309999447316,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.31876890000421554,
+            "admission_seconds": 0.1240990000005695,
+            "scheduling_admission_seconds": 2.680001489352435e-05,
+            "dispatch_cpu_seconds": 0.171875,
+            "mean_completion_seconds": 0.1767035194457599,
+            "p95_completion_seconds": 0.31523870000091847,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.4719734999962384,
+            "total_cpu_seconds": 0.265625
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.32160470000235364,
+            "admission_seconds": 0.12773179999931017,
+            "scheduling_admission_seconds": 3.130001277895644e-05,
+            "dispatch_cpu_seconds": 0.0625,
+            "mean_completion_seconds": 0.17685766111349543,
+            "p95_completion_seconds": 0.31848330000502756,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.4787085999996634,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.32796740000048885,
+            "admission_seconds": 0.12695119999989402,
+            "scheduling_admission_seconds": 2.4300003133248538e-05,
+            "dispatch_cpu_seconds": 0.171875,
+            "mean_completion_seconds": 0.1814158249979098,
+            "p95_completion_seconds": 0.32399309999891557,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.48457849999977043,
+            "total_cpu_seconds": 0.21875
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.31587620000209427,
+            "admission_seconds": 0.12444359999790322,
+            "scheduling_admission_seconds": 2.5400011509191245e-05,
+            "dispatch_cpu_seconds": 0.09375,
+            "mean_completion_seconds": 0.17473190555716023,
+            "p95_completion_seconds": 0.31276770000113174,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.4700888000006671,
+            "total_cpu_seconds": 0.140625
+          }
+        ],
+        "ptc": [
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.3737833000050159,
+            "admission_seconds": 0.13204009999753907,
+            "scheduling_admission_seconds": 0.001187900015793275,
+            "dispatch_cpu_seconds": 0.125,
+            "mean_completion_seconds": 0.15348745000240646,
+            "p95_completion_seconds": 0.36271120000310475,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.5357592000000295,
+            "total_cpu_seconds": 0.203125
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.27733449999504955,
+            "admission_seconds": 0.1386521000022185,
+            "scheduling_admission_seconds": 0.0013950000211480074,
+            "dispatch_cpu_seconds": 0.140625,
+            "mean_completion_seconds": 0.12416747499689033,
+            "p95_completion_seconds": 0.2670010999936494,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.44649289999506436,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.3376434999954654,
+            "admission_seconds": 0.13431750000017928,
+            "scheduling_admission_seconds": 0.0011172999948030338,
+            "dispatch_cpu_seconds": 0.109375,
+            "mean_completion_seconds": 0.12273738333028127,
+            "p95_completion_seconds": 0.3272477999998955,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.5034808999989764,
+            "total_cpu_seconds": 0.15625
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2746270999996341,
+            "admission_seconds": 0.14105160000326578,
+            "scheduling_admission_seconds": 0.0012773000125889666,
+            "dispatch_cpu_seconds": 0.0625,
+            "mean_completion_seconds": 0.12064849444363467,
+            "p95_completion_seconds": 0.26398669999616686,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.4477113000029931,
+            "total_cpu_seconds": 0.125
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.3473824999964563,
+            "admission_seconds": 0.1246023999992758,
+            "scheduling_admission_seconds": 0.0013328999993973412,
+            "dispatch_cpu_seconds": 0.125,
+            "mean_completion_seconds": 0.12684609999733867,
+            "p95_completion_seconds": 0.33670039999560686,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.503304300000309,
+            "total_cpu_seconds": 0.203125
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.25290289999975357,
+            "admission_seconds": 0.1268530000015744,
+            "scheduling_admission_seconds": 0.0011078999668825418,
+            "dispatch_cpu_seconds": 0.09375,
+            "mean_completion_seconds": 0.11119561944542511,
+            "p95_completion_seconds": 0.24257349999970756,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.4096292000031099,
+            "total_cpu_seconds": 0.15625
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2567150999966543,
+            "admission_seconds": 0.1277812999978778,
+            "scheduling_admission_seconds": 0.0011730000042007305,
+            "dispatch_cpu_seconds": 0.125,
+            "mean_completion_seconds": 0.11202469999706308,
+            "p95_completion_seconds": 0.24655039999925066,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.41529609999997774,
+            "total_cpu_seconds": 0.203125
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2510653999997885,
+            "admission_seconds": 0.12856019999890123,
+            "scheduling_admission_seconds": 0.0012000999777228571,
+            "dispatch_cpu_seconds": 0.140625,
+            "mean_completion_seconds": 0.1110669055558699,
+            "p95_completion_seconds": 0.24130410000361735,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.7969725000002654,
+            "total_cpu_seconds": 0.21875
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.25760470000386704,
+            "admission_seconds": 0.1285037999987253,
+            "scheduling_admission_seconds": 0.00116639999760082,
+            "dispatch_cpu_seconds": 0.09375,
+            "mean_completion_seconds": 0.11197994722311301,
+            "p95_completion_seconds": 0.24718920000304934,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.41670259999955306,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.24750810000114143,
+            "admission_seconds": 0.19440190000022994,
+            "scheduling_admission_seconds": 0.0011123000149382278,
+            "dispatch_cpu_seconds": 0.125,
+            "mean_completion_seconds": 0.1087404888908673,
+            "p95_completion_seconds": 0.23770990000048187,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.47130230000038864,
+            "total_cpu_seconds": 0.203125
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2574505999946268,
+            "admission_seconds": 0.13179359999776352,
+            "scheduling_admission_seconds": 0.0012031000078422949,
+            "dispatch_cpu_seconds": 0.109375,
+            "mean_completion_seconds": 0.11176459444161285,
+            "p95_completion_seconds": 0.24697849999938626,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.4190493999994942,
+            "total_cpu_seconds": 0.15625
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.24930379999568686,
+            "admission_seconds": 0.21115190000273287,
+            "scheduling_admission_seconds": 0.001183100015623495,
+            "dispatch_cpu_seconds": 0.140625,
+            "mean_completion_seconds": 0.10947958333013554,
+            "p95_completion_seconds": 0.23921019999397686,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.48916169999574777,
+            "total_cpu_seconds": 0.234375
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2515397999959532,
+            "admission_seconds": 0.12635130000126082,
+            "scheduling_admission_seconds": 0.0010881000125664286,
+            "dispatch_cpu_seconds": 0.109375,
+            "mean_completion_seconds": 0.11038290555350411,
+            "p95_completion_seconds": 0.2413745999947423,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.4077818999940064,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.3100345000057132,
+            "admission_seconds": 0.12317240000265883,
+            "scheduling_admission_seconds": 0.0010086999827763066,
+            "dispatch_cpu_seconds": 0.125,
+            "mean_completion_seconds": 0.16425131944803675,
+            "p95_completion_seconds": 0.29953170000226237,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.4630321000004187,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2524912999942899,
+            "admission_seconds": 0.12597890000324696,
+            "scheduling_admission_seconds": 0.001413299971318338,
+            "dispatch_cpu_seconds": 0.109375,
+            "mean_completion_seconds": 0.11086897499606291,
+            "p95_completion_seconds": 0.24186209999606945,
+            "sql_rows": 24,
+            "api_style_receipts": 12,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 1,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+            "total_wall_seconds": 0.40795280000020284,
+            "total_cpu_seconds": 0.203125
+          }
+        ]
+      },
+      "medians": {
+        "fifo": {
+          "wall_seconds": 0.3246184999952675,
+          "total_wall_seconds": 0.48457849999977043,
+          "admission_seconds": 0.12695119999989402,
+          "scheduling_admission_seconds": 2.7999994927085936e-05,
+          "dispatch_cpu_seconds": 0.109375,
+          "total_cpu_seconds": 0.1875,
+          "mean_completion_seconds": 0.17953298333446177,
+          "p95_completion_seconds": 0.32053040000027977
+        },
+        "ptc": {
+          "wall_seconds": 0.2574505999946268,
+          "total_wall_seconds": 0.4477113000029931,
+          "admission_seconds": 0.12856019999890123,
+          "scheduling_admission_seconds": 0.001183100015623495,
+          "dispatch_cpu_seconds": 0.125,
+          "total_cpu_seconds": 0.171875,
+          "mean_completion_seconds": 0.11197994722311301,
+          "p95_completion_seconds": 0.24697849999938626
+        }
+      },
+      "total_wall_reduction_percent": 7.608096520335672,
+      "dispatch_wall_reduction_percent": 20.69133459788024,
+      "total_cpu_change_percent": -8.333333333333337,
+      "paired_reduction_percent": [
+        -5.727062111748538,
+        12.53961000129884,
+        -0.8897875022228829,
+        15.46706055158319,
+        19.2697058515237,
+        13.8615414575047,
+        14.311585231462265,
+        -68.65086922804973,
+        13.13931162651233,
+        29.56613368480466,
+        13.190522681783401,
+        -3.6417722604439318,
+        14.816257741287064,
+        4.446420961590725,
+        13.21792818726506
+      ],
+      "paired_median_reduction_95pct_bootstrap_interval": [
+        4.446420961590725,
+        14.816257741287064
+      ],
+      "memory_samples": {
+        "fifo": {
+          "mode": "fifo",
+          "wall_seconds": 0.5478633000020636,
+          "admission_seconds": 0.13289390000136336,
+          "scheduling_admission_seconds": 3.050001396331936e-05,
+          "dispatch_cpu_seconds": 0.078125,
+          "mean_completion_seconds": 0.32256113055619706,
+          "p95_completion_seconds": 0.54477549999865,
+          "sql_rows": 24,
+          "api_style_receipts": 12,
+          "canonical_permits_consumed": 36,
+          "audit_valid": true,
+          "max_concurrency": {
+            "sql": 1,
+            "api": 2
+          },
+          "final_slots": {
+            "sql": 0,
+            "api": 0
+          },
+          "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+          "total_wall_seconds": 0.7140421000003698,
+          "total_cpu_seconds": 0.171875,
+          "peak_python_allocation_bytes": 123888
+        },
+        "ptc": {
+          "mode": "ptc",
+          "wall_seconds": 0.26004269999975804,
+          "admission_seconds": 0.1287469000017154,
+          "scheduling_admission_seconds": 0.002385200023127254,
+          "dispatch_cpu_seconds": 0.125,
+          "mean_completion_seconds": 0.11388865277492893,
+          "p95_completion_seconds": 0.24994299999525538,
+          "sql_rows": 24,
+          "api_style_receipts": 12,
+          "canonical_permits_consumed": 36,
+          "audit_valid": true,
+          "max_concurrency": {
+            "sql": 1,
+            "api": 2
+          },
+          "final_slots": {
+            "sql": 0,
+            "api": 0
+          },
+          "exact_effects_digest": "c3f332e8290e2de8860b8f7341ac2a411f915d0e689b73f19b7b865847246a47",
+          "total_wall_seconds": 0.42038859999593114,
+          "total_cpu_seconds": 0.171875,
+          "peak_python_allocation_bytes": 125952
+        }
+      },
+      "python_peak_allocation_delta_bytes": 2064,
+      "identical_exact_effects": true
+    },
+    "api_only": {
+      "parameters": {
+        "sql_jobs": 0,
+        "api_jobs": 36
+      },
+      "samples": {
+        "fifo": [
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.2579937999980757,
+            "admission_seconds": 0.12911000000167405,
+            "scheduling_admission_seconds": 2.5799978175200522e-05,
+            "dispatch_cpu_seconds": 0.046875,
+            "mean_completion_seconds": 0.13598340832929048,
+            "p95_completion_seconds": 0.2538598999963142,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4167395000040415,
+            "total_cpu_seconds": 0.109375
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.25573160000203643,
+            "admission_seconds": 0.13179479999962496,
+            "scheduling_admission_seconds": 2.9199982236605138e-05,
+            "dispatch_cpu_seconds": 0.078125,
+            "mean_completion_seconds": 0.13507718055694162,
+            "p95_completion_seconds": 0.2516181000028155,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4187175999977626,
+            "total_cpu_seconds": 0.125
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.2560516000012285,
+            "admission_seconds": 0.13002130000677425,
+            "scheduling_admission_seconds": 2.5199988158419728e-05,
+            "dispatch_cpu_seconds": 0.046875,
+            "mean_completion_seconds": 0.13553834444671034,
+            "p95_completion_seconds": 0.2524522000021534,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.41686959999788087,
+            "total_cpu_seconds": 0.109375
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.2571886000005179,
+            "admission_seconds": 0.20650860000023386,
+            "scheduling_admission_seconds": 2.9999959224369377e-05,
+            "dispatch_cpu_seconds": 0.0625,
+            "mean_completion_seconds": 0.13558597777531153,
+            "p95_completion_seconds": 0.25303539999731584,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.49455529999977443,
+            "total_cpu_seconds": 0.125
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.25891520000004675,
+            "admission_seconds": 0.13208559999475256,
+            "scheduling_admission_seconds": 2.580002910690382e-05,
+            "dispatch_cpu_seconds": 0.0625,
+            "mean_completion_seconds": 0.13675384166425728,
+            "p95_completion_seconds": 0.25532709999970393,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.42208450000180164,
+            "total_cpu_seconds": 0.125
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.31798929999786196,
+            "admission_seconds": 0.12873190000391332,
+            "scheduling_admission_seconds": 3.2499985536560416e-05,
+            "dispatch_cpu_seconds": 0.0625,
+            "mean_completion_seconds": 0.1443671416673169,
+            "p95_completion_seconds": 0.3142764000003808,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4767696999988402,
+            "total_cpu_seconds": 0.15625
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.25570679999509593,
+            "admission_seconds": 0.15986010000051465,
+            "scheduling_admission_seconds": 2.649998350534588e-05,
+            "dispatch_cpu_seconds": 0.0625,
+            "mean_completion_seconds": 0.13511804999891158,
+            "p95_completion_seconds": 0.2520728000017698,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.44447849999414757,
+            "total_cpu_seconds": 0.125
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.2547024000014062,
+            "admission_seconds": 0.12642159999813884,
+            "scheduling_admission_seconds": 2.5900008040480316e-05,
+            "dispatch_cpu_seconds": 0.015625,
+            "mean_completion_seconds": 0.13422207222275676,
+            "p95_completion_seconds": 0.25054000000091037,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4103608999939752,
+            "total_cpu_seconds": 0.0625
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.25462169999809703,
+            "admission_seconds": 0.1229901000042446,
+            "scheduling_admission_seconds": 2.559999848017469e-05,
+            "dispatch_cpu_seconds": 0.03125,
+            "mean_completion_seconds": 0.13379301110843597,
+            "p95_completion_seconds": 0.2485199000002467,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4077179000014439,
+            "total_cpu_seconds": 0.09375
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.2537882000033278,
+            "admission_seconds": 0.12621499999659136,
+            "scheduling_admission_seconds": 2.710001717787236e-05,
+            "dispatch_cpu_seconds": 0.078125,
+            "mean_completion_seconds": 0.13421871666752042,
+            "p95_completion_seconds": 0.25030030000198167,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4089973000009195,
+            "total_cpu_seconds": 0.109375
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.2534735000008368,
+            "admission_seconds": 0.12670259999867994,
+            "scheduling_admission_seconds": 2.640002639964223e-05,
+            "dispatch_cpu_seconds": 0.046875,
+            "mean_completion_seconds": 0.13439110000217624,
+            "p95_completion_seconds": 0.24988799999846378,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.40912810000008903,
+            "total_cpu_seconds": 0.09375
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.25828090000140946,
+            "admission_seconds": 0.21983409999666037,
+            "scheduling_admission_seconds": 2.590001531643793e-05,
+            "dispatch_cpu_seconds": 0.078125,
+            "mean_completion_seconds": 0.1370080805580882,
+            "p95_completion_seconds": 0.2548815000045579,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.5078035000042291,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.2558195999954478,
+            "admission_seconds": 0.12530020000122022,
+            "scheduling_admission_seconds": 2.5999994250014424e-05,
+            "dispatch_cpu_seconds": 0.03125,
+            "mean_completion_seconds": 0.13408775833199293,
+            "p95_completion_seconds": 0.25072050000017043,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.41165280000132043,
+            "total_cpu_seconds": 0.09375
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.25590419999934966,
+            "admission_seconds": 0.1280278999984148,
+            "scheduling_admission_seconds": 2.780000795610249e-05,
+            "dispatch_cpu_seconds": 0.046875,
+            "mean_completion_seconds": 0.1357129416689228,
+            "p95_completion_seconds": 0.2523053000040818,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.41397690000303555,
+            "total_cpu_seconds": 0.109375
+          },
+          {
+            "mode": "fifo",
+            "wall_seconds": 0.31815939999796683,
+            "admission_seconds": 0.12360569999873405,
+            "scheduling_admission_seconds": 2.5199995434377342e-05,
+            "dispatch_cpu_seconds": 0.0625,
+            "mean_completion_seconds": 0.1537790500007961,
+            "p95_completion_seconds": 0.31502020000334596,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.47045020000223303,
+            "total_cpu_seconds": 0.09375
+          }
+        ],
+        "ptc": [
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.33451549999881536,
+            "admission_seconds": 0.1346099000002141,
+            "scheduling_admission_seconds": 0.0012587000164785422,
+            "dispatch_cpu_seconds": 0.03125,
+            "mean_completion_seconds": 0.20974127499761785,
+            "p95_completion_seconds": 0.331219499996223,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4998048000052222,
+            "total_cpu_seconds": 0.0625
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2569891000021016,
+            "admission_seconds": 0.12943390000145882,
+            "scheduling_admission_seconds": 0.0010825999997905456,
+            "dispatch_cpu_seconds": 0.046875,
+            "mean_completion_seconds": 0.13593876389172188,
+            "p95_completion_seconds": 0.2533222000056412,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.41684470000473084,
+            "total_cpu_seconds": 0.109375
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2624747000008938,
+            "admission_seconds": 0.13241370000469033,
+            "scheduling_admission_seconds": 0.0010505000100238249,
+            "dispatch_cpu_seconds": 0.0625,
+            "mean_completion_seconds": 0.1379765749980935,
+            "p95_completion_seconds": 0.25828099999489496,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.42586650000157533,
+            "total_cpu_seconds": 0.125
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2587506999989273,
+            "admission_seconds": 0.1374050000013085,
+            "scheduling_admission_seconds": 0.0011313000286463648,
+            "dispatch_cpu_seconds": 0.09375,
+            "mean_completion_seconds": 0.13723735277643653,
+            "p95_completion_seconds": 0.25538999999844236,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4285719000035897,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2533534999965923,
+            "admission_seconds": 0.3323223000043072,
+            "scheduling_admission_seconds": 0.001162899992777966,
+            "dispatch_cpu_seconds": 0.046875,
+            "mean_completion_seconds": 0.13371717500033103,
+            "p95_completion_seconds": 0.2502625999986776,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.6179608999955235,
+            "total_cpu_seconds": 0.078125
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2577445999995689,
+            "admission_seconds": 0.1264085000002524,
+            "scheduling_admission_seconds": 0.001028199985739775,
+            "dispatch_cpu_seconds": 0.09375,
+            "mean_completion_seconds": 0.13522530833223653,
+            "p95_completion_seconds": 0.25137420000100974,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4134887999971397,
+            "total_cpu_seconds": 0.171875
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2583777999971062,
+            "admission_seconds": 0.12410239999735495,
+            "scheduling_admission_seconds": 0.0010371000098530203,
+            "dispatch_cpu_seconds": 0.046875,
+            "mean_completion_seconds": 0.13685846110860844,
+            "p95_completion_seconds": 0.25373389999731444,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4113006999978097,
+            "total_cpu_seconds": 0.125
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.25381449999986216,
+            "admission_seconds": 0.12401099999988219,
+            "scheduling_admission_seconds": 0.001073899955372326,
+            "dispatch_cpu_seconds": 0.046875,
+            "mean_completion_seconds": 0.13398774444047173,
+            "p95_completion_seconds": 0.2504365999993752,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.40666829999827314,
+            "total_cpu_seconds": 0.09375
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.25438279999798397,
+            "admission_seconds": 0.123999499999627,
+            "scheduling_admission_seconds": 0.0010430999755044468,
+            "dispatch_cpu_seconds": 0.078125,
+            "mean_completion_seconds": 0.13368768333202752,
+            "p95_completion_seconds": 0.25029869999707444,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4074806999997236,
+            "total_cpu_seconds": 0.15625
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.253040300005523,
+            "admission_seconds": 0.12489579999964917,
+            "scheduling_admission_seconds": 0.001100699977541808,
+            "dispatch_cpu_seconds": 0.03125,
+            "mean_completion_seconds": 0.1337659027796892,
+            "p95_completion_seconds": 0.24961099999927683,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.5060184000030858,
+            "total_cpu_seconds": 0.09375
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.27175700000225333,
+            "admission_seconds": 0.1248358000011649,
+            "scheduling_admission_seconds": 0.0010590999881969765,
+            "dispatch_cpu_seconds": 0.09375,
+            "mean_completion_seconds": 0.13446229166523457,
+            "p95_completion_seconds": 0.26152469999942696,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4254240000009304,
+            "total_cpu_seconds": 0.140625
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2560155999963172,
+            "admission_seconds": 0.12461079999775393,
+            "scheduling_admission_seconds": 0.0011014000192517415,
+            "dispatch_cpu_seconds": 0.03125,
+            "mean_completion_seconds": 0.13493827499809818,
+            "p95_completion_seconds": 0.2524266999971587,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4807705999992322,
+            "total_cpu_seconds": 0.09375
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2532548999952269,
+            "admission_seconds": 0.12537370000063675,
+            "scheduling_admission_seconds": 0.0010692000068956986,
+            "dispatch_cpu_seconds": 0.078125,
+            "mean_completion_seconds": 0.13310287777494523,
+            "p95_completion_seconds": 0.2481575999991037,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4083195999992313,
+            "total_cpu_seconds": 0.140625
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.2542108999987249,
+            "admission_seconds": 0.12671730000147363,
+            "scheduling_admission_seconds": 0.0010455999654368497,
+            "dispatch_cpu_seconds": 0.0625,
+            "mean_completion_seconds": 0.13351676944532503,
+            "p95_completion_seconds": 0.2487773000029847,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4102368999956525,
+            "total_cpu_seconds": 0.125
+          },
+          {
+            "mode": "ptc",
+            "wall_seconds": 0.25494549999712035,
+            "admission_seconds": 0.12374860000272747,
+            "scheduling_admission_seconds": 0.0010499999843887053,
+            "dispatch_cpu_seconds": 0.03125,
+            "mean_completion_seconds": 0.13391486388678053,
+            "p95_completion_seconds": 0.24996709999686573,
+            "sql_rows": 0,
+            "api_style_receipts": 36,
+            "canonical_permits_consumed": 36,
+            "audit_valid": true,
+            "max_concurrency": {
+              "sql": 0,
+              "api": 2
+            },
+            "final_slots": {
+              "sql": 0,
+              "api": 0
+            },
+            "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+            "total_wall_seconds": 0.4075585999962641,
+            "total_cpu_seconds": 0.078125
+          }
+        ]
+      },
+      "medians": {
+        "fifo": {
+          "wall_seconds": 0.25590419999934966,
+          "total_wall_seconds": 0.41686959999788087,
+          "admission_seconds": 0.12873190000391332,
+          "scheduling_admission_seconds": 2.5999994250014424e-05,
+          "dispatch_cpu_seconds": 0.0625,
+          "total_cpu_seconds": 0.109375,
+          "mean_completion_seconds": 0.13553834444671034,
+          "p95_completion_seconds": 0.2523053000040818
+        },
+        "ptc": {
+          "wall_seconds": 0.2560155999963172,
+          "total_wall_seconds": 0.41684470000473084,
+          "admission_seconds": 0.12537370000063675,
+          "scheduling_admission_seconds": 0.0010692000068956986,
+          "dispatch_cpu_seconds": 0.046875,
+          "total_cpu_seconds": 0.125,
+          "mean_completion_seconds": 0.13446229166523457,
+          "p95_completion_seconds": 0.25137420000100974
+        }
+      },
+      "total_wall_reduction_percent": 0.00597308922266615,
+      "dispatch_wall_reduction_percent": -0.043531914274086425,
+      "total_cpu_change_percent": 14.28571428571428,
+      "paired_reduction_percent": [
+        -19.932187853653225,
+        0.4472943083934755,
+        -2.1582048687983413,
+        13.34196600384524,
+        -46.40691614899048,
+        13.272844310755161,
+        7.464433037092844,
+        0.8998420648156924,
+        0.05817748048821958,
+        -23.721696940773995,
+        -3.9830801161880203,
+        5.323496195826094,
+        0.8097114855233456,
+        0.903432053178721,
+        13.368386283111455
+      ],
+      "paired_median_reduction_95pct_bootstrap_interval": [
+        -3.9830801161880203,
+        5.323496195826094
+      ],
+      "memory_samples": {
+        "fifo": {
+          "mode": "fifo",
+          "wall_seconds": 0.2579559000005247,
+          "admission_seconds": 0.12749719999555964,
+          "scheduling_admission_seconds": 2.9400005587376654e-05,
+          "dispatch_cpu_seconds": 0.078125,
+          "mean_completion_seconds": 0.13613476944354058,
+          "p95_completion_seconds": 0.25435879999713507,
+          "sql_rows": 0,
+          "api_style_receipts": 36,
+          "canonical_permits_consumed": 36,
+          "audit_valid": true,
+          "max_concurrency": {
+            "sql": 0,
+            "api": 2
+          },
+          "final_slots": {
+            "sql": 0,
+            "api": 0
+          },
+          "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+          "total_wall_seconds": 0.41769599999679485,
+          "total_cpu_seconds": 0.171875,
+          "peak_python_allocation_bytes": 122692
+        },
+        "ptc": {
+          "mode": "ptc",
+          "wall_seconds": 0.2580740999983391,
+          "admission_seconds": 0.1269906000015908,
+          "scheduling_admission_seconds": 0.0022987000120338053,
+          "dispatch_cpu_seconds": 0.078125,
+          "mean_completion_seconds": 0.13657482777974414,
+          "p95_completion_seconds": 0.2539743000015733,
+          "sql_rows": 0,
+          "api_style_receipts": 36,
+          "canonical_permits_consumed": 36,
+          "audit_valid": true,
+          "max_concurrency": {
+            "sql": 0,
+            "api": 2
+          },
+          "final_slots": {
+            "sql": 0,
+            "api": 0
+          },
+          "exact_effects_digest": "f6fb40bdc7ce3e5a725073ba8e221f5da679928589b3553d6b1b9545230bf9bb",
+          "total_wall_seconds": 0.4175094999955036,
+          "total_cpu_seconds": 0.109375,
+          "peak_python_allocation_bytes": 123508
+        }
+      },
+      "python_peak_allocation_delta_bytes": 816,
+      "identical_exact_effects": true
+    }
+  },
+  "scope": "Real disposable SQL writes; local API-style fake; no external providers",
+  "method": "One warm-up per mode/case excluded; alternating FIFO/PTC order; identical effects and lane capacities; separate traced-memory runs",
+  "limitations": [
+    "Local wall time and CPU; host contention is uncontrolled",
+    "Bootstrap intervals describe sample variation, not production certainty",
+    "Python allocation peaks exclude SQLite native allocations and process RSS",
+    "Fixture total includes DB creation, policy/permit issuance, effects, verification and cleanup",
+    "Each mode receives preauthorized jobs in a burst; no live arrival stream",
+    "Portfolio weights each listed scenario once; not an estimate of actual user traffic"
+  ],
+  "one_of_each_scenario_portfolio": {
+    "median_total_seconds_sum": {
+      "fifo": 0.9014480999976513,
+      "ptc": 0.8645560000077239
+    },
+    "reduction_percent": 4.092537328552082
+  }
+}

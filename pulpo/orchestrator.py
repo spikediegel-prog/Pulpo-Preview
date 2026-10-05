@@ -9,6 +9,7 @@ executor, and audit projection into one explicit workflow surface.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import contextmanager
 
 from .authority import ApprovalEnvelope
 from .authority_client import AuthorityApprovalRequest, AuthorityClient, AuthorityPoll
@@ -22,6 +23,7 @@ from .commerce import (
 from .directives import Directive, DirectiveAuthorityController, GovernedDirectiveProjection
 from .kernel import Decision, GovernanceKernel, Intent, LockedTarget, TargetResolution
 from .targets import evaluate_locked_target_with_approval
+from .traffic import TrafficControl
 
 
 class OrchestrationError(RuntimeError):
@@ -188,6 +190,27 @@ class PulpoOrchestrator:
         if resolution.outcome != "match" or resolution.target is None:
             return False
         return self.kernel.consume(decision.permit, resolution.target.intent)
+
+    @contextmanager
+    def traffic_dispatch(self, traffic: TrafficControl):
+        """Hold a lane slot while consuming an exact queued permit once.
+
+        This is the existing canonical consumption seam with scheduling around
+        it, not an arbitrary-tool executor. Only the trusted execution owner
+        uses this surface. Do not pre-consume for executors (such as commerce)
+        that already consume their own permit. No automatic retry on failure.
+        """
+        acquired = traffic.acquire()
+        if acquired is None:
+            yield None
+            return
+        token, dispatch = acquired
+        try:
+            if not self.kernel.consume(dispatch.work.permit, dispatch.work.intent):
+                raise OrchestrationError("traffic_permit_rejected")
+            yield dispatch
+        finally:
+            traffic.release(token)
 
     def activate_directive(
         self,
