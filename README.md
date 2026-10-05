@@ -234,6 +234,45 @@ The lifecycle is explicit:
 
 ```text
 Purpose → Intent → Authority → Policy → Decision → Permit → Execution → Evidence → Reconciliation → Memory → Adaptation → Purpose
+# Pulpo
+
+For pulpo-preview, click on the link in the upper right-hand corner under About, or go to the preview tree here: https://github.com/spikediegel-prog/Pulpo-Preview/tree/preview
+
+Pulpo is the governance and evidence plane between AI intelligence and consequential execution. It turns explicit intent into deterministic governance, binds allowed work to narrowly scoped one-use permits, and preserves durable evidence for verification and reconciliation.
+
+This repository is the clean canonical Pulpo project. The older `Iron-Ember/pulpo` repository remains historical reference material; its accumulated plans, generated evidence, machine-specific scripts, and CI workarounds are intentionally not imported here.
+
+## Proven now
+
+The base dependency-free suite and optional asymmetric-authority suite prove:
+
+- unknown, incomplete, and over-budget intents fail closed;
+- selected high-impact actions require a verifier-backed approval envelope;
+- authority policy pins verifier, key, algorithm, public-key fingerprint,
+  deployment, and maximum approval lifetime;
+- optional Ed25519 verification contains public material only and exposes no
+  signer;
+- caller-controlled boolean approval and authorization timestamps are absent
+  from the evaluation API;
+- permits are bound to the exact intent and cannot be replayed;
+- an optional SQLite state backend preserves approval-ID, nonce, permit, and
+  audit state across process restart in the same canonical kernel;
+- persisted audit-chain tampering fails closed when the kernel restarts;
+- configured agent roles cannot exceed their action, resource, or cost grant.
+- a bounded domain order is bound to its full request, quote, reserved budget, and one-use permit.
+- a configured external verifier checks v2 approval envelopes bound to trust,
+  deployment, intent, policy, principal, session, nonce, issue time, and expiry
+  using the kernel's trusted clock.
+- transactional SQLite commerce state preserves reservations, attempted orders,
+  reconciliation, and spend across restart.
+
+PulpoGit provides a read-only clarity projection for local source state. It
+distinguishes canonical, proposal, stale, diverged, detached, and dirty
+checkouts without inferring tests or authority. See the
+[PulpoGit clarity proof](proofs/git_clarity/README.md).
+
+```bash
+python -m unittest discover -s tests -v
 ```
 
 ## Minimal example
