@@ -452,6 +452,14 @@ def capture_envelope_surfaces(
 ) -> tuple[TreeSnapshot, ...]:
     if collector is not None:
         return collector.capture(envelope)
+    # Performance hints only: never alter scope, exclusions, digest or policy.
+    # No profile preserves the original serial behavior. Invalid/stale profiles
+    # select bounded complete collection, never skip evidence or verification.
+    from .evidence_tuning import default_profile_path, create_collector
+    profile = default_profile_path()
+    if profile.is_file():
+        with create_collector(profile) as configured:
+            return configured.capture(envelope)
     return tuple(capture_surface(surface) for surface in envelope.surfaces)
 
 
