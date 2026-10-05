@@ -1,0 +1,375 @@
+test_approval_required_policy_binds_signature_to_committed_order (test_api.CustodyServiceApiTests.test_approval_required_policy_binds_signature_to_committed_order) ... Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4e4a90>:
+Traceback (most recent call last):
+  File "<frozen importlib._bootstrap_external>", line 511, in _compile_bytecode
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4e4a90>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4e4b80>:
+Traceback (most recent call last):
+  File "<frozen importlib._bootstrap_external>", line 511, in _compile_bytecode
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4e4b80>
+ok
+test_byte_identical_external_order_has_no_authority_without_commitment (test_api.CustodyServiceApiTests.test_byte_identical_external_order_has_no_authority_without_commitment) ... Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4e4400>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_generate_schema.py", line 2921, in __init__
+    def __init__(self) -> None:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4e4400>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acad3970>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_generate_schema.py", line 2921, in __init__
+    def __init__(self) -> None:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acad3970>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad470e50>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_generate_schema.py", line 2921, in __init__
+    def __init__(self) -> None:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad470e50>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb249a0>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_generate_schema.py", line 2921, in __init__
+    def __init__(self) -> None:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb249a0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4717b0>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_generate_schema.py", line 2921, in __init__
+    def __init__(self) -> None:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4717b0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb24d60>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_generate_schema.py", line 2921, in __init__
+    def __init__(self) -> None:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb24d60>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad470f40>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_generate_schema.py", line 2921, in __init__
+    def __init__(self) -> None:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad470f40>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad471030>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_generate_schema.py", line 2921, in __init__
+    def __init__(self) -> None:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad471030>
+ok
+test_copied_handle_cannot_execute_twice_or_substitute_order_hash (test_api.CustodyServiceApiTests.test_copied_handle_cannot_execute_twice_or_substitute_order_hash) ... ok
+test_worker_cannot_inject_order_time_budget_or_provider_fields (test_api.CustodyServiceApiTests.test_worker_cannot_inject_order_time_budget_or_provider_fields) ... ok
+test_worker_uses_proposal_reference_then_handle_only (test_api.CustodyServiceApiTests.test_worker_uses_proposal_reference_then_handle_only) ... ok
+test_approval_for_one_commitment_cannot_authorize_another (test_approval_challenge.ApprovalChallengeTests.test_approval_for_one_commitment_cannot_authorize_another) ... ok
+test_changed_domain_gets_different_commitment_target_and_intent (test_approval_challenge.ApprovalChallengeTests.test_changed_domain_gets_different_commitment_target_and_intent) ... Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4b6c50>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4b6c50>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4b7010>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4b7010>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4e4400>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4e4400>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb25030>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb25030>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb249a0>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb249a0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb24040>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb24040>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acad3970>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acad3970>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acad1030>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acad1030>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acad1990>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acad1990>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acae3f10>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acae3f10>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acae3c40>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acae3c40>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb26980>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb26980>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba0e50>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba0e50>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb25c60>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb25c60>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba1300>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba1300>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba13f0>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba13f0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb27f10>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb27f10>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba0f40>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba0f40>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba2980>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba2980>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba2a70>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba2a70>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb267a0>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb267a0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb25b70>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb25b70>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acae1b70>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acae1b70>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb26200>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb26200>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba33d0>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba33d0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba3970>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba3970>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba3a60>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba3a60>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba1f30>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba1f30>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba1d50>:
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-04/referenced-chatgpt-conversation-this-is-an/work/audit-test-venv/lib/python3.14/site-packages/pydantic/_internal/_schema_generation_shared.py", line 82, in __call__
+    def __call__(self, source_type: Any, /) -> core_schema.CoreSchema:
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba1d50>
+ok
+test_exact_authority_request_is_compatible_and_non_authorizing (test_approval_challenge.ApprovalChallengeTests.test_exact_authority_request_is_compatible_and_non_authorizing) ... ok
+test_worker_cannot_inject_target_policy_deployment_ttl_time_or_order (test_approval_challenge.ApprovalChallengeTests.test_worker_cannot_inject_target_policy_deployment_ttl_time_or_order) ... ok
+test_two_callers_same_commitment_create_one_authoritative_attempt (test_concurrency.CustodyServiceConcurrencyTests.test_two_callers_same_commitment_create_one_authoritative_attempt) ... ok
+test_domain_only_proposal_captures_price_commitment_and_approval_request (test_domain_proposal.DomainProposalApiTests.test_domain_only_proposal_captures_price_commitment_and_approval_request) ... ok
+test_exact_commitment_can_receive_signature_then_create_one_attempt (test_domain_proposal.DomainProposalApiTests.test_exact_commitment_can_receive_signature_then_create_one_attempt) ... Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb27970>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb27970>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb262f0>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb262f0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acad3a60>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acad3a60>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acad1990>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acad1990>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb265c0>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb265c0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acad1030>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acad1030>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acad3970>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acad3970>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acae3970>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acae3970>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb26890>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb26890>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb254e0>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb254e0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb257b0>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb257b0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb27100>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb27100>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb27f10>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb27f10>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb274c0>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb274c0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb255d0>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb255d0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb245e0>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb245e0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba1f30>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba1f30>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb24040>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb24040>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb249a0>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/contextlib.py", line 108, in __init__
+    def __init__(self, func, args, kwds):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb249a0>
+ok
+test_identical_display_order_cannot_replace_commitment_reference (test_domain_proposal.DomainProposalApiTests.test_identical_display_order_cannot_replace_commitment_reference) ... ok
+test_worker_cannot_inject_consequential_proposal_fields (test_domain_proposal.DomainProposalApiTests.test_worker_cannot_inject_consequential_proposal_fields) ... Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb26a70>:
+Traceback (most recent call last):
+  File "<string>", line 0, in <module>
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb26a70>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb271f0>:
+Traceback (most recent call last):
+  File "<string>", line 0, in <module>
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb271f0>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb27d30>:
+Traceback (most recent call last):
+  File "<string>", line 0, in <module>
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb27d30>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb25c60>:
+Traceback (most recent call last):
+  File "<string>", line 0, in <module>
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb25c60>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4b7010>:
+Traceback (most recent call last):
+  File "<string>", line 0, in <module>
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4b7010>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4b6c50>:
+Traceback (most recent call last):
+  File "<string>", line 0, in <module>
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4b6c50>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acba2110>:
+Traceback (most recent call last):
+  File "<string>", line 0, in <module>
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acba2110>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb24040>:
+Traceback (most recent call last):
+  File "<string>", line 0, in <module>
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb24040>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb275b0>:
+Traceback (most recent call last):
+  File "<string>", line 0, in <module>
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb275b0>
+ok
+test_budget_ttl_username_token_and_state_path_constraints_fail_closed (test_runtime.CustodyRuntimeTests.test_budget_ttl_username_token_and_state_path_constraints_fail_closed) ... ok
+test_build_is_hard_pinned_to_sandbox_and_external_approval (test_runtime.CustodyRuntimeTests.test_build_is_hard_pinned_to_sandbox_and_external_approval) ... ok
+test_missing_or_short_custody_secrets_fail_before_service_start (test_runtime.CustodyRuntimeTests.test_missing_or_short_custody_secrets_fail_before_service_start) ... ok
+test_unrelated_environment_variable_cannot_select_production (test_runtime.CustodyRuntimeTests.test_unrelated_environment_variable_cannot_select_production) ... ok
+test_environment_requires_token_bot_identity_and_numeric_chat (test_telegram_transport.TelegramBotApiTransportTests.test_environment_requires_token_bot_identity_and_numeric_chat) ... ok
+test_malformed_success_response_is_external_reality_unknown (test_telegram_transport.TelegramBotApiTransportTests.test_malformed_success_response_is_external_reality_unknown) ... ok
+test_network_ambiguity_is_unknown_sanitized_and_not_retried (test_telegram_transport.TelegramBotApiTransportTests.test_network_ambiguity_is_unknown_sanitized_and_not_retried) ... ok
+test_out_of_scope_bot_is_rejected_before_network (test_telegram_transport.TelegramBotApiTransportTests.test_out_of_scope_bot_is_rejected_before_network) ... ok
+test_out_of_scope_chat_is_rejected_before_network (test_telegram_transport.TelegramBotApiTransportTests.test_out_of_scope_chat_is_rejected_before_network) ... ok
+test_provider_denial_is_explicit_and_destination_mismatch_is_unknown (test_telegram_transport.TelegramBotApiTransportTests.test_provider_denial_is_explicit_and_destination_mismatch_is_unknown) ... Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4b6c50>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/unittest/mock.py", line 2259, in __init__
+    def __init__(self, name, parent):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4b6c50>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6ad4b7010>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/unittest/mock.py", line 2259, in __init__
+    def __init__(self, name, parent):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6ad4b7010>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb26a70>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/unittest/mock.py", line 2259, in __init__
+    def __init__(self, name, parent):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb26a70>
+Exception ignored while finalizing database connection <sqlite3.Connection object at 0x7cc6acb275b0>:
+Traceback (most recent call last):
+  File "/usr/lib/python3.14/unittest/mock.py", line 2259, in __init__
+    def __init__(self, name, parent):
+ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7cc6acb275b0>
+ok
+test_send_message_shape_uses_official_https_endpoint_and_minimized_claim (test_telegram_transport.TelegramBotApiTransportTests.test_send_message_shape_uses_official_https_endpoint_and_minimized_claim) ... ok
+test_token_identity_is_pinned_and_repr_is_redacted (test_telegram_transport.TelegramBotApiTransportTests.test_token_identity_is_pinned_and_repr_is_redacted) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 0.808s
+
+OK
