@@ -1,0 +1,17 @@
+{
+  "python": "3.12.10",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "repo": "C:\\Users\\spike\\Pulpo1.0",
+  "results": [
+    {
+      "suite": "focused",
+      "returncode": 0,
+      "summary": [
+        "Ran 115 tests in 27.938s",
+        "OK"
+      ],
+      "log": "C:\\Users\\spike\\Pulpo1.0\\perf-results\\tuning-package-tests\\focused.log",
+      "log_sha256": "4b95465a3d63a005264cee50c982bec3d910f2eee0458853c8267c18a5588248"
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "classification": "Verified executable smoke tests",
+  "exe_sha256": "49bbeb4015606f83b43ac07d4715cef666ce7a61094f123454fadf3d328197f5",
+  "size_bytes": 13666260,
+  "python_and_source_not_on_search_path": true,
+  "tests": [
+    {
+      "case": "help",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "setup-help",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "quick-start",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "tune-help",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "tune-custom",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "tune-show",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "quick-start-preserves-custom",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "custom-after-launch",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "upgrade-revalidation",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "custom-after-upgrade",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "invalid-worker",
+      "exit_code": 2,
+      "result": "PASS"
+    },
+    {
+      "case": "bundled-tkinter",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "fallback",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "calibration",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "reuse",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "invalid-command",
+      "exit_code": 2,
+      "result": "PASS"
+    },
+    {
+      "case": "installer-first",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "installer-upgrade",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "case": "installer-rejects-unsafe-count",
+      "exit_code": 1,
+      "result": "PASS"
+    }
+  ],
+  "scope": "Bundled setup/tuning CLI, Tcl/Tk widget construction, saved-choice upgrade migration, optional isolated installer; not visual GUI approval or production proof."
+}
