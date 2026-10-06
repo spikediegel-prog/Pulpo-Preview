@@ -1,0 +1,82 @@
+{
+  "python": "3.12.14",
+  "sqlite": "3.53.1",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "repeats": 5,
+  "measurement": "Fresh process and connection; timed GovernanceKernel bootstrap only; OS caches not flushed; imports, state schema initialization, fixture construction and forced full proof excluded.",
+  "source_sha256": {
+    "pulpo/state.py": "87fa357fdbe814660712e9a329bad8329ccd07f1761f9a3af5a5a7bd2f1d246f",
+    "pulpo/kernel.py": "1d1f8dbfd266f417cc1dccc92a3b06d94429fa8b9ce5c71055dd6abeee89a833",
+    "scripts/benchmark_audit_restart.py": "1812bf74a29e4a2be53ed204d572a56a06b5cf6d9c333559f60c0002b65a1f7b"
+  },
+  "results": [
+    {
+      "history": 1000,
+      "suffix_records": 20,
+      "samples_seconds": {
+        "full": [
+          0.006314942000003043,
+          0.006362757999994528,
+          0.006145355000001018,
+          0.00597443799999553,
+          0.006679884999996943
+        ],
+        "checkpoint": [
+          0.00323006600000042,
+          0.002711155000000076,
+          0.002675838000001818,
+          0.00272778299999743,
+          0.0026912259999960497
+        ],
+        "suffix": [
+          0.00399873000000639,
+          0.003992288000006283,
+          0.004310383000003526,
+          0.004040853999995875,
+          0.004347520999999688
+        ]
+      },
+      "median_seconds": {
+        "full": 0.006314942000003043,
+        "checkpoint": 0.002711155000000076,
+        "suffix": 0.004040853999995875
+      },
+      "checkpoint_speedup": 2.329244178220303,
+      "suffix_speedup": 1.5627741066639602
+    },
+    {
+      "history": 10000,
+      "suffix_records": 20,
+      "samples_seconds": {
+        "full": [
+          0.06536483299998963,
+          0.062143515999991905,
+          0.05741269499999646,
+          0.06321477500000583,
+          0.0625850930000098
+        ],
+        "checkpoint": [
+          0.03271731400000988,
+          0.029305830999987847,
+          0.02459465799999805,
+          0.02432100900000478,
+          0.022858610000000112
+        ],
+        "suffix": [
+          0.03550050300000862,
+          0.03668361399999753,
+          0.037409108999995055,
+          0.03602262399999745,
+          0.03441106500000046
+        ]
+      },
+      "median_seconds": {
+        "full": 0.0625850930000098,
+        "checkpoint": 0.02459465799999805,
+        "suffix": 0.03602262399999745
+      },
+      "checkpoint_speedup": 2.5446620562894093,
+      "suffix_speedup": 1.7373829568888217
+    }
+  ]
+}

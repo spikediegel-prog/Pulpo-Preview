@@ -1,0 +1,1440 @@
+{
+  "classification": "Verified",
+  "base_revision": "ee88a8ea5aa5496c06afaa82ec31db30c2e4e1fc",
+  "python": "3.12.14",
+  "sqlite": "3.53.1",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "seed": 20261005,
+  "rounds": 3,
+  "variants": [
+    {
+      "variant": "baseline",
+      "crashes": [
+        {
+          "operation": "issue",
+          "stage": "after_approval",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "after_permit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "after_first_audit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.0033219252120567917,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 0
+        },
+        {
+          "operation": "consume",
+          "stage": "after_spent",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 0
+        },
+        {
+          "operation": "consume",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 0
+        },
+        {
+          "operation": "consume",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 0
+        },
+        {
+          "operation": "consume",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 0
+        },
+        {
+          "operation": "consume",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.00355595499871716,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 0
+        },
+        {
+          "operation": "unique",
+          "stage": "before_insert",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "unique",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "unique",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 0
+        },
+        {
+          "operation": "unique",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 0
+        },
+        {
+          "operation": "unique",
+          "stage": "random",
+          "acknowledged": false,
+          "expected": "either",
+          "kill_delay_seconds": 0.001853927769797759,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "replay",
+          "stage": "during_scan",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "replay",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "replay",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "replay",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": 0.006640815811326856,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "after_approval",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "after_permit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "after_first_audit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "random",
+          "acknowledged": false,
+          "expected": "either",
+          "kill_delay_seconds": 0.00026315904481688214,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 1
+        },
+        {
+          "operation": "consume",
+          "stage": "after_spent",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 1
+        },
+        {
+          "operation": "consume",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 1
+        },
+        {
+          "operation": "consume",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 1
+        },
+        {
+          "operation": "consume",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 1
+        },
+        {
+          "operation": "consume",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.0013409322843063625,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 1
+        },
+        {
+          "operation": "unique",
+          "stage": "before_insert",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "unique",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "unique",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 1
+        },
+        {
+          "operation": "unique",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 1
+        },
+        {
+          "operation": "unique",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.0034462712588145374,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 1
+        },
+        {
+          "operation": "replay",
+          "stage": "during_scan",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "replay",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "replay",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "replay",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": 0.0034133248094192687,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "after_approval",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "after_permit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "after_first_audit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.010603304515075181,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 2
+        },
+        {
+          "operation": "consume",
+          "stage": "after_spent",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 2
+        },
+        {
+          "operation": "consume",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 2
+        },
+        {
+          "operation": "consume",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 2
+        },
+        {
+          "operation": "consume",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 2
+        },
+        {
+          "operation": "consume",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.0076896706592977804,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 2
+        },
+        {
+          "operation": "unique",
+          "stage": "before_insert",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        },
+        {
+          "operation": "unique",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        },
+        {
+          "operation": "unique",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 2
+        },
+        {
+          "operation": "unique",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 2
+        },
+        {
+          "operation": "unique",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.007040125403365127,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 2
+        },
+        {
+          "operation": "replay",
+          "stage": "during_scan",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        },
+        {
+          "operation": "replay",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        },
+        {
+          "operation": "replay",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        },
+        {
+          "operation": "replay",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": 0.010275652204129584,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        }
+      ],
+      "storage_faults": [
+        {
+          "operation": "issue",
+          "fault": "audit_insert_abort",
+          "sqlite_error": "SQLITE_CONSTRAINT_TRIGGER",
+          "passed": true
+        },
+        {
+          "operation": "issue",
+          "fault": "commit_locked",
+          "sqlite_error": "SQLITE_BUSY",
+          "passed": true
+        },
+        {
+          "operation": "issue",
+          "fault": "sqlite_full",
+          "sqlite_error": "SQLITE_FULL",
+          "passed": true
+        },
+        {
+          "operation": "consume",
+          "fault": "audit_insert_abort",
+          "sqlite_error": "SQLITE_CONSTRAINT_TRIGGER",
+          "passed": true
+        },
+        {
+          "operation": "consume",
+          "fault": "commit_locked",
+          "sqlite_error": "SQLITE_BUSY",
+          "passed": true
+        },
+        {
+          "operation": "consume",
+          "fault": "sqlite_full",
+          "sqlite_error": "SQLITE_FULL",
+          "passed": true
+        },
+        {
+          "operation": "unique",
+          "fault": "audit_insert_abort",
+          "sqlite_error": "SQLITE_CONSTRAINT_TRIGGER",
+          "passed": true
+        },
+        {
+          "operation": "unique",
+          "fault": "commit_locked",
+          "sqlite_error": "SQLITE_BUSY",
+          "passed": true
+        },
+        {
+          "operation": "unique",
+          "fault": "sqlite_full",
+          "sqlite_error": "SQLITE_FULL",
+          "passed": true
+        }
+      ],
+      "tamper_controls": [
+        {
+          "field": "payload_json",
+          "malformed": false,
+          "rejected": true
+        },
+        {
+          "field": "payload_json",
+          "malformed": true,
+          "rejected": true
+        },
+        {
+          "field": "hash",
+          "malformed": false,
+          "rejected": true
+        }
+      ]
+    },
+    {
+      "variant": "candidate",
+      "crashes": [
+        {
+          "operation": "issue",
+          "stage": "after_approval",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "after_permit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "after_first_audit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.0033219252120567917,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 0
+        },
+        {
+          "operation": "consume",
+          "stage": "after_spent",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 0
+        },
+        {
+          "operation": "consume",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 0
+        },
+        {
+          "operation": "consume",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 0
+        },
+        {
+          "operation": "consume",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 0
+        },
+        {
+          "operation": "consume",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.00355595499871716,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 0
+        },
+        {
+          "operation": "unique",
+          "stage": "before_insert",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "unique",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "unique",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 0
+        },
+        {
+          "operation": "unique",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 0
+        },
+        {
+          "operation": "unique",
+          "stage": "random",
+          "acknowledged": false,
+          "expected": "either",
+          "kill_delay_seconds": 0.001853927769797759,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "replay",
+          "stage": "during_scan",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "replay",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "replay",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "replay",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": 0.006640815811326856,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 0
+        },
+        {
+          "operation": "issue",
+          "stage": "after_approval",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "after_permit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "after_first_audit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "random",
+          "acknowledged": false,
+          "expected": "either",
+          "kill_delay_seconds": 0.00026315904481688214,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 1
+        },
+        {
+          "operation": "consume",
+          "stage": "after_spent",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 1
+        },
+        {
+          "operation": "consume",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 1
+        },
+        {
+          "operation": "consume",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 1
+        },
+        {
+          "operation": "consume",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 1
+        },
+        {
+          "operation": "consume",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.0013409322843063625,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 1
+        },
+        {
+          "operation": "unique",
+          "stage": "before_insert",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "unique",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "unique",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 1
+        },
+        {
+          "operation": "unique",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 1
+        },
+        {
+          "operation": "unique",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.0034462712588145374,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 1
+        },
+        {
+          "operation": "replay",
+          "stage": "during_scan",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "replay",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "replay",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "replay",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": 0.0034133248094192687,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 1
+        },
+        {
+          "operation": "issue",
+          "stage": "after_approval",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "after_permit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "after_first_audit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 0,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 2
+        },
+        {
+          "operation": "issue",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.010603304515075181,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 2,
+          "round": 2
+        },
+        {
+          "operation": "consume",
+          "stage": "after_spent",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 2
+        },
+        {
+          "operation": "consume",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 2,
+          "round": 2
+        },
+        {
+          "operation": "consume",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 2
+        },
+        {
+          "operation": "consume",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 2
+        },
+        {
+          "operation": "consume",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.0076896706592977804,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 3,
+          "round": 2
+        },
+        {
+          "operation": "unique",
+          "stage": "before_insert",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        },
+        {
+          "operation": "unique",
+          "stage": "before_commit",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        },
+        {
+          "operation": "unique",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 2
+        },
+        {
+          "operation": "unique",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": null,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 2
+        },
+        {
+          "operation": "unique",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "committed",
+          "kill_delay_seconds": 0.007040125403365127,
+          "committed_before_probe": true,
+          "audit_rows_before_probe": 129,
+          "round": 2
+        },
+        {
+          "operation": "replay",
+          "stage": "during_scan",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        },
+        {
+          "operation": "replay",
+          "stage": "after_commit_before_ack",
+          "acknowledged": false,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        },
+        {
+          "operation": "replay",
+          "stage": "after_ack",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": null,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        },
+        {
+          "operation": "replay",
+          "stage": "random",
+          "acknowledged": true,
+          "expected": "absent",
+          "kill_delay_seconds": 0.010275652204129584,
+          "committed_before_probe": false,
+          "audit_rows_before_probe": 128,
+          "round": 2
+        }
+      ],
+      "storage_faults": [
+        {
+          "operation": "issue",
+          "fault": "audit_insert_abort",
+          "sqlite_error": "SQLITE_CONSTRAINT_TRIGGER",
+          "passed": true
+        },
+        {
+          "operation": "issue",
+          "fault": "commit_locked",
+          "sqlite_error": "SQLITE_BUSY",
+          "passed": true
+        },
+        {
+          "operation": "issue",
+          "fault": "sqlite_full",
+          "sqlite_error": "SQLITE_FULL",
+          "passed": true
+        },
+        {
+          "operation": "consume",
+          "fault": "audit_insert_abort",
+          "sqlite_error": "SQLITE_CONSTRAINT_TRIGGER",
+          "passed": true
+        },
+        {
+          "operation": "consume",
+          "fault": "commit_locked",
+          "sqlite_error": "SQLITE_BUSY",
+          "passed": true
+        },
+        {
+          "operation": "consume",
+          "fault": "sqlite_full",
+          "sqlite_error": "SQLITE_FULL",
+          "passed": true
+        },
+        {
+          "operation": "unique",
+          "fault": "audit_insert_abort",
+          "sqlite_error": "SQLITE_CONSTRAINT_TRIGGER",
+          "passed": true
+        },
+        {
+          "operation": "unique",
+          "fault": "commit_locked",
+          "sqlite_error": "SQLITE_BUSY",
+          "passed": true
+        },
+        {
+          "operation": "unique",
+          "fault": "sqlite_full",
+          "sqlite_error": "SQLITE_FULL",
+          "passed": true
+        }
+      ],
+      "tamper_controls": [
+        {
+          "field": "payload_json",
+          "malformed": false,
+          "rejected": true
+        },
+        {
+          "field": "payload_json",
+          "malformed": true,
+          "rejected": true
+        },
+        {
+          "field": "hash",
+          "malformed": false,
+          "rejected": true
+        }
+      ]
+    }
+  ],
+  "source_sha256": {
+    "pulpo/state.py": "87fa357fdbe814660712e9a329bad8329ccd07f1761f9a3af5a5a7bd2f1d246f",
+    "pulpo/kernel.py": "1d1f8dbfd266f417cc1dccc92a3b06d94429fa8b9ce5c71055dd6abeee89a833",
+    "scripts/test_crash_recovery.py": "0aa334e8cf6355fa775fa803e23052308ba75f2cc1761c1f38cb0a478a821af0"
+  },
+  "boundaries": [
+    "Disposable synthetic fixture databases only; no live credentials or provider effects.",
+    "Process SIGKILL and real SQLite FULL/BUSY/trigger errors; not physical power loss or actual fsync fault injection.",
+    "Storage-layer unknown-consequence replay preservation; not a simulated external provider recovery.",
+    "Current-head backend comparison, not whole historical-system temporal replay.",
+    "Whole valid-database rollback protection and production performance remain Unknown."
+  ],
+  "passed": true
+}

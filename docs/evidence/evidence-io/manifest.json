@@ -1,0 +1,108 @@
+{
+  "base_revision": "ee88a8ea5aa5496c06afaa82ec31db30c2e4e1fc",
+  "classifications": {
+    "Verified": "Local executable outcomes below, limited to their recorded environments.",
+    "Recorded": "Raw samples/logs/source hashes; line endings normalized to Git LF.",
+    "Inferred": "Large-history Python allocation benefit, not general throughput gain.",
+    "Proposed": "Preview admission and continued native installed Windows validation.",
+    "Unknown": "Installed native Windows behavior, practical power loss, production benefit, whole-database rollback resistance."
+  },
+  "runs": {
+    "windows_focused_baseline": 115,
+    "windows_focused_candidate": 115,
+    "windows_extended_errors_baseline": 8,
+    "windows_extended_errors_candidate": 8,
+    "wsl_final_core_baseline": 501,
+    "wsl_final_core_candidate": 520,
+    "wsl_authority_completed": 65,
+    "wsl_authority_skipped": 4,
+    "wsl_custody": 26,
+    "crash_rounds_per_backend": 3,
+    "forced_crashes": 126,
+    "storage_failures": 18,
+    "tamper_controls": 6,
+    "crash_unit_tests": 36
+  },
+  "sources": {
+    "pulpo/state.py": "87fa357fdbe814660712e9a329bad8329ccd07f1761f9a3af5a5a7bd2f1d246f",
+    "pulpo/kernel.py": "1d1f8dbfd266f417cc1dccc92a3b06d94429fa8b9ce5c71055dd6abeee89a833",
+    "scripts/benchmark_unique_audit_scan.py": "6b8ea3816dd133cee66f0156e8e3dcdabf58458f77e7f6a8aaae393ac4afddb4",
+    "scripts/test_crash_recovery.py": "0aa334e8cf6355fa775fa803e23052308ba75f2cc1761c1f38cb0a478a821af0",
+    "tests/test_unique_audit_scan.py": "903c5de33dd663a16f0fdf6619c212af573e68d3abd46971aeede6f0d9796a37",
+    "tests/test_crash_recovery_harness.py": "f8658bf5b2d7cb5fe8124f2c0d8e92d4a6737228dcb4fccc44f87cac37a84746"
+  },
+  "evidence": {
+    "windows-focused-baseline.log": {
+      "original_artifact_sha256": "8aa1f5913bebf501b0ab89b83b4cd6674f2408f675c848a35825e879dcd19fce",
+      "git_lf_sha256": "e17a15c88c44947a792eceae68265691db6ab6d6292357dbdb8a2d08786aa3d6"
+    },
+    "windows-focused-candidate.log": {
+      "original_artifact_sha256": "b8122a899c655e9f8387146d5e2d8da7ae1123e5a0db8eaa3ecf684dd2630b86",
+      "git_lf_sha256": "1df23a3be4310042441adf20df9b706f2f2dc5f52076d692461c03ab07349dfd"
+    },
+    "windows-extended-baseline.log": {
+      "original_artifact_sha256": "4c6fb15bd69eefdac5807e8a749cc4f0445cab07e686b6c8802a6b6287419619",
+      "git_lf_sha256": "f3f47f1e3cd7ead68e19ad375adc5f0ce65410faa8b53dedacc6003d1a177f16"
+    },
+    "windows-extended-candidate.log": {
+      "original_artifact_sha256": "71444a9cc36fee8cca6f808c3e1b2df601983bb8643cac885a1e9b1fe6b6604f",
+      "git_lf_sha256": "44f8274c6379ffcd7d06a13313e81be5d587212e4791c4b9bb19f28b20f17dd5"
+    },
+    "windows-unique-paired.json": {
+      "original_artifact_sha256": "e1fa7ce87926390a0cd233075a316b0fe915d87189d4f5c651bd8d6489ca719c",
+      "git_lf_sha256": "44c01b2c695d8c531fdc3753ed95a995b2576725f0a4ba8f02ec44d8efab2b08"
+    },
+    "wsl-core-baseline.log": {
+      "original_artifact_sha256": "0468d7d0c90820bd23c75c8b3cf9aaf68cb22eaf75f0670d228759e3685a4768",
+      "git_lf_sha256": "0468d7d0c90820bd23c75c8b3cf9aaf68cb22eaf75f0670d228759e3685a4768"
+    },
+    "wsl-core-candidate.log": {
+      "original_artifact_sha256": "b32649cd7ed4e475e62e97fe588d877cce58301402e54299e5acc9818222d0d6",
+      "git_lf_sha256": "b32649cd7ed4e475e62e97fe588d877cce58301402e54299e5acc9818222d0d6"
+    },
+    "wsl-authority.log": {
+      "original_artifact_sha256": "febc52a73719252b059d2b1b7c41087308d241714fd8e382a65deb15b4f06c8b",
+      "git_lf_sha256": "febc52a73719252b059d2b1b7c41087308d241714fd8e382a65deb15b4f06c8b"
+    },
+    "wsl-custody.log": {
+      "original_artifact_sha256": "f7c242d5d53673aa719e500aad2fc1ee8133f3ae28af0a9f8af1a9f016dbfcab",
+      "git_lf_sha256": "f7c242d5d53673aa719e500aad2fc1ee8133f3ae28af0a9f8af1a9f016dbfcab"
+    },
+    "wsl-unique-paired.json": {
+      "original_artifact_sha256": "3894da29d312250d7cdb2c8b4eae23547c2c22dc3f61a97d5c59c9e40b49f696",
+      "git_lf_sha256": "3894da29d312250d7cdb2c8b4eae23547c2c22dc3f61a97d5c59c9e40b49f696"
+    },
+    "wsl-sqlite-paired-native.json": {
+      "original_artifact_sha256": "6fc5650b1cf1d0a11524df10ef1701470a0068bcb4daea8f007eee216c2a8505",
+      "git_lf_sha256": "6fc5650b1cf1d0a11524df10ef1701470a0068bcb4daea8f007eee216c2a8505"
+    },
+    "wsl-restart-baseline.json": {
+      "original_artifact_sha256": "189060ce6346c6db69e34afdf0cd856fc61166a2c2aa48ebb30294bcb1f1a001",
+      "git_lf_sha256": "189060ce6346c6db69e34afdf0cd856fc61166a2c2aa48ebb30294bcb1f1a001"
+    },
+    "wsl-restart-candidate.json": {
+      "original_artifact_sha256": "5f63dc1bf351a8e977d46d7c5c6a77f1881b5e200d7101c2664ec09883374dad",
+      "git_lf_sha256": "5f63dc1bf351a8e977d46d7c5c6a77f1881b5e200d7101c2664ec09883374dad"
+    },
+    "crash-results.json": {
+      "original_artifact_sha256": "15a0d50a0ba7ca37b5a0b2d339e6d98e5ba983fc56dbd9110cbd049eb78ad134",
+      "git_lf_sha256": "15a0d50a0ba7ca37b5a0b2d339e6d98e5ba983fc56dbd9110cbd049eb78ad134"
+    },
+    "crash-oracle-tests.log": {
+      "original_artifact_sha256": "ce4f868a3c5dd1868158af9a7ae694a2d7e9f2fccb8a3d59241ff4a650bb3854",
+      "git_lf_sha256": "ce4f868a3c5dd1868158af9a7ae694a2d7e9f2fccb8a3d59241ff4a650bb3854"
+    },
+    "crash-reconciliation-tests.log": {
+      "original_artifact_sha256": "065f8799e8f689782807650ea3f1d2feaafa8c821287fa47e1edb6f66ec28c80",
+      "git_lf_sha256": "065f8799e8f689782807650ea3f1d2feaafa8c821287fa47e1edb6f66ec28c80"
+    },
+    "crash-rounds.log": {
+      "original_artifact_sha256": "d50c839a2aede33ff67149e7d2bcfb87a2b0a5c41736bf11e9a37de50fa78ac4",
+      "git_lf_sha256": "d50c839a2aede33ff67149e7d2bcfb87a2b0a5c41736bf11e9a37de50fa78ac4"
+    },
+    "wsl-environment.json": {
+      "original_artifact_sha256": "aab0561bea844ff1f660dfa7ce3d825087d6c66a73b62e9e964fd3da81c9e030",
+      "git_lf_sha256": "aab0561bea844ff1f660dfa7ce3d825087d6c66a73b62e9e964fd3da81c9e030"
+    }
+  }
+}

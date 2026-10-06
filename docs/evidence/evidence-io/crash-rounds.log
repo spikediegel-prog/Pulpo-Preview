@@ -1,0 +1,8 @@
+baseline: crash round 1/3 passed
+baseline: crash round 2/3 passed
+baseline: crash round 3/3 passed
+baseline: 63 crashes, 9 storage failures, 3 tamper controls PASS
+candidate: crash round 1/3 passed
+candidate: crash round 2/3 passed
+candidate: crash round 3/3 passed
+candidate: 63 crashes, 9 storage failures, 3 tamper controls PASS
