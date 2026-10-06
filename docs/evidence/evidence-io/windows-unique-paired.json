@@ -1,0 +1,194 @@
+{
+  "baseline_revision": "ee88a8ea5aa5496c06afaa82ec31db30c2e4e1fc",
+  "baseline_sha256": "3890da21442aad557034160513e80a81f2f61d07583a556755e63f17534bec3f",
+  "candidate_sha256": "39bc8e48b779171aec037d2f6e0efd006bd8b687c7ee797e9eda3aac96314f45",
+  "python": "3.12.14",
+  "sqlite": "3.53.1",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "arguments": {
+    "compare_ref": "ee88a8ea5aa5496c06afaa82ec31db30c2e4e1fc",
+    "history": [
+      1000,
+      10000
+    ],
+    "payload_bytes": 1024,
+    "iterations": 10,
+    "repeats": 5,
+    "json": "..\\..\\outputs\\candidate-unique.json"
+  },
+  "measurement": "Measure same-event reconciliation lookup time and Python allocation peak.\n\nFixture setup and full chain proof are excluded. Allocation tracing is a\nseparate untimed pass. Alternate exact-baseline and candidate order each repeat.\n",
+  "results": [
+    {
+      "history": 1000,
+      "variant": "baseline",
+      "samples": [
+        {
+          "seconds": 0.0281503000005614,
+          "peak_python_bytes": 1100765,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.025413199997274205,
+          "peak_python_bytes": 1100765,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.02674470000783913,
+          "peak_python_bytes": 1100765,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.02571080000780057,
+          "peak_python_bytes": 1100765,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.025727800006279722,
+          "peak_python_bytes": 1100765,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        }
+      ],
+      "median_ms_per_lookup": 2.572780000627972,
+      "median_peak_python_bytes": 1100765
+    },
+    {
+      "history": 1000,
+      "variant": "candidate",
+      "samples": [
+        {
+          "seconds": 0.024678000001586042,
+          "peak_python_bytes": 6319,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.02464079999481328,
+          "peak_python_bytes": 6319,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.02399139999761246,
+          "peak_python_bytes": 6319,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.024387899989960715,
+          "peak_python_bytes": 6319,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.024895099995774217,
+          "peak_python_bytes": 6319,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        }
+      ],
+      "median_ms_per_lookup": 2.464079999481328,
+      "median_peak_python_bytes": 6319
+    },
+    {
+      "history": 10000,
+      "variant": "baseline",
+      "samples": [
+        {
+          "seconds": 0.4212420999974711,
+          "peak_python_bytes": 11353133,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.4168179999978747,
+          "peak_python_bytes": 11353133,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.41372759999649134,
+          "peak_python_bytes": 11353133,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.4043411000020569,
+          "peak_python_bytes": 11353133,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.42193899999256246,
+          "peak_python_bytes": 11353133,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        }
+      ],
+      "median_ms_per_lookup": 41.68179999978747,
+      "median_peak_python_bytes": 11353133
+    },
+    {
+      "history": 10000,
+      "variant": "candidate",
+      "samples": [
+        {
+          "seconds": 0.39732639999419916,
+          "peak_python_bytes": 6320,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.4482793000061065,
+          "peak_python_bytes": 6320,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.3989564999938011,
+          "peak_python_bytes": 6320,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.394570600008592,
+          "peak_python_bytes": 6320,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        },
+        {
+          "seconds": 0.4062668999977177,
+          "peak_python_bytes": 6320,
+          "lookup_rows_changed": 0,
+          "journal_mode": "delete",
+          "synchronous": 2
+        }
+      ],
+      "median_ms_per_lookup": 39.89564999938011,
+      "median_peak_python_bytes": 6320
+    }
+  ]
+}

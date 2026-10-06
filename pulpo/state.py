@@ -399,7 +399,9 @@ class SQLiteKernelState:
             rows = self._connection.execute(
                 "SELECT payload_json FROM audit WHERE event = ? ORDER BY sequence",
                 (event,),
-            ).fetchall()
+            )
+            # Stream raw rows within the same locked transaction. Still scan
+            # every row: later duplicates or malformed JSON must not be hidden.
             matches: list[dict[str, Any]] = []
             for (encoded,) in rows:
                 candidate = json.loads(str(encoded))

@@ -1,0 +1,194 @@
+{
+  "label": "candidate",
+  "python": "3.12.14",
+  "sqlite": "3.53.1",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "iterations": 200,
+  "history": 10000,
+  "repeats": 5,
+  "results": [
+    {
+      "variant": "baseline",
+      "case": "append",
+      "median_seconds": 0.01454209799999262,
+      "operations_per_second": 13753.173716756792,
+      "samples_seconds": [
+        0.014767360999996981,
+        0.014661558999989666,
+        0.01454209799999262,
+        0.013848850999977458,
+        0.014191584999991846
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "candidate",
+      "case": "append",
+      "median_seconds": 0.0145023110000011,
+      "operations_per_second": 13790.905463273048,
+      "samples_seconds": [
+        0.014632650999999441,
+        0.014697807000004559,
+        0.0145023110000011,
+        0.014071534000038355,
+        0.013941754000029505
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "candidate_indexed",
+      "case": "append",
+      "median_seconds": 0.0157208289999744,
+      "operations_per_second": 12721.975412386057,
+      "samples_seconds": [
+        0.01852491699997927,
+        0.015544172000033996,
+        0.01599898900002472,
+        0.015587078999999449,
+        0.0157208289999744
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "baseline",
+      "case": "issue_and_consume",
+      "median_seconds": 0.041610658000024614,
+      "operations_per_second": 4806.4608831680025,
+      "samples_seconds": [
+        0.03948273899999322,
+        0.04265981800000418,
+        0.041783384999973805,
+        0.041610658000024614,
+        0.04155542399996648
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "candidate",
+      "case": "issue_and_consume",
+      "median_seconds": 0.041372685999988335,
+      "operations_per_second": 4834.107217502301,
+      "samples_seconds": [
+        0.04198746999998093,
+        0.04193986299998187,
+        0.04017406699995263,
+        0.041372685999988335,
+        0.039711861999990106
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "candidate_indexed",
+      "case": "issue_and_consume",
+      "median_seconds": 0.046263494000015726,
+      "operations_per_second": 4323.063018109528,
+      "samples_seconds": [
+        0.04792974900004765,
+        0.050080707999995866,
+        0.044572624000011274,
+        0.04420423200002688,
+        0.046263494000015726
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "baseline",
+      "case": "unique_new",
+      "median_seconds": 0.10550281799999084,
+      "operations_per_second": 1895.6839617309308,
+      "samples_seconds": [
+        0.10643963700005088,
+        0.10564425800004074,
+        0.09976649300000417,
+        0.10188943299999664,
+        0.10550281799999084
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "candidate",
+      "case": "unique_new",
+      "median_seconds": 0.10244677100001809,
+      "operations_per_second": 1952.233321243133,
+      "samples_seconds": [
+        0.10102114800002937,
+        0.10555421499998374,
+        0.10607260400001906,
+        0.10084744099998488,
+        0.10244677100001809
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "candidate_indexed",
+      "case": "unique_new",
+      "median_seconds": 0.03894677000005231,
+      "operations_per_second": 5135.214036997969,
+      "samples_seconds": [
+        0.03812055200000941,
+        0.038601796000023114,
+        0.04071305600001551,
+        0.03991664599999467,
+        0.03894677000005231
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "baseline",
+      "case": "unique_replay",
+      "median_seconds": 0.06890086099997461,
+      "operations_per_second": 2902.7213462553636,
+      "samples_seconds": [
+        0.06876743100002614,
+        0.06874615300000642,
+        0.06890086099997461,
+        0.0699643089999995,
+        0.07072421999998824
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "candidate",
+      "case": "unique_replay",
+      "median_seconds": 0.06893764800003055,
+      "operations_per_second": 2901.1723753602873,
+      "samples_seconds": [
+        0.06786113999999088,
+        0.06914569200000642,
+        0.06893764800003055,
+        0.06929981099995075,
+        0.06797038899998142
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    },
+    {
+      "variant": "candidate_indexed",
+      "case": "unique_replay",
+      "median_seconds": 0.0037247379999598706,
+      "operations_per_second": 53695.051840466294,
+      "samples_seconds": [
+        0.0037247379999598706,
+        0.003764525000008234,
+        0.003644173999987288,
+        0.003802591000010125,
+        0.00371038899999121
+      ],
+      "journal_mode": "delete",
+      "synchronous": 2
+    }
+  ],
+  "state_source_sha256": "87fa357fdbe814660712e9a329bad8329ccd07f1761f9a3af5a5a7bd2f1d246f",
+  "baseline_revision": "ee88a8ea5aa5496c06afaa82ec31db30c2e4e1fc",
+  "baseline_state_source_sha256": "3890da21442aad557034160513e80a81f2f61d07583a556755e63f17534bec3f"
+}

@@ -1,0 +1,149 @@
+test_concurrent_same_identity_appends_exactly_once (tests.test_unique_audit_scan.IndexedUniqueAuditScanTests.test_concurrent_same_identity_appends_exactly_once) ... ok
+test_duplicate_at_end_is_ambiguous_without_mutation (tests.test_unique_audit_scan.IndexedUniqueAuditScanTests.test_duplicate_at_end_is_ambiguous_without_mutation) ... ok
+test_failed_commit_rolls_back_new_identity (tests.test_unique_audit_scan.IndexedUniqueAuditScanTests.test_failed_commit_rolls_back_new_identity) ... ok
+test_failed_insert_rolls_back_and_retry_succeeds (tests.test_unique_audit_scan.IndexedUniqueAuditScanTests.test_failed_insert_rolls_back_and_retry_succeeds) ... ok
+test_malformed_later_row_is_not_hidden_by_match (tests.test_unique_audit_scan.IndexedUniqueAuditScanTests.test_malformed_later_row_is_not_hidden_by_match) ... ok
+test_new_identity_is_durable_and_other_events_do_not_conflict (tests.test_unique_audit_scan.IndexedUniqueAuditScanTests.test_new_identity_is_durable_and_other_events_do_not_conflict) ... ok
+test_replay_scans_later_rows_and_never_writes (tests.test_unique_audit_scan.IndexedUniqueAuditScanTests.test_replay_scans_later_rows_and_never_writes) ... ok
+test_concurrent_same_identity_appends_exactly_once (tests.test_unique_audit_scan.UniqueAuditScanTests.test_concurrent_same_identity_appends_exactly_once) ... ok
+test_duplicate_at_end_is_ambiguous_without_mutation (tests.test_unique_audit_scan.UniqueAuditScanTests.test_duplicate_at_end_is_ambiguous_without_mutation) ... ok
+test_failed_commit_rolls_back_new_identity (tests.test_unique_audit_scan.UniqueAuditScanTests.test_failed_commit_rolls_back_new_identity) ... ok
+test_failed_insert_rolls_back_and_retry_succeeds (tests.test_unique_audit_scan.UniqueAuditScanTests.test_failed_insert_rolls_back_and_retry_succeeds) ... ok
+test_malformed_later_row_is_not_hidden_by_match (tests.test_unique_audit_scan.UniqueAuditScanTests.test_malformed_later_row_is_not_hidden_by_match) ... ok
+test_new_identity_is_durable_and_other_events_do_not_conflict (tests.test_unique_audit_scan.UniqueAuditScanTests.test_new_identity_is_durable_and_other_events_do_not_conflict) ... ok
+test_replay_scans_later_rows_and_never_writes (tests.test_unique_audit_scan.UniqueAuditScanTests.test_replay_scans_later_rows_and_never_writes) ... ok
+test_exact_independent_observation_reconciles_success_and_settles_budget (tests.test_custody_reconcile.CustodyReconciliationTests.test_exact_independent_observation_reconciles_success_and_settles_budget) ... ok
+test_explicit_provider_failure_without_observed_effect_is_failure_but_budget_remains_held (tests.test_custody_reconcile.CustodyReconciliationTests.test_explicit_provider_failure_without_observed_effect_is_failure_but_budget_remains_held) ... ok
+test_not_found_lookup_cannot_be_inferred_as_known_failure (tests.test_custody_reconcile.CustodyReconciliationTests.test_not_found_lookup_cannot_be_inferred_as_known_failure) ... ok
+test_observed_substitution_is_failure_and_does_not_reopen_budget (tests.test_custody_reconcile.CustodyReconciliationTests.test_observed_substitution_is_failure_and_does_not_reopen_budget) ... ok
+test_provider_success_without_complete_external_observation_stays_unresolved_and_holds_budget (tests.test_custody_reconcile.CustodyReconciliationTests.test_provider_success_without_complete_external_observation_stays_unresolved_and_holds_budget) ... ok
+test_unresolved_consequence_can_later_resolve_without_reopening_execution (tests.test_custody_reconcile_later.LaterEvidenceReconciliationTests.test_unresolved_consequence_can_later_resolve_without_reopening_execution) ... ok
+test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical) ... ERROR
+test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical) ... ERROR
+test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical) ... ERROR
+test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event) ... ERROR
+test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event) ... ERROR
+test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event) ... ERROR
+test_artifact_mutation_during_observation_fails_closed (tests.test_target_reconcile.TargetReconciliationTests.test_artifact_mutation_during_observation_fails_closed) ... ok
+test_completion_of_one_version_does_not_complete_another (tests.test_target_reconcile.TargetReconciliationTests.test_completion_of_one_version_does_not_complete_another) ... ERROR
+test_completion_requires_exact_target_hash (tests.test_target_reconcile.TargetReconciliationTests.test_completion_requires_exact_target_hash) ... ok
+test_locked_target_remains_unresolved_without_completion_evidence (tests.test_target_reconcile.TargetReconciliationTests.test_locked_target_remains_unresolved_without_completion_evidence) ... ok
+test_memory_or_chat_claim_does_not_complete_target (tests.test_target_reconcile.TargetReconciliationTests.test_memory_or_chat_claim_does_not_complete_target) ... ok
+test_missing_or_empty_artifact_cannot_complete_target (tests.test_target_reconcile.TargetReconciliationTests.test_missing_or_empty_artifact_cannot_complete_target) ... ok
+test_nonempty_artifact_records_exact_completion_without_authority_effect (tests.test_target_reconcile.TargetReconciliationTests.test_nonempty_artifact_records_exact_completion_without_authority_effect) ... ERROR
+test_same_artifact_completion_is_idempotent_but_replacement_is_denied (tests.test_target_reconcile.TargetReconciliationTests.test_same_artifact_completion_is_idempotent_but_replacement_is_denied) ... ok
+test_unresolved_and_completed_state_survive_sqlite_restart (tests.test_target_reconcile.TargetReconciliationTests.test_unresolved_and_completed_state_survive_sqlite_restart) ... ok
+
+======================================================================
+ERROR: test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\tests\test_issue_153_consequence_reconciliation_v0.py", line 44, in <lambda>
+    self.addCleanup(lambda: Path(str(path) + "-shm").unlink(missing_ok=True))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1342, in unlink
+    os.unlink(self)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\spike\\AppData\\Local\\Temp\\tmpmgh39n0c.sqlite3-shm'
+
+======================================================================
+ERROR: test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\tests\test_issue_153_consequence_reconciliation_v0.py", line 43, in <lambda>
+    self.addCleanup(lambda: Path(str(path) + "-wal").unlink(missing_ok=True))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1342, in unlink
+    os.unlink(self)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\spike\\AppData\\Local\\Temp\\tmpmgh39n0c.sqlite3-wal'
+
+======================================================================
+ERROR: test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_10_outcome_memory_denied_until_exact_reconciliation_evidence_is_canonical)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\tests\test_issue_153_consequence_reconciliation_v0.py", line 42, in <lambda>
+    self.addCleanup(lambda: path.unlink(missing_ok=True))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1342, in unlink
+    os.unlink(self)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\spike\\AppData\\Local\\Temp\\tmpmgh39n0c.sqlite3'
+
+======================================================================
+ERROR: test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\tests\test_issue_153_consequence_reconciliation_v0.py", line 44, in <lambda>
+    self.addCleanup(lambda: Path(str(path) + "-shm").unlink(missing_ok=True))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1342, in unlink
+    os.unlink(self)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\spike\\AppData\\Local\\Temp\\tmpiki_zxqj.sqlite3-shm'
+
+======================================================================
+ERROR: test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\tests\test_issue_153_consequence_reconciliation_v0.py", line 43, in <lambda>
+    self.addCleanup(lambda: Path(str(path) + "-wal").unlink(missing_ok=True))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1342, in unlink
+    os.unlink(self)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\spike\\AppData\\Local\\Temp\\tmpiki_zxqj.sqlite3-wal'
+
+======================================================================
+ERROR: test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event (tests.test_issue_153_outcome_memory_hostile_v0.Issue153OutcomeMemoryHostileV0.test_11_concurrent_identical_recording_creates_exactly_one_canonical_memory_event)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\tests\test_issue_153_consequence_reconciliation_v0.py", line 42, in <lambda>
+    self.addCleanup(lambda: path.unlink(missing_ok=True))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\pathlib.py", line 1342, in unlink
+    os.unlink(self)
+PermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\Users\\spike\\AppData\\Local\\Temp\\tmpiki_zxqj.sqlite3'
+
+======================================================================
+ERROR: test_completion_of_one_version_does_not_complete_another (tests.test_target_reconcile.TargetReconciliationTests.test_completion_of_one_version_does_not_complete_another)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\pulpo\target_reconcile.py", line 187, in _observe_file
+    descriptor = os.open(resolved, flags)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\spike\\AppData\\Local\\Temp\\tmpwp_65uu8.pptx'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\tests\test_target_reconcile.py", line 126, in test_completion_of_one_version_does_not_complete_another
+    self.reconcile.complete_file("deck-v1", self.target.target_hash, handle.name, version=1)
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\pulpo\target_reconcile.py", line 245, in complete_file
+    resolved_path, artifact_sha256, size_bytes = self._observe_file(artifact_path)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\pulpo\target_reconcile.py", line 191, in _observe_file
+    raise ValueError("artifact_unreadable") from exc
+ValueError: artifact_unreadable
+
+======================================================================
+ERROR: test_nonempty_artifact_records_exact_completion_without_authority_effect (tests.test_target_reconcile.TargetReconciliationTests.test_nonempty_artifact_records_exact_completion_without_authority_effect)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\pulpo\target_reconcile.py", line 187, in _observe_file
+    descriptor = os.open(resolved, flags)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 13] Permission denied: 'C:\\Users\\spike\\AppData\\Local\\Temp\\tmp_43dtv8k.pptx'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\tests\test_target_reconcile.py", line 68, in test_nonempty_artifact_records_exact_completion_without_authority_effect
+    completion = self.reconcile.complete_file("deck-v1", self.target.target_hash, handle.name)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\pulpo\target_reconcile.py", line 245, in complete_file
+    resolved_path, artifact_sha256, size_bytes = self._observe_file(artifact_path)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\spike\Documents\Codex\2026-10-05\referenced-chatgpt-conversation-this-is-an-3\work\Pulpo-Preview\pulpo\target_reconcile.py", line 191, in _observe_file
+    raise ValueError("artifact_unreadable") from exc
+ValueError: artifact_unreadable
+
+----------------------------------------------------------------------
+Ran 31 tests in 1.822s
+
+FAILED (errors=8)

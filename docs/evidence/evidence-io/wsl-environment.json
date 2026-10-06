@@ -1,0 +1,13 @@
+{
+  "python": "3.12.14 (main, Sep 24 2026, 17:57:43) [Clang 22.1.3 ]",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "sqlite": "3.53.1",
+  "packages": {
+    "cryptography": "50.0.1",
+    "fastapi": "0.141.1",
+    "uvicorn": "0.52.4",
+    "webauthn": "3.0.0",
+    "httpx2": "2.12.0",
+    "anyio": "4.14.2"
+  }
+}

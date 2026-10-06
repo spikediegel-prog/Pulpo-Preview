@@ -1,0 +1,10 @@
+test_missing_acknowledged_commit_is_rejected (tests.test_crash_recovery_harness.CrashRecoveryOracleTests.test_missing_acknowledged_commit_is_rejected) ... ok
+test_partial_issuance_is_rejected_even_with_valid_empty_audit (tests.test_crash_recovery_harness.CrashRecoveryOracleTests.test_partial_issuance_is_rejected_even_with_valid_empty_audit) ... ok
+test_spent_without_consumption_audit_is_rejected (tests.test_crash_recovery_harness.CrashRecoveryOracleTests.test_spent_without_consumption_audit_is_rejected) ... ok
+test_storage_faults_really_fire_and_roll_back (tests.test_crash_recovery_harness.CrashRecoveryOracleTests.test_storage_faults_really_fire_and_roll_back) ... ok
+test_tamper_controls_are_rejected_at_restart (tests.test_crash_recovery_harness.CrashRecoveryOracleTests.test_tamper_controls_are_rejected_at_restart) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.167s
+
+OK
