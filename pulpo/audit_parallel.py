@@ -19,8 +19,12 @@ AuditRow = tuple[str, str, str, int, str]
 AuditBodyKey = tuple[str, str, str, int]
 
 
+# Reuse the unchanged encoder configuration; per-call state stays in encode().
+_CANONICAL_ENCODER = json.JSONEncoder(sort_keys=True, separators=(",", ":"))
+
+
 def _canonical(value: object) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    return _CANONICAL_ENCODER.encode(value).encode()
 
 
 def _digest_body(key: AuditBodyKey) -> str:
