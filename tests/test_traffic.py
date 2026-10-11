@@ -309,3 +309,108 @@ class TrafficTests(unittest.TestCase):
                 self.assertEqual(0, traffic.snapshot()["sql"]["active"])
             finally:
                 state.close()
+
+
+class MinimalRouterRefinementTests(unittest.TestCase):
+    setUp = TrafficTests.setUp
+    make_traffic = TrafficTests.make_traffic
+    enqueue = TrafficTests.enqueue
+
+    def ttl_traffic(self, ttl=1.0, limit=2):
+        return TrafficControl.for_sql_api(
+            (Path("sql-a", "sql", self.intent), Path("sql-b", "api", self.intent)),
+            sql_queue_limit=limit, api_queue_limit=limit,
+            queue_ttl_seconds=ttl, clock=lambda: self.now[0] / 1e9)
+
+    def test_ttl_drop_does_not_consume_permit_or_write_evidence(self):
+        traffic = self.ttl_traffic()
+        decision = self.kernel.evaluate(self.intent)
+        traffic.enqueue(self.intent, decision, ("sql-a",))
+        before = list(self.kernel.audit)
+        self.now[0] += 1_000_000_000
+        with self.owner.traffic_dispatch(traffic) as work:
+            self.assertIsNone(work)
+        self.assertEqual(before, self.kernel.audit)
+        self.assertEqual({"queued": 0, "active": 0, "dropped": 1}, traffic.snapshot()["sql"])
+        # Routing expiry cannot revoke/renew authority: the canonical permit is
+        # still usable only if its original kernel checks currently allow it.
+        self.assertTrue(self.kernel.consume(decision.permit, self.intent))
+
+    def test_expiry_reclaims_capacity_and_ready_timer_reports_drop_deadline(self):
+        traffic = self.ttl_traffic(limit=1)
+        first = self.kernel.evaluate(self.intent)
+        traffic.enqueue(self.intent, first, ("sql-a",))
+        traffic.pause("sql", 10)
+        self.assertAlmostEqual(1, traffic.ready_delay())
+        self.now[0] += 1_000_000_000
+        self.assertIsNone(traffic.ready_delay())
+        second = self.kernel.evaluate(self.intent)
+        traffic.enqueue(self.intent, second, ("sql-a",))
+        self.assertEqual((1, 1), (traffic.snapshot()["sql"]["queued"], traffic.snapshot()["sql"]["dropped"]))
+        # No automated renewal, retry or fallback path is introduced.
+        self.assertIsNone(traffic.acquire())
+        self.assertFalse(any(r['event'] == 'permit_consumed' for r in self.kernel.audit))
+
+    def test_active_work_is_never_cancelled_or_requeued_by_queue_ttl(self):
+        traffic = self.ttl_traffic()
+        decision = self.kernel.evaluate(self.intent)
+        traffic.enqueue(self.intent, decision, ("sql-a",))
+        with self.owner.traffic_dispatch(traffic) as work:
+            self.assertIsNotNone(work)
+            self.now[0] += 2_000_000_000
+            self.assertEqual((1, 0), (traffic.snapshot()["sql"]["active"], traffic.snapshot()["sql"]["dropped"]))
+        self.assertEqual(0, traffic.snapshot()["sql"]["active"])
+        self.assertIsNone(traffic.acquire())
+        self.assertFalse(self.kernel.consume(decision.permit, self.intent))
+
+    def test_boolean_and_noninteger_release_cannot_free_a_real_slot(self):
+        self.enqueue()
+        token, _ = self.traffic.acquire()
+        for forged in (True, float(token), str(token), object()):
+            with self.assertRaises(ValueError):
+                self.traffic.release(forged)
+            self.assertEqual(1, self.traffic.snapshot()["sql"]["active"])
+        self.traffic.release(token)
+        with self.assertRaises(ValueError):
+            self.traffic.release(token)
+
+    def test_ttl_and_cooldown_configuration_are_strict_and_bounded(self):
+        for ttl in (0, -1, True, float('nan'), float('inf'), 301, '1', 10**1000):
+            with self.assertRaises(ValueError):
+                self.ttl_traffic(ttl)
+        with self.assertRaises(ValueError):
+            self.traffic.pause("sql", True)
+        self.assertEqual(1, self.ttl_traffic(300)._lanes["sql"].concurrency)
+        self.assertEqual(2, self.ttl_traffic()._lanes["api"].concurrency)
+
+    def test_bad_and_regressing_clock_fail_before_queue_or_authority_mutation(self):
+        decision = self.kernel.evaluate(self.intent)
+        for bad in (True, float('nan'), float('inf'), -1, 'now', 10**1000):
+            traffic = TrafficControl.for_sql_api((Path("sql-a", "sql", self.intent),), clock=lambda bad=bad: bad)
+            before = list(self.kernel.audit)
+            with self.assertRaises(ValueError):
+                traffic.enqueue(self.intent, decision, ("sql-a",))
+            self.assertEqual(before, self.kernel.audit)
+            self.assertEqual(0, len(traffic._queues['sql']))
+        traffic = self.ttl_traffic()
+        traffic.enqueue(self.intent, decision, ("sql-a",))
+        before = list(self.kernel.audit)
+        self.now[0] -= 1
+        with self.assertRaisesRegex(ValueError, 'regressing'):
+            traffic.acquire()
+        self.assertEqual(1, len(traffic._queues['sql']))
+        self.assertEqual(before, self.kernel.audit)
+
+    def test_routing_preserves_exact_intent_bytes_and_has_no_writer_or_recirculation(self):
+        import json
+        from dataclasses import asdict
+        before = json.dumps(asdict(self.intent), sort_keys=True).encode()
+        traffic = self.ttl_traffic()
+        decision = self.kernel.evaluate(self.intent)
+        traffic.enqueue(self.intent, decision, ("sql-a", "sql-b"))
+        with self.owner.traffic_dispatch(traffic) as work:
+            self.assertIs(self.intent, work.work.intent)
+            self.assertEqual(before, json.dumps(asdict(work.work.intent), sort_keys=True).encode())
+        self.assertFalse(hasattr(traffic, 'kernel'))
+        self.assertFalse(hasattr(traffic, 'executor'))
+        self.assertFalse(hasattr(traffic, 'requeue'))
