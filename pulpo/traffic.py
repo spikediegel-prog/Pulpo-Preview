@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+from math import isfinite
 from threading import RLock
 from time import monotonic
 from typing import Callable
@@ -59,6 +60,12 @@ class Dispatch:
     path: Path
 
 
+@dataclass(frozen=True)
+class _Queued:
+    work: Work
+    expires_at: float
+
+
 class TrafficControl:
     """One trusted owner's scheduling helper, with no canonical writer.
 
@@ -72,19 +79,30 @@ class TrafficControl:
 
     @classmethod
     def for_sql_api(cls, paths: tuple[Path, ...], *, sql_queue_limit: int = 16,
-                    api_queue_limit: int = 16, clock: Callable[[], float] = monotonic):
+                    api_queue_limit: int = 16, clock: Callable[[], float] = monotonic,
+                    queue_ttl_seconds: float | None = None):
         """Selected local profile: one SQL writer, two API slots, zero pacing.
 
         Preserve lane isolation for mixed/interleaved work without the SQL
-        delays rejected by the shaping benchmark. Only queue bounds can vary
-        through this profile. Exact path registration and canonical dispatch
+        delays rejected by the shaping benchmark. Queue bounds and an optional
+        routing-only queue TTL can vary. Exact path registration and canonical dispatch
         checks are identical to the explicit experimental constructor.
         """
         return cls((Lane("sql", "sql", 1, sql_queue_limit),
-                    Lane("api", "api", 2, api_queue_limit)), paths, clock=clock)
+                    Lane("api", "api", 2, api_queue_limit)), paths, clock=clock,
+                   queue_ttl_seconds=queue_ttl_seconds)
 
     def __init__(self, lanes: tuple[Lane, ...], paths: tuple[Path, ...],
-                 *, clock: Callable[[], float] = monotonic):
+                 *, clock: Callable[[], float] = monotonic,
+                 queue_ttl_seconds: float | None = None):
+        if queue_ttl_seconds is not None and (
+                type(queue_ttl_seconds) not in (int, float)
+                or not 0 < queue_ttl_seconds <= 300 or not isfinite(queue_ttl_seconds)):
+            raise ValueError("queue TTL must be finite and in (0, 300] seconds")
+        if not callable(clock):
+            raise ValueError("scheduling clock must be callable")
+        self._queue_ttl_seconds = queue_ttl_seconds
+        self._last_now = -1.0
         self._lanes = {lane.name: lane for lane in lanes}
         self._paths = {path.name: path for path in paths}
         if not lanes or len(self._lanes) != len(lanes):
@@ -100,6 +118,32 @@ class TrafficControl:
         self._ready_at = {name: 0.0 for name in self._lanes}
         self._clock = clock
         self._lock = RLock()
+        self._dropped = {name: 0 for name in self._lanes}
+
+    def _now(self):
+        now = self._clock()
+        try:
+            invalid = (type(now) not in (int, float) or not isfinite(now)
+                       or now < 0 or now < self._last_now)
+        except OverflowError:
+            invalid = True
+        if invalid:
+            raise ValueError("invalid or regressing scheduling clock")
+        self._last_now = now
+        return now
+
+    @staticmethod
+    def _head(queue):
+        entry = queue[0]
+        return entry.work if type(entry) is _Queued else entry
+
+    def _expire(self, now):
+        if self._queue_ttl_seconds is None:
+            return
+        for lane, queue in self._queues.items():
+            while queue and now >= queue[0].expires_at:
+                queue.popleft()
+                self._dropped[lane] += 1  # Terminal volatile DROP; never requeue.
 
     def _busy(self, lane):
         return sum(d.path.lane == lane for d in self._active.values())
@@ -122,27 +166,32 @@ class TrafficControl:
             raise ValueError("path target mismatch")
         work = Work(intent, decision.permit, paths)
         with self._lock:
+            now = self._now()
+            self._expire(now)
             available = [p for p in self._eligible(work)
                          if len(self._queues[p.lane]) < self._lanes[p.lane].queue_limit]
             if not available:
                 raise Backpressure("queues saturated")
             path = min(available, key=lambda p: (
-                max(self._paused[p.lane], self._ready_at[p.lane]) > self._clock(),
+                max(self._paused[p.lane], self._ready_at[p.lane]) > now,
                 (len(self._queues[p.lane]) + self._busy(p.lane))
                 / self._lanes[p.lane].concurrency, p.name))
-            self._queues[path.lane].append(work)
+            entry = work if self._queue_ttl_seconds is None else _Queued(work, now + self._queue_ttl_seconds)
+            self._queues[path.lane].append(entry)
 
     def acquire(self) -> tuple[int, Dispatch] | None:
         with self._lock:
+            now = self._now()
+            self._expire(now)
             # Round-robin lane order prevents a busy lane monopolizing dispatch.
             for lane in self._queues:
                 queue = self._queues[lane]
                 if not queue:
                     continue
-                work = queue[0]
+                work = self._head(queue)
                 available = [p for p in self._eligible(work)
                              if self._busy(p.lane) < self._lanes[p.lane].concurrency
-                             and max(self._paused[p.lane], self._ready_at[p.lane]) <= self._clock()]
+                             and max(self._paused[p.lane], self._ready_at[p.lane]) <= now]
                 if not available:
                     continue
                 path = min(available, key=lambda p: (
@@ -151,7 +200,7 @@ class TrafficControl:
                 self._next += 1
                 dispatch = Dispatch(work, path)
                 self._active[self._next] = dispatch
-                self._ready_at[path.lane] = self._clock() + self._lanes[path.lane].min_dispatch_interval
+                self._ready_at[path.lane] = now + self._lanes[path.lane].min_dispatch_interval
                 # Move this queue to the end without mutating during iteration.
                 self._queues = {k: v for k, v in self._queues.items() if k != lane} | {lane: queue}
                 return self._next, dispatch
@@ -161,33 +210,39 @@ class TrafficControl:
         """Earliest unoccupied queued path's timer delay, without consuming work.
 
         The owner can wait for this timer or an occupied slot's completion.
-        None means no queued path has a free slot. No worker or sleep is owned
-        by PTC, and this clock never decides canonical permit lifetime.
+        Optional queue expiry is also a wake deadline, even with occupied slots.
+        None means no free-path or enabled expiry deadline remains. No worker or
+        sleep is owned by PTC; scheduling time never decides permit lifetime.
         """
         with self._lock:
-            now = self._clock()
+            now = self._now()
+            self._expire(now)
             delays = [max(0.0, max(self._paused[p.lane], self._ready_at[p.lane]) - now)
                       for queue in self._queues.values() if queue
-                      for p in self._eligible(queue[0])
+                      for p in self._eligible(self._head(queue))
                       if self._busy(p.lane) < self._lanes[p.lane].concurrency]
+            if self._queue_ttl_seconds is not None:
+                delays.extend(queue[0].expires_at - now for queue in self._queues.values() if queue)
             return min(delays) if delays else None
 
     def release(self, token: int) -> None:
         with self._lock:
-            if token not in self._active:
+            if type(token) is not int or token not in self._active:
                 raise ValueError("unknown or released slot")
             del self._active[token]
 
     def pause(self, lane: str, seconds: float) -> None:
         """Trusted owner signals contention; this delays but never retries work."""
-        if not isinstance(seconds, (int, float)) or not 0 <= seconds <= 60:
+        if type(seconds) not in (int, float) or not 0 <= seconds <= 60 or not isfinite(seconds):
             raise ValueError("cooldown must be in [0, 60] seconds")
         with self._lock:
             if lane not in self._lanes:
                 raise ValueError("unknown lane")
-            self._paused[lane] = max(self._paused[lane], self._clock() + seconds)
+            self._paused[lane] = max(self._paused[lane], self._now() + seconds)
 
     def snapshot(self) -> dict[str, dict[str, int]]:
         with self._lock:
-            return {name: {"queued": len(self._queues[name]), "active": self._busy(name)}
+            self._expire(self._now())
+            return {name: {"queued": len(self._queues[name]), "active": self._busy(name),
+                           "dropped": self._dropped[name]}
                     for name in self._lanes}

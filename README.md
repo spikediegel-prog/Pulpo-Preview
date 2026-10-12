@@ -73,6 +73,15 @@ This branch is currently **88 commits ahead of this fork's `main` branch**.
 
 ## Major improvements represented in the preview
 
+### Minimal SQL/API traffic controller
+
+The existing controller keeps one SQL writer, two API slots, bounded queues and
+zero artificial pacing. Optional queue TTL now drops stale queued work without
+consuming or renewing permits. Finite monotonic scheduling time and strict slot
+release checks close invalid-clock and boolean-token edge cases. Every dispatch
+still uses the original kernel consume gate; no second router or executor is
+added. See [configuration, tests and limits](docs/TRAFFIC_CONTROL.md).
+
 ### Performance and adaptive verification
 
 Pulpo Preview adds performance paths intended to increase throughput without moving governance authority away from the canonical kernel:

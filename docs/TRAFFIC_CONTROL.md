@@ -290,3 +290,73 @@ regression check, not a temporal-transfer lesson claim. No relevant historical
 PTC checkpoint exists in the examined current surface; no reusable historical
 performance or authority-transfer proof is asserted. Broader integration,
 distributed caps, safe grouping and production scheduling remain Proposed.
+
+
+## Minimal SQL/API controller refinements (2026-10-11)
+
+The selected profile remains one SQL writer, two API slots, bounded per-lane
+queues and zero artificial pacing. This refines the existing controller only;
+no byte-intake router, SQL connection pool, preparation cache or proprietary
+SENTRY/PASI logic is imported.
+
+Trusted owners may enable `queue_ttl_seconds` through `TrafficControl.for_sql_api`
+or its existing explicit constructor. The default is `None`, preserving prior
+queue behavior and canonical permit-expiry checks. A configured TTL must be a
+finite exact int/float in (0, 300] seconds; booleans are rejected.
+
+```python
+traffic = TrafficControl.for_sql_api(paths, queue_ttl_seconds=30)
+```
+
+The deadline is fixed on admission. Queued entries reaching it are removed as
+terminal transport DROP, counted in each lane's `snapshot()[lane]["dropped"]`.
+Cleanup is lazy on admission, acquire, timer inspection and snapshot. There is
+no worker, recirculation, auto-resubmission or deadline refresh. Active work is
+never cancelled/requeued by this TTL. Queue saturation still raises the existing
+`Backpressure` exception without spending a permit. Routing DROP does not revoke,
+renew or consume a permit: authority remains entirely in the original kernel.
+
+`ready_delay()` includes the earliest enabled queue-expiry deadline even when
+slots are occupied, so the existing owner can wake for cleanup. Scheduling clock
+values must be finite, nonnegative, exact int/float and nondecreasing. Bad or
+regressing time fails before queue admission/dispatch. This time is not the
+canonical authority clock. Slot release requires an exact integer: `True` and
+`1.0` can no longer alias slot 1. Cooldowns also reject booleans and nonfinite or
+out-of-range values. The existing `traffic_dispatch()` consume/finally-release
+seam is unchanged; every delivered claim still passes `kernel.consume()`.
+
+### Evidence and boundaries
+
+Verified: the pre-change 17-test controller suite passed. The final controller
+suite passes 24 tests on Windows Python 3.12.10 and WSL Python 3.14.4, including
+seven refinement proofs for TTL, capacity recovery, timer deadlines, active-work
+preservation, slot type confusion, malformed/regressing clocks and exact intent
+bytes. Existing tests cover forged claims, revocation/expiry, concurrent queue
+bounds, one-use/restart replay and SQLite dispatch races. Full Preview WSL root
+regression results are recorded in the PR. Compilation and whitespace checks
+pass. Canonical kernel, state and orchestrator source are unchanged.
+
+Run `python -W error -m unittest tests.test_traffic -v`. Performance measurements
+remain user-run through the existing `scripts/benchmark_traffic.py`,
+`benchmark_traffic_matrix.py` and `benchmark_sql_shaping.py`; no new speed, CPU,
+memory or evidence-pressure improvement is claimed. Broader Python 3.14 SQLite
+finalization warnings remain outside this focused controller path. Windows-created
+Git pointers and the historical fixture's CRLF bytes required temporary Linux/LF
+interpretation for WSL tests; neither committed history nor source was changed.
+
+| Adversarial pass | Result within tested scope |
+| --- | --- |
+| Flip | Forged decisions still fail canonical consumption; scheduling state cannot authorize them. |
+| Reverse | TTL DROP leaves permits/evidence unchanged; effects still require original kernel consumption. |
+| Invert | Smooth scheduling/transport delivery is not legitimate execution evidence. |
+| Inside-Out | The controller retains no canonical writer, executor or signing credential. |
+| Darken | Full queues, bad clocks, invalid TTL and forged slot values fail without extra dispatch capacity. |
+| Lighten | Valid exact intents retain the original path and default profile. |
+| Amplify | Queue/concurrency bounds, timer expiry and persistent one-use replay remain tested; fleet scale is Unknown. |
+| Negate | Optional TTL can stay off; zero pacing and the original canonical dispatch seam remain. |
+
+Authority delta: unchanged. Canonical mutations remain solely the original
+`permit_consumed`/`permit_rejected` transitions behind `kernel.consume()`; none
+are added or exposed by these refinements. Temporal transfer of the refinement
+has not been evaluated against exact historical checkpoints and remains Unknown.
+Existing temporal-proof tests do not constitute that transfer experiment.
