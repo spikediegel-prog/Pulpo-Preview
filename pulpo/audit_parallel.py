@@ -175,9 +175,11 @@ class AuditVerificationEngine:
             executor = self._executor
             self._executor = None
             self._primed = False
-        if executor is not None:
-            executor.shutdown(wait=True, cancel_futures=True)
-        self.cache.clear()
+        try:
+            if executor is not None:
+                executor.shutdown(wait=True, cancel_futures=True)
+        finally:
+            self.cache.clear()
 
     def __enter__(self) -> "AuditVerificationEngine":
         return self

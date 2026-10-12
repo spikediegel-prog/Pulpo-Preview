@@ -17,6 +17,7 @@ import time
 from typing import Iterable, Sequence
 
 from .audit_parallel import AuditRow, AuditVerificationEngine
+from .resources import ResourceScope
 
 
 @dataclass(frozen=True)
@@ -376,9 +377,11 @@ class AdaptiveAuditVerificationEngine:
         return engine.verify_rows(row_list)
 
     def close(self) -> None:
-        for engine in self._engines.values():
-            engine.close()
+        engines = tuple(self._engines.values())
         self._engines.clear()
+        with ResourceScope() as cleanup:
+            for engine in engines:
+                cleanup.own(engine)
 
     def __enter__(self) -> "AdaptiveAuditVerificationEngine":
         return self

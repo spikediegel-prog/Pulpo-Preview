@@ -36,7 +36,7 @@ def _setup_command(args: argparse.Namespace) -> int:
         if not report["ready_for_test_use"]:
             raise ValueError("Setup verification failed; evidence settings were not applied")
         destination = save_settings(evidence_settings, args.evidence_profile)
-        report["evidence_performance"] = {"mode": "threads", "workers": evidence_settings.workers,
+        report["evidence_performance"] = {"mode": "serial" if evidence_settings.workers <= 1 else "threads", "workers": evidence_settings.workers,
             "profile_path": str(destination), "correctness": "PASS", "authority_effect": "none"}
 
     if args.json_report:
@@ -81,7 +81,8 @@ def _tune_command(args: argparse.Namespace) -> int:
     from .evidence_tuning import EvidenceSettings, default_profile_path, load_settings, recommended, save_settings, refresh_settings
     if args.show:
         path = Path(args.profile) if args.profile else default_profile_path()
-        print(json.dumps({"mode": "threads", "workers": load_settings(path).workers if path.is_file() else 0,
+        resolved = load_settings(path)
+        print(json.dumps({"mode": "serial" if resolved.workers <= 1 else "threads", "workers": resolved.workers,
                           "profile_path": str(path),
                           "authority_effect": "none", "process_runtime_enabled": False}, indent=2))
     elif args.refresh:

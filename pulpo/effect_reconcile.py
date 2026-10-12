@@ -326,7 +326,7 @@ def _entry_from_lstat(path: Path, relative_path: str) -> SnapshotEntry:
     if stat.S_ISREG(info.st_mode):
         digest = sha256()
         with path.open("rb") as handle:
-            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            for chunk in iter(lambda: handle.read(64 * 1024), b""):
                 digest.update(chunk)
         return SnapshotEntry(kind="file", content_sha256=digest.hexdigest(), **common)
     if stat.S_ISDIR(info.st_mode):

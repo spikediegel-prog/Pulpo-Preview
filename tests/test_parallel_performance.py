@@ -248,6 +248,18 @@ class ParallelEvidenceTests(unittest.TestCase):
         self.assertEqual(cache.digest(first), cache.digest(second))
         self.assertNotEqual(cache.digest(first), cache.digest(changed))
 
+    def test_file_digest_covers_multiple_chunks_and_trailing_bytes(self):
+        from hashlib import sha256
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            data = bytes(range(256)) * 512 + b"trailing bytes"
+            (root / "evidence.bin").write_bytes(data)
+            snapshot = capture_envelope_surfaces(self._envelope([str(root)]))[0]
+            entry = next(item for item in snapshot.entries if item.kind == "file")
+            self.assertEqual(entry.content_sha256, sha256(data).hexdigest())
+            self.assertEqual(entry.size, len(data))
+
 
 if __name__ == "__main__":
     unittest.main()

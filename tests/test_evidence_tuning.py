@@ -30,7 +30,7 @@ class EvidenceTuningTests(unittest.TestCase):
         self.assertEqual(4, tuning.load_settings(self.profile).workers)
 
     def test_absent_profile_recommends_complete_collection(self):
-        self.assertEqual(2, tuning.load_settings(self.profile).workers)
+        self.assertEqual(0, tuning.load_settings(self.profile).workers)
 
     def test_invalid_types_and_ranges_rejected(self):
         for value in (True, False, "2", 2.5, None, -1, 9, 100000):
@@ -39,7 +39,7 @@ class EvidenceTuningTests(unittest.TestCase):
 
     def test_single_cpu_recommendation(self):
         with patch.object(tuning.os, "cpu_count", return_value=1):
-            self.assertEqual(1, tuning.recommended().workers)
+            self.assertEqual(0, tuning.recommended().workers)
 
     def test_hardware_limit_is_capped(self):
         with patch.object(tuning.os, "cpu_count", return_value=128):
@@ -47,15 +47,15 @@ class EvidenceTuningTests(unittest.TestCase):
 
     def test_corrupt_digest_falls_back(self):
         self.rewrite(lambda document: document.update(digest="0" * 64))
-        self.assertEqual(2, tuning.load_settings(self.profile).workers)
+        self.assertEqual(0, tuning.load_settings(self.profile).workers)
 
     def test_stale_machine_falls_back(self):
         self.rewrite(lambda document: document["machine"].update(logical_cpus=99))
-        self.assertEqual(2, tuning.load_settings(self.profile).workers)
+        self.assertEqual(0, tuning.load_settings(self.profile).workers)
 
     def test_changed_code_falls_back(self):
         self.rewrite(lambda document: document.update(source_sha256="stale"))
-        self.assertEqual(2, tuning.load_settings(self.profile).workers)
+        self.assertEqual(0, tuning.load_settings(self.profile).workers)
 
     def stale_profile(self):
         tuning.save_settings(tuning.EvidenceSettings(4), self.profile)
@@ -98,7 +98,7 @@ class EvidenceTuningTests(unittest.TestCase):
             payload = {key: value for key, value in document.items() if key != "digest"}
             document["digest"] = tuning.sha256(tuning._canonical(payload)).hexdigest()
         self.rewrite(modify)
-        self.assertEqual(2, tuning.load_settings(self.profile).workers)
+        self.assertEqual(0, tuning.load_settings(self.profile).workers)
 
     def test_process_mode_cannot_be_enabled_by_profile(self):
         def modify(document):
@@ -106,17 +106,27 @@ class EvidenceTuningTests(unittest.TestCase):
             payload = {key: value for key, value in document.items() if key != "digest"}
             document["digest"] = tuning.sha256(tuning._canonical(payload)).hexdigest()
         self.rewrite(modify)
-        self.assertEqual(2, tuning.load_settings(self.profile).workers)
+        self.assertEqual(0, tuning.load_settings(self.profile).workers)
 
     def test_malformed_json_falls_back(self):
         for value in ('[1,2]', 'null', '{"workers":2}', '{', '{"schema":1,"schema":2}'):
             with self.subTest(value=value):
                 self.profile.write_text(value)
-                self.assertEqual(2, tuning.load_settings(self.profile).workers)
+                self.assertEqual(0, tuning.load_settings(self.profile).workers)
 
     def test_oversized_profile_falls_back(self):
         self.profile.write_text(" " * 17000)
-        self.assertEqual(2, tuning.load_settings(self.profile).workers)
+        self.assertEqual(0, tuning.load_settings(self.profile).workers)
+
+    def test_helpers_require_explicit_valid_choice_and_can_return_to_serial(self):
+        self.assertEqual(0, tuning.EvidenceSettings().workers)
+        with tuning.create_collector(self.profile) as collector:
+            self.assertEqual(0, collector.workers)
+        tuning.save_settings(tuning.EvidenceSettings(2), self.profile)
+        with tuning.create_collector(self.profile) as collector:
+            self.assertEqual(2, collector.workers)
+        tuning.save_settings(tuning.recommended(), self.profile)
+        self.assertEqual(0, tuning.load_settings(self.profile).workers)
 
     def test_failed_check_does_not_replace_saved_setting(self):
         tuning.save_settings(tuning.EvidenceSettings(4), self.profile)

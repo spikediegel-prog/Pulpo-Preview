@@ -187,6 +187,14 @@ class InMemoryKernelState:
 class SQLiteKernelState:
     def __init__(self, path: str | PathLike[str], *, index_audit_events: bool = False) -> None:
         self._connection = sqlite3.connect(path)
+        self._closed = False
+        try:
+            self._initialize(index_audit_events=index_audit_events)
+        except BaseException:
+            self.close()
+            raise
+
+    def _initialize(self, *, index_audit_events: bool) -> None:
         self._connection.execute("PRAGMA foreign_keys = ON")
         self._connection.execute("PRAGMA synchronous = FULL")
         self._connection.executescript("""
@@ -436,4 +444,16 @@ class SQLiteKernelState:
             rows,
         )
 
-    def close(self) -> None: self._connection.close()
+    def close(self) -> None:
+        if not self._closed:
+            self._connection.close()
+            self._closed = True
+
+    def __enter__(self) -> "SQLiteKernelState":
+        if self._closed:
+            raise sqlite3.ProgrammingError("kernel state is closed")
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        # Closing rolls back pending work; cleanup must never authorize a commit.
+        self.close()

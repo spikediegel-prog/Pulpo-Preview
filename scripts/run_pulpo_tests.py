@@ -39,12 +39,18 @@ def main():
         log = args.log_dir / f"{suite}.log"
         with log.open("w", encoding="utf-8") as handle:
             result = subprocess.run(command, cwd=repo, env=env, stdout=handle, stderr=subprocess.STDOUT)
-        print(f"{suite}: {'PASS' if result.returncode == 0 else 'FAIL'} — {log.resolve()}")
         lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+        resource_warnings = sum("ResourceWarning:" in line for line in lines)
+        returncode = result.returncode or (1 if resource_warnings else 0)
+        print(f"{suite}: {'PASS' if returncode == 0 else 'FAIL'} — {log.resolve()}")
+        if resource_warnings:
+            print(f"  {resource_warnings} resource warnings require cleanup")
         summary = [line for line in lines if line.startswith(("Ran ", "OK", "FAILED"))]
         for line in summary:
             print("  " + line)
-        results.append({"suite": suite, "returncode": result.returncode,
+        results.append({"suite": suite, "returncode": returncode,
+                        "process_returncode": result.returncode,
+                        "resource_warnings": resource_warnings,
                         "summary": summary, "log": str(log.resolve()),
                         "log_sha256": sha256(log.read_bytes()).hexdigest()})
     report = {"python": platform.python_version(), "platform": platform.platform(),

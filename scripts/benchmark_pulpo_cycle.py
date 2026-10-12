@@ -85,12 +85,13 @@ def timed(samples, stage, operation):
 
 def cycle_case(path, directory, iterations, workers, surfaces, files, file_bytes,
                *, repo=None, mode="threads", resources=False, validate_snapshots=False):
-    from pulpo import Intent, SQLiteKernelState
+    from pulpo import Intent, ResourceScope, SQLiteKernelState
     from pulpo.effect_reconcile import (EffectEnvelope, ExecutionIdentity, SurfaceSpec,
         ParallelEvidenceCollector, bind_resource_to_effect_envelope,
         capture_envelope_surfaces, reconcile_effects)
     from tests.authority_support import signed_envelope
-    state = SQLiteKernelState(path)
+    cleanup = ResourceScope()
+    state = cleanup.own(SQLiteKernelState(path))
     collector = None
     sampler = None
     samples = {}
@@ -135,6 +136,14 @@ def cycle_case(path, directory, iterations, workers, surfaces, files, file_bytes
             collector = ProcessCollector(repo, workers)
         else:
             collector = ParallelEvidenceCollector(workers=workers)
+        class CollectorCleanup:
+            def close(self):
+                started = perf_counter()
+                try:
+                    collector.close()
+                finally:
+                    lifecycle["collector_shutdown_seconds"] = perf_counter() - started
+        cleanup.own(CollectorCleanup())
         lifecycle["collector_setup_seconds"] = perf_counter() - start
         start = perf_counter()
         warm = capture_envelope_surfaces(envelope, collector=collector)
@@ -212,12 +221,8 @@ def cycle_case(path, directory, iterations, workers, surfaces, files, file_bytes
         try:
             if sampler is not None:
                 sampler.finish(max(perf_counter() - sampler_start, 1e-9), os.cpu_count() or 1)
-            if collector is not None:
-                start = perf_counter()
-                collector.close()
-                lifecycle["collector_shutdown_seconds"] = perf_counter() - start
         finally:
-            state.close()
+            cleanup.close()
     lifecycle["startup_and_shutdown_seconds"] = sum(lifecycle[key] for key in (
         "kernel_bootstrap_seconds", "collector_setup_seconds", "first_capture_seconds",
         "collector_shutdown_seconds"))
@@ -278,7 +283,7 @@ def main():
     parser.add_argument("--sizes", nargs="+", type=int, default=[1000, 10000, 50000])
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--iterations", type=int, default=10)
-    parser.add_argument("--workers", nargs="+", type=int, default=[0, 4], help="0=serial evidence; >1=parallel")
+    parser.add_argument("--workers", nargs="+", type=int, default=[0], help="Default serial; opt in with --workers 0 2 or 0 4")
     parser.add_argument("--processes", nargs="+", type=int, default=[],
                         help="Optional persistent process collectors; requires sibling process benchmark")
     parser.add_argument("--resources", action="store_true",

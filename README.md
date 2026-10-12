@@ -73,6 +73,18 @@ This branch is currently **88 commits ahead of this fork's `main` branch**.
 
 ## Major improvements represented in the preview
 
+Local idle-routing candidate: trusted owners can mark disposable work with
+`Path(..., background=True)` to give foreground claims priority through the
+existing router and permit gate. See [idle background routing](docs/IDLE_BACKGROUND_ROUTING.md)
+for integration, shared bounds and durability limits. This is an opt-in library
+feature, not a running SQL service or automatic canonical-write batching.
+Owners can use [resource lifecycle cleanup](docs/RESOURCE_LIFECYCLE.md) to release
+owned workers and database connections on normal exit, errors and interrupts.
+See [idle batch stress fixtures](docs/IDLE_BATCH_STRESS.md) for bounded load,
+concurrent observers and the remaining starvation/non-preemption limits.
+Evidence helpers are [opt-in for testers](docs/EVIDENCE_TUNING.md); serial
+collection is the default and fallback, with full evidence checks preserved.
+
 ### Minimal SQL/API traffic controller
 
 The existing controller keeps one SQL writer, two API slots, bounded queues and
