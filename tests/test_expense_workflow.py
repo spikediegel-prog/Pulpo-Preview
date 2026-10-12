@@ -1,3 +1,4 @@
+from pathlib import Path
 import tempfile
 import unittest
 
@@ -213,8 +214,9 @@ class FieldExpenseGovernedEffectProofTests(unittest.TestCase):
         self.assertFalse(kernel.consume(decision.permit, resolution.target.intent))
 
     def test_revocation_after_issue_prevents_effect_and_survives_restart(self):
-        with tempfile.NamedTemporaryFile() as handle:
-            state = SQLiteKernelState(handle.name)
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "state.sqlite3"
+            state = SQLiteKernelState(database)
             item = submission()
             claim = evidence(item)
             effect = build_expense_effect(item, claim)
@@ -238,7 +240,7 @@ class FieldExpenseGovernedEffectProofTests(unittest.TestCase):
             self.assertEqual("allow", revoked.outcome)
             state.close()
 
-            restarted = SQLiteKernelState(handle.name)
+            restarted = SQLiteKernelState(database)
             restarted_kernel, _ = self.governed(restarted)
             self.assertFalse(restarted_kernel.consume(decision.permit, intent))
             rejected = [record for record in restarted.audit if record["event"] == "permit_rejected"][-1]

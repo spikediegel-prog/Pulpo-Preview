@@ -1,3 +1,4 @@
+from pathlib import Path
 import tempfile
 import unittest
 
@@ -135,8 +136,9 @@ class ProjectionNonElevationTests(unittest.TestCase):
         )
 
     def test_stale_pre_revocation_projection_cannot_restore_authority_after_restart(self):
-        with tempfile.NamedTemporaryFile() as handle:
-            state = SQLiteKernelState(handle.name)
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "state.sqlite3"
+            state = SQLiteKernelState(database)
             d = directive()
             kernel, verifier, controller = self.activate(state, d)
 
@@ -161,7 +163,7 @@ class ProjectionNonElevationTests(unittest.TestCase):
             self.assertEqual("allow", revoke.outcome)
             state.close()
 
-            restarted = SQLiteKernelState(handle.name)
+            restarted = SQLiteKernelState(database)
             restarted_kernel, _ = self.governed(restarted)
             governed_projection = GovernedDirectiveProjection(restarted_kernel)
 

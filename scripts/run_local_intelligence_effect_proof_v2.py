@@ -55,6 +55,10 @@ def stage_runtime_auth_copy(
     staged = runtime_codex_home / "auth.json"
     if staged.exists() or staged.is_symlink():
         raise v1.ProofError("runtime_auth_projection_preexists")
+    # POSIX mode bits cannot establish an owner-private credential on Windows.
+    # The macOS ceremony must not silently stage an inherited-ACL copy there.
+    if os.name != "posix":
+        raise v1.ProofError("runtime_auth_projection_private_permissions_unsupported")
     shutil.copyfile(auth_source, staged)
     os.chmod(staged, 0o600)
     if v1._sha256_file(staged) != expected_sha256:
