@@ -126,6 +126,50 @@ class MCPPluginTests(unittest.TestCase):
                 ):
                     load_mcp_snapshot(path)
 
+    def test_rejects_oversized_and_non_utf8_snapshots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "snapshot.json"
+            for payload in (b" " * 16385, b"\xff\xfe"):
+                path.write_bytes(payload)
+                if os.name == "posix":
+                    path.chmod(0o600)
+                with self.assertRaisesRegex(MCPBoundaryError, "snapshot_invalid"):
+                    load_mcp_snapshot(path)
+
+    @unittest.skipUnless(os.name == "nt", "Windows handle sharing required")
+    def test_windows_read_blocks_replacement_and_releases_handles(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "snapshot.json"
+            replacement = Path(directory) / "replacement.json"
+            self.write_snapshot(path)
+            self.write_snapshot(replacement)
+            original = os.fdopen
+            def during_open(*args, **kwargs):
+                with self.assertRaises(OSError):
+                    os.replace(replacement, path)
+                return original(*args, **kwargs)
+            with patch("pulpo.mcp_plugin.os.fdopen", side_effect=during_open):
+                self.assertTrue(load_mcp_snapshot(path).audit_valid)
+            os.replace(replacement, path)
+            with patch("pulpo.mcp_plugin.os.fdopen", side_effect=OSError("read failed")):
+                with self.assertRaisesRegex(MCPBoundaryError, "snapshot_invalid"):
+                    load_mcp_snapshot(path)
+            # A failed read also releases the file and all directory handles.
+            path.unlink()
+
+    @unittest.skipUnless(os.name == "nt", "Windows reparse traversal required")
+    def test_windows_rejects_symlink_in_ancestor_chain(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            nested = root / "real" / "nested"
+            nested.mkdir(parents=True)
+            path = nested / "snapshot.json"
+            self.write_snapshot(path)
+            linked = root / "linked"
+            linked.symlink_to(root / "real", target_is_directory=True)
+            with self.assertRaisesRegex(MCPBoundaryError, "snapshot_parent_invalid"):
+                load_mcp_snapshot(linked / "nested" / path.name)
+
     def test_main_runs_existing_mcp_server_over_stdio_only(self):
         snapshot = MCPReadSnapshot(**self.snapshot_document())
         server = FakeRunnableServer()

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -51,6 +52,11 @@ class LocalIntelligenceEffectProofV2Tests(unittest.TestCase):
             auth = real / "auth.json"
             auth.write_text('{"token":"secret"}', encoding="utf-8")
             disposable, auth_source, auth_sha, _ = prepare_runtime_codex_home(real, runtime)
+            if os.name != "posix":
+                with self.assertRaisesRegex(RuntimeError, "private_permissions_unsupported"):
+                    stage_runtime_auth_copy(auth_source, auth_sha, disposable)
+                self.assertFalse((disposable / "auth.json").exists())
+                return
             staged = stage_runtime_auth_copy(auth_source, auth_sha, disposable)
             self.assertIsNotNone(staged)
             assert staged is not None

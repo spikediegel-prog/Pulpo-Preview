@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import tempfile
+from unittest.mock import patch
 import unittest
 
 
@@ -12,6 +14,34 @@ spec = importlib.util.spec_from_file_location("temporal_transfer_proof_zero", RU
 assert spec is not None and spec.loader is not None
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+
+
+class FreezeManifestPortabilityTests(unittest.TestCase):
+    def check_manifest(self, working, frozen, current):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "freeze.json"
+            path.write_bytes(working)
+            with patch.object(module, "FREEZE_PATH", path), patch.object(
+                module.subprocess, "check_output", side_effect=[frozen, current]
+            ):
+                return module.load_freeze()
+
+    def test_checkout_crlf_keeps_original_frozen_bytes_and_hash(self):
+        frozen = b'{\n  "schema": "fixture"\n}\n'
+        for working in (frozen, frozen.replace(b"\n", b"\r\n")):
+            document, evidence = self.check_manifest(working, frozen, frozen)
+            self.assertEqual({"schema": "fixture"}, document)
+            self.assertEqual(frozen, evidence)
+
+    def test_checkout_content_change_is_rejected(self):
+        frozen = b'{"schema":"fixture"}\n'
+        with self.assertRaisesRegex(RuntimeError, "freeze manifest changed"):
+            self.check_manifest(frozen.replace(b"fixture", b"changed"), frozen, frozen)
+
+    def test_current_git_blob_change_is_rejected(self):
+        frozen = b'{"schema":"fixture"}\n'
+        with self.assertRaisesRegex(RuntimeError, "freeze manifest changed"):
+            self.check_manifest(frozen, frozen, frozen.replace(b"fixture", b"changed"))
 
 
 class TemporalTransferProofZeroTests(unittest.TestCase):

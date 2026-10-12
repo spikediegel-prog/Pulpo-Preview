@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -26,8 +27,8 @@ class LocalIntelligenceEffectProofScriptTests(unittest.TestCase):
             protected.mkdir()
             profile = build_seatbelt_profile(runtime, (protected,))
             self.assertIn("(deny file-write*)", profile)
-            self.assertIn(f'(allow file-write* (subpath "{runtime.resolve()}"))', profile)
-            self.assertIn(f'(deny file-read* (subpath "{protected.resolve()}"))', profile)
+            self.assertIn(f'(allow file-write* (subpath {json.dumps(str(runtime.resolve()))}))', profile)
+            self.assertIn(f'(deny file-read* (subpath {json.dumps(str(protected.resolve()))}))', profile)
 
     def test_codex_exec_argv_freezes_ephemeral_readonly_update_and_hook_controls(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -58,8 +59,8 @@ class LocalIntelligenceEffectProofScriptTests(unittest.TestCase):
         )
         self.assertEqual(env["HOME"], "/home/test")
         self.assertEqual(env["PATH"], "/bin")
-        self.assertEqual(env["TMPDIR"], "/tmp/runtime")
-        self.assertEqual(env["CODEX_HOME"], "/home/test/.codex")
+        self.assertEqual(env["TMPDIR"], str(Path("/tmp/runtime")))
+        self.assertEqual(env["CODEX_HOME"], str(Path("/home/test/.codex")))
         self.assertNotIn("OPENAI_API_KEY", env)
         self.assertNotIn("AWS_SECRET_ACCESS_KEY", env)
 

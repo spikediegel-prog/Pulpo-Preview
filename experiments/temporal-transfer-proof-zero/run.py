@@ -53,10 +53,14 @@ def _git_show(commit: str, path: str) -> str:
 
 def load_freeze() -> tuple[dict[str, object], bytes]:
     raw = FREEZE_PATH.read_bytes()
-    frozen_raw = _git("show", f"{FREEZE_COMMIT}:experiments/temporal-transfer-proof-zero/freeze.json").encode()
-    if raw != frozen_raw:
+    manifest = "experiments/temporal-transfer-proof-zero/freeze.json"
+    frozen_raw = subprocess.check_output(["git", "show", f"{FREEZE_COMMIT}:{manifest}"], cwd=ROOT)
+    current_blob = subprocess.check_output(["git", "show", f"HEAD:{manifest}"], cwd=ROOT)
+    # Compare exact Git blobs; allow only Windows checkout CRLF conversion.
+    # Evidence remains bound to the original frozen bytes, never rewritten JSON.
+    if current_blob != frozen_raw or raw.replace(b"\r\n", b"\n") != frozen_raw:
         raise RuntimeError("freeze manifest changed after the freeze commit")
-    return json.loads(raw), raw
+    return json.loads(frozen_raw), frozen_raw
 
 
 def repository_features(commit: str) -> set[str]:
