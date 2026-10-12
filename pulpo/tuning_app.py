@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import queue
 import json
 import statistics
@@ -15,8 +16,35 @@ from .evidence_tuning import (EvidenceSettings, default_profile_path, load_setti
     machine, recommended, save_settings, restore_previous, check_settings, thread_limit)
 
 
+def _prepare_tk_libraries():
+    """Use bundled/local runtime data before Tk starts; retain explicit settings."""
+    if os.environ.get("TCL_LIBRARY") and os.environ.get("TK_LIBRARY"):
+        return
+    roots = [Path(sys.prefix)]
+    bundled = getattr(sys, "_MEIPASS", None)
+    if bundled:
+        roots.insert(0, Path(bundled))
+    for root in roots:
+        candidates = [(root / "_tcl_data", root / "_tk_data")]
+        candidates.extend((tcl, tcl.with_name("tk" + tcl.name[3:]))
+                          for tcl in sorted((root / "tcl").glob("tcl[0-9]*")))
+        for tcl, tk in candidates:
+            if (tcl / "init.tcl").is_file() and (tk / "tk.tcl").is_file():
+                # Relative paths let the native Tcl resolver use the same cwd
+                # when an embedded environment maps Python's absolute paths.
+                def native_path(path):
+                    try:
+                        return os.path.relpath(path).replace("\\", "/")
+                    except ValueError:
+                        return path.as_posix()
+                os.environ.setdefault("TCL_LIBRARY", native_path(tcl))
+                os.environ.setdefault("TK_LIBRARY", native_path(tk))
+                return
+
+
 def check_gui():
     """Packaging smoke check; constructs Tk widgets without opening the app."""
+    _prepare_tk_libraries()
     import tkinter as tk
     from tkinter import ttk, filedialog, messagebox
     root = tk.Tk()
@@ -62,6 +90,7 @@ def benchmark_threads(workers: int, surfaces=8, files=8, file_bytes=65536, repea
 
 
 def launch(profile=None):
+    _prepare_tk_libraries()
     import tkinter as tk
     from tkinter import ttk, messagebox, filedialog
     profile = Path(profile) if profile else default_profile_path()
@@ -78,9 +107,9 @@ def launch(profile=None):
     workers = tk.StringVar(value=str(resolved.workers))
     choices = ttk.Frame(panel)
     choices.pack(fill="x", pady=14)
-    ttk.Radiobutton(choices, text="Recommended (up to 2 threads)", variable=mode,
+    ttk.Radiobutton(choices, text="Default (serial, no helpers)", variable=mode,
                     value="Recommended").pack(side="left")
-    ttk.Radiobutton(choices, text="Custom thread count", variable=mode, value="Custom").pack(side="left", padx=12)
+    ttk.Radiobutton(choices, text="Opt in: helper count", variable=mode, value="Custom").pack(side="left", padx=12)
     spin = ttk.Spinbox(choices, from_=0, to=thread_limit(), width=5, textvariable=workers)
     spin.pack(side="left")
     ttk.Label(panel, text="0 or 1 collects serially. More workers may increase memory use; no hard RAM cap is promised.").pack(anchor="w")
@@ -140,7 +169,7 @@ def launch(profile=None):
 
     def compare():
         try:
-            counts = sorted({0, recommended().workers, selected().workers})
+            counts = sorted({0, min(2, thread_limit()), selected().workers})
         except ValueError as exc:
             messagebox.showerror("Invalid setting", str(exc))
             return
@@ -222,7 +251,7 @@ def launch(profile=None):
                 messagebox.showerror("Save failed", str(exc))
 
     for label, action in (("Compare thread settings", compare), ("Apply setting", apply),
-                          ("Recommended", restore), ("Undo setting", rollback), ("Process experiment", experiment),
+                          ("Serial default", restore), ("Undo setting", rollback), ("Process experiment", experiment),
                           ("Save results", export)):
         button = ttk.Button(buttons, text=label, command=action)
         button.pack(side="left", padx=(0, 8))

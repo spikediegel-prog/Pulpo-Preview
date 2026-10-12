@@ -15,14 +15,15 @@ python scripts/benchmark_pulpo_cycle.py --self-test
 python -m pulpo.cli tune
 ```
 
-The window offers Recommended or Custom thread settings, a disposable capture
+The window offers a serial default or explicit opt-in helper settings, a disposable capture
 comparison, Apply, Recommended, Undo setting, a benchmark-only process experiment,
 and JSON measurement export. Applying and undoing settings run fresh canonical
 serial snapshot checks. Comparisons never automatically apply the fastest count.
 The process experiment requires the existing source-checkout benchmark scripts
 and psutil, validates their self-tests first, and measures temporary full cycles.
 
-Recommended uses at most two threads. Custom permits integers from zero through
+Recommended now means serial collection with zero helpers. Helpers are an opt-in
+test/troubleshooting control, not enabled automatically. Custom permits integers from zero through
 the lesser of the logical CPU count and sixteen. Zero and one collect serially.
 This is a bounded experimental range, not a claim that every value is faster.
 No hard RAM budget, CPU affinity, or scheduling isolation is implemented.
@@ -30,11 +31,14 @@ No hard RAM budget, CPU affinity, or scheduling isolation is implemented.
 ## Setup integration
 
 ```powershell
-# Recommended installation settings
+# Serial default installation settings
 python -m pulpo.cli setup --no-calibrate --evidence-install recommended
 
-# Custom installation settings (four threads)
-python -m pulpo.cli setup --no-calibrate --evidence-install custom --evidence-workers 4
+# Opt in to two helpers for testing
+python -m pulpo.cli tune --workers 2
+
+# Return to serial collection
+python -m pulpo.cli tune --workers 0
 
 # Inspect effective default settings
 python -m pulpo.cli tune --show
@@ -49,7 +53,8 @@ profile paths require callers to use `create_collector(custom_path)`; saving a
 custom path does not redirect the default runtime profile.
 
 Missing profiles preserve existing serial behavior. Invalid or stale profiles
-use complete collection with the conservative thread recommendation. JSON
+use complete serial collection. A valid explicitly saved helper profile remains
+an opt-in choice. JSON
 duplicates, extra fields, boolean/negative/oversized worker counts, and process
 settings are rejected. The profile is bounded to 16 KiB and tied to platform,
 Python version, CPU count and implementation hash. The digest detects accidental
@@ -61,6 +66,33 @@ The Windows launcher installs recommended settings on first use and preserves
 an existing profile on subsequent launches. The rebuilt executable opens the
 window with `pulpo-preview.exe tune`. Upgrade migration revalidates bounded
 settings and preserves the previous setting before rebinding the profile.
+
+## Local Linux benchmark policy
+
+Serial collection measured roughly 14 ms for the overall small-file cycle,
+compared with roughly 24 ms using two helpers and 49 ms using four. These results
+support serial as the local default; helper options remain for testers evaluating
+other workloads or troubleshooting. The source cycle benchmark defaults to
+`--workers 0`; pass `--workers 0 2` or `--workers 0 4` explicitly to compare.
+The Linux PowerShell launcher defaults to serial; pass `-Helpers 2` or
+`-Helpers 4` for explicit comparison runs. Clicking the tuning window's comparison
+button tests serial and up to two helpers, but does not apply the measured choice.
+Programmatic callers can opt in with `ParallelEvidenceCollector(workers=2)`.
+
+Verified locally and on Linux: 45 tuning, setup and parallel-evidence tests pass.
+Latest run `wsl-results-20261012-042140-11776` passes 568 core and 117 focused
+tests with zero resource warnings, plus all nine required runner stages.
+The default benchmark also runs serial-only in a disposable local check. GUI
+construction could not be checked in the current bundled Python environment:
+Tcl/Tk initialization cannot load a usable library even though the files exist.
+GUI labels were updated in source.
+
+Adversarial review: Flip/Inside-Out keep helper configuration subordinate to the
+existing owner; Reverse/Invert preserve full capture and original errors rather
+than skipping evidence; Darken covers malformed/stale profiles falling back to
+serial; Lighten preserves explicit valid choices; Amplify retains bounded counts,
+fresh validation and cleanup; Negate uses serial without creating new authority,
+writers, workers or caches by default. This changes performance configuration only.
 
 ## Authority and adversarial review
 

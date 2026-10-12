@@ -28,6 +28,7 @@ class Lane:
     concurrency: int = 1
     queue_limit: int = 16
     min_dispatch_interval: float = 0.0
+    foreground_reserve: int = 1
 
     def __post_init__(self):
         if not self.name or self.kind not in {"sql", "api"}:
@@ -38,6 +39,9 @@ class Lane:
         if (type(self.min_dispatch_interval) not in (int, float)
                 or not 0 <= self.min_dispatch_interval <= 1):
             raise ValueError("dispatch interval must be finite and in [0, 1] seconds")
+        if (type(self.foreground_reserve) is not int
+                or not 0 <= self.foreground_reserve <= self.queue_limit):
+            raise ValueError("foreground reserve must be an integer in [0, queue_limit]")
 
 
 @dataclass(frozen=True)
@@ -45,6 +49,11 @@ class Path:
     name: str
     lane: str
     intent: Intent
+    background: bool = False
+
+    def __post_init__(self):
+        if type(self.background) is not bool:
+            raise ValueError("background classification must be an exact boolean")
 
 
 @dataclass(frozen=True)
@@ -52,6 +61,7 @@ class Work:
     intent: Intent
     permit: str
     paths: tuple[str, ...]
+    background: bool = False
 
 
 @dataclass(frozen=True)
@@ -80,7 +90,8 @@ class TrafficControl:
     @classmethod
     def for_sql_api(cls, paths: tuple[Path, ...], *, sql_queue_limit: int = 16,
                     api_queue_limit: int = 16, clock: Callable[[], float] = monotonic,
-                    queue_ttl_seconds: float | None = None):
+                    queue_ttl_seconds: float | None = None,
+                    sql_foreground_reserve: int = 1, api_foreground_reserve: int = 1):
         """Selected local profile: one SQL writer, two API slots, zero pacing.
 
         Preserve lane isolation for mixed/interleaved work without the SQL
@@ -88,8 +99,10 @@ class TrafficControl:
         routing-only queue TTL can vary. Exact path registration and canonical dispatch
         checks are identical to the explicit experimental constructor.
         """
-        return cls((Lane("sql", "sql", 1, sql_queue_limit),
-                    Lane("api", "api", 2, api_queue_limit)), paths, clock=clock,
+        return cls((Lane("sql", "sql", 1, sql_queue_limit,
+                         foreground_reserve=sql_foreground_reserve),
+                    Lane("api", "api", 2, api_queue_limit,
+                         foreground_reserve=api_foreground_reserve)), paths, clock=clock,
                    queue_ttl_seconds=queue_ttl_seconds)
 
     def __init__(self, lanes: tuple[Lane, ...], paths: tuple[Path, ...],
@@ -105,6 +118,8 @@ class TrafficControl:
         self._last_now = -1.0
         self._lanes = {lane.name: lane for lane in lanes}
         self._paths = {path.name: path for path in paths}
+        self._has_background = any(path.background for path in paths)
+        self._foreground_lanes = {path.lane for path in paths if not path.background}
         if not lanes or len(self._lanes) != len(lanes):
             raise ValueError("lanes must be nonempty and unique")
         if not paths or len(self._paths) != len(paths):
@@ -141,15 +156,38 @@ class TrafficControl:
         if self._queue_ttl_seconds is None:
             return
         for lane, queue in self._queues.items():
-            while queue and now >= queue[0].expires_at:
-                queue.popleft()
-                self._dropped[lane] += 1  # Terminal volatile DROP; never requeue.
+            if not self._has_background:
+                while queue and now >= queue[0].expires_at:
+                    queue.popleft()
+                    self._dropped[lane] += 1
+                continue
+            # Foreground priority can reorder admission deadlines. Inspect all
+            # bounded entries so older background work still expires on time.
+            remaining = deque(entry for entry in queue if now < entry.expires_at)
+            self._dropped[lane] += len(queue) - len(remaining)
+            self._queues[lane] = remaining
+
+    def _foreground_pending(self):
+        return (any(queue and not self._head(queue).background for queue in self._queues.values())
+                or any(not dispatch.work.background for dispatch in self._active.values()))
 
     def _busy(self, lane):
         return sum(d.path.lane == lane for d in self._active.values())
 
     def _eligible(self, work):
         return [self._paths[name] for name in work.paths]
+
+    def _can_enqueue(self, path, work):
+        lane = self._lanes[path.lane]
+        queue = self._queues[path.lane]
+        if len(queue) >= lane.queue_limit:
+            return False
+        if not work.background or path.lane not in self._foreground_lanes:
+            return True
+        background_count = sum(
+            (entry.work if type(entry) is _Queued else entry).background
+            for entry in queue)
+        return background_count < lane.queue_limit - lane.foreground_reserve
 
     def enqueue(self, intent: Intent, decision: Decision,
                 paths: tuple[str, ...]) -> None:
@@ -164,12 +202,15 @@ class TrafficControl:
         if any(name not in self._paths or self._paths[name].intent != intent
                for name in paths):
             raise ValueError("path target mismatch")
-        work = Work(intent, decision.permit, paths)
+        classifications = {self._paths[name].background for name in paths}
+        if len(classifications) != 1:
+            raise ValueError("equivalent paths must have the same background classification")
+        work = Work(intent, decision.permit, paths, classifications.pop())
         with self._lock:
             now = self._now()
             self._expire(now)
             available = [p for p in self._eligible(work)
-                         if len(self._queues[p.lane]) < self._lanes[p.lane].queue_limit]
+                         if self._can_enqueue(p, work)]
             if not available:
                 raise Backpressure("queues saturated")
             path = min(available, key=lambda p: (
@@ -177,18 +218,28 @@ class TrafficControl:
                 (len(self._queues[p.lane]) + self._busy(p.lane))
                 / self._lanes[p.lane].concurrency, p.name))
             entry = work if self._queue_ttl_seconds is None else _Queued(work, now + self._queue_ttl_seconds)
-            self._queues[path.lane].append(entry)
+            queue = self._queues[path.lane]
+            if work.background or not self._has_background:
+                queue.append(entry)
+            else:
+                # FIFO within each class, foreground before queued background.
+                position = next((index for index, queued in enumerate(queue)
+                                 if (queued.work if type(queued) is _Queued else queued).background), len(queue))
+                queue.insert(position, entry)
 
     def acquire(self) -> tuple[int, Dispatch] | None:
         with self._lock:
             now = self._now()
             self._expire(now)
+            foreground_pending = self._has_background and self._foreground_pending()
             # Round-robin lane order prevents a busy lane monopolizing dispatch.
             for lane in self._queues:
                 queue = self._queues[lane]
                 if not queue:
                     continue
                 work = self._head(queue)
+                if work.background and foreground_pending:
+                    continue
                 available = [p for p in self._eligible(work)
                              if self._busy(p.lane) < self._lanes[p.lane].concurrency
                              and max(self._paused[p.lane], self._ready_at[p.lane]) <= now]
@@ -217,12 +268,14 @@ class TrafficControl:
         with self._lock:
             now = self._now()
             self._expire(now)
+            foreground_pending = self._has_background and self._foreground_pending()
             delays = [max(0.0, max(self._paused[p.lane], self._ready_at[p.lane]) - now)
                       for queue in self._queues.values() if queue
+                      if not self._head(queue).background or not foreground_pending
                       for p in self._eligible(self._head(queue))
                       if self._busy(p.lane) < self._lanes[p.lane].concurrency]
             if self._queue_ttl_seconds is not None:
-                delays.extend(queue[0].expires_at - now for queue in self._queues.values() if queue)
+                delays.extend(entry.expires_at - now for queue in self._queues.values() for entry in queue)
             return min(delays) if delays else None
 
     def release(self, token: int) -> None:

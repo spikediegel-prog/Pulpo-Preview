@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict, replace
+from contextlib import closing
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import test_service
 from pulpo_authority_service import AuthorityConfig, AuthorityService
@@ -55,6 +58,51 @@ class AuthorityRestartAdapterTests(unittest.TestCase):
 
     def _credentials(self):
         return (self.fixture.primary, self.fixture.recovery)
+
+    def test_operation_connections_close_after_initialization_and_restart(self):
+        original = sqlite3.connect
+        captured = []
+        def connect(*args, **kwargs):
+            connection = original(*args, **kwargs)
+            captured.append(connection)
+            return connection
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "authority.sqlite3"
+            with patch("pulpo_authority_service.restart_adapters.sqlite3.connect", connect):
+                state = SQLiteRestartState(database, self._credentials())
+                state.sequence = 1
+                restarted = SQLiteRestartState(database, self._credentials())
+                self.assertEqual(1, restarted.sequence)
+            self.assertTrue(captured)
+            for connection in captured:
+                with self.assertRaises(sqlite3.ProgrammingError):
+                    connection.execute("SELECT 1")
+
+    def test_interrupted_transaction_entry_releases_connection_and_mutex(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = SQLiteRestartState(Path(directory) / "authority.sqlite3", self._credentials())
+            captured = []
+            original = sqlite3.connect
+            def connect(*args, **kwargs):
+                connection = original(*args, **kwargs)
+                captured.append(connection)
+                return connection
+            with patch("pulpo_authority_service.restart_adapters.sqlite3.connect", connect), \
+                 patch.object(state, "_reload_locked", side_effect=KeyboardInterrupt):
+                with self.assertRaises(KeyboardInterrupt):
+                    with state.lock:
+                        self.fail("interrupted entry reached transaction body")
+            self.assertIsNone(state._active_connection)
+            self.assertEqual(0, state._depth)
+            with self.assertRaises(sqlite3.ProgrammingError):
+                captured[0].execute("SELECT 1")
+            def probe():
+                acquired = state._mutex.acquire(timeout=.5)
+                if acquired:
+                    state._mutex.release()
+                return acquired
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                self.assertTrue(executor.submit(probe).result(timeout=2))
 
     def test_pending_request_and_challenge_survive_restart(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -215,7 +263,7 @@ class AuthorityRestartAdapterTests(unittest.TestCase):
             root = Path(directory)
             database = root / "authority.sqlite3"
             SQLiteRestartState(database, self._credentials())
-            with sqlite3.connect(database) as connection:
+            with closing(sqlite3.connect(database)) as connection, connection:
                 payload = connection.execute(
                     "SELECT payload FROM authority_state WHERE singleton = 1"
                 ).fetchone()[0]

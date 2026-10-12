@@ -50,7 +50,7 @@ def source_digest() -> str:
 
 @dataclass(frozen=True)
 class EvidenceSettings:
-    workers: int = 2
+    workers: int = 0
 
     def validate(self):
         if type(self.workers) is not int or not 0 <= self.workers <= thread_limit():
@@ -59,7 +59,7 @@ class EvidenceSettings:
 
 
 def recommended() -> EvidenceSettings:
-    return EvidenceSettings(min(2, thread_limit()))
+    return EvidenceSettings(0)
 
 
 def _strict_pairs(pairs):
@@ -108,7 +108,7 @@ def _read_profile(path, *, allow_stale=False):
 
 
 def load_settings(path: Path | str | None = None) -> EvidenceSettings:
-    """Untrusted/missing/stale profiles fall back to complete thread collection."""
+    """Untrusted/missing/stale profiles fall back to complete serial collection."""
     path = Path(path) if path is not None else default_profile_path()
     try:
         return EvidenceSettings(**_read_profile(path)["settings"])
