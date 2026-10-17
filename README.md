@@ -14,6 +14,12 @@
 
 Pulpo Preview is the testing ground for work that extends that model while preserving the core invariant: **learning, performance, memory, successful execution, or added capability never grants authority.**
 
+## Ubuntu-first Preview quick start
+
+Start with the [Ubuntu install, doctor, and guided demo](docs/UBUNTU_PREVIEW.md).
+Preview UX follows [Simplicity by Default](docs/PREVIEW_UX.md): keep the path
+simple and add complexity only when it is necessary.
+
 ## ⭐ Featured: Windows Preview Installer Experience
 
 Pulpo Preview now includes a **portable Windows x64 setup executable** designed to make testing much easier.
