@@ -14,8 +14,8 @@ import json
 from typing import Any, Callable, Protocol
 
 from .commerce import DomainPurchaseOrder, RegistrarResult
-from .custody import CustodyViolation, SQLiteGovernanceCustody
-from .custody_domain import GovernedDomainAttempt
+from .custody import AttemptAuthorization, CustodyViolation, SQLiteGovernanceCustody, TransitionReceipt
+from .custody_domain import GovernedDomainAttempt, _authorization_hash
 
 
 def _canonical(value: Any) -> bytes:
@@ -120,11 +120,7 @@ class TrustedDomainExecutor:
         order: DomainPurchaseOrder,
         adapter: CustodyRegistrarAdapter,
     ) -> ProviderAttemptClaim:
-        if order.order_hash != governed.order_hash:
-            raise CustodyViolation("executor_order_mismatch")
-        snapshot = self.custody.attempt(governed.attempt_id)
-        if snapshot is None or snapshot.object_hash != order.order_hash:
-            raise CustodyViolation("executor_attempt_mismatch")
+        self._validate_handle(governed, order)
 
         self._claim_or_resume(governed.attempt_id)
 
@@ -200,3 +196,44 @@ class TrustedDomainExecutor:
             result=result,
             claim_hash=_hash(claim_material),
         )
+
+    def _validate_handle(self, governed: GovernedDomainAttempt, order: DomainPurchaseOrder) -> None:
+        """Resolve and verify the complete commitment before any side effect."""
+        if type(governed) is not GovernedDomainAttempt or type(order) is not DomainPurchaseOrder:
+            raise CustodyViolation("executor_handle_invalid")
+        for field in ("attempt_id", "order_hash", "target_hash", "intent_hash", "policy_hash", "canonical_audit_tip"):
+            _require_hash(getattr(governed, field), field)
+        if (type(governed.reservation_id) is not str or not governed.reservation_id
+                or type(governed.reserved_cents) is not int
+                or type(governed.budget_ceiling_cents) is not int
+                or not 0 <= governed.reserved_cents <= governed.budget_ceiling_cents):
+            raise CustodyViolation("executor_handle_invalid")
+        if order.order_hash != governed.order_hash:
+            raise CustodyViolation("executor_order_mismatch")
+        snapshot = self.custody.attempt(governed.attempt_id)
+        if snapshot is None or snapshot.object_hash != order.order_hash:
+            raise CustodyViolation("executor_attempt_mismatch")
+        authorization = governed.custody
+        if type(authorization) is not AttemptAuthorization or type(authorization.receipt) is not TransitionReceipt:
+            raise CustodyViolation("executor_receipt_invalid")
+        receipt = authorization.receipt
+        if (authorization.attempt_id != governed.attempt_id
+                or type(receipt.epoch) is not int or type(receipt.custody_time_ns) is not int
+                or type(receipt.signature) is not str
+                or receipt.epoch != snapshot.created_epoch
+                or receipt.transition_type != self.custody.ATTEMPT_AUTHORIZED
+                or receipt.schema != "pulpo.custody-transition.v0"
+                or receipt.object_hash != snapshot.object_hash
+                or not self.custody.verify_receipt(receipt)):
+            raise CustodyViolation("executor_receipt_invalid")
+        commitment = _authorization_hash(
+            target_hash=governed.target_hash, order_hash=governed.order_hash,
+            intent_hash=governed.intent_hash, policy_hash=governed.policy_hash,
+            permit_hash=snapshot.permit_hash, reservation_id=governed.reservation_id,
+            reserved_cents=governed.reserved_cents, budget_ceiling_cents=governed.budget_ceiling_cents,
+            canonical_audit_tip=governed.canonical_audit_tip)
+        if (snapshot.target_hash != governed.target_hash
+                or commitment != snapshot.authorization_hash
+                or self.custody._attempt_id(snapshot.object_hash, snapshot.target_hash,
+                    snapshot.permit_hash, snapshot.authorization_hash) != governed.attempt_id):
+            raise CustodyViolation("executor_authorization_mismatch")

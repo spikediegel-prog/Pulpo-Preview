@@ -11,7 +11,7 @@ import time
 from typing import Any, Callable
 
 from .authority import ApprovalEnvelope, ApprovalVerifier, AuthorityTrust
-from .audit_parallel import AuditVerificationEngine
+from .audit_parallel import AuditVerificationEngine, audit_row_has_valid_types
 from .state import ApprovalUse, InMemoryKernelState, KernelState
 
 
@@ -548,6 +548,9 @@ class GovernanceKernel:
         previous = "0" * 64
         for record in self.audit:
             body = {key: value for key, value in record.items() if key != "hash"}
+            if not audit_row_has_valid_types((body.get("event"), "", body.get("previous_hash"),
+                                             body.get("timestamp_ns"), record.get("hash"))):
+                return False
             if body["previous_hash"] != previous:
                 return False
             expected = sha256(_canonical(body)).hexdigest()

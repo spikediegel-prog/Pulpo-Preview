@@ -19,6 +19,21 @@ AuditRow = tuple[str, str, str, int, str]
 AuditBodyKey = tuple[str, str, str, int]
 
 
+def audit_row_has_valid_types(row: object) -> bool:
+    """Validate stored values before decoding, cache lookup, or worker dispatch.
+
+    Python considers 1, 1.0 and True equal as dictionary keys. Only the exact
+    canonical types may participate in a digest cache; never coerce audit bytes.
+    """
+    if not isinstance(row, (tuple, list)) or len(row) != 5:
+        return False
+    event, encoded, previous, timestamp, digest = row
+    return (type(event) is str and type(encoded) is str and type(timestamp) is int
+            and all(type(value) is str and len(value) == 64
+                    and all(c in "0123456789abcdef" for c in value)
+                    for value in (previous, digest)))
+
+
 # Reuse the unchanged encoder configuration; per-call state stays in encode().
 _CANONICAL_ENCODER = json.JSONEncoder(sort_keys=True, separators=(",", ":"))
 
@@ -129,6 +144,8 @@ class AuditVerificationEngine:
 
         # These checks are deliberately coordinator-side and repeat on every pass.
         for index, row in enumerate(row_list):
+            if not audit_row_has_valid_types(row):
+                return False
             event, payload_json, previous_hash, timestamp_ns, stored_hash = row
             if previous_hash != previous:
                 return False

@@ -16,6 +16,8 @@ import sqlite3
 from threading import RLock
 from typing import Any, Callable, Protocol
 
+from .audit_parallel import audit_row_has_valid_types
+
 
 # Reuse the unchanged encoder configuration; per-call state stays in encode().
 _CANONICAL_ENCODER = json.JSONEncoder(sort_keys=True, separators=(",", ":"))
@@ -333,12 +335,19 @@ class SQLiteKernelState:
                 "SELECT sequence, event, payload_json, previous_hash, timestamp_ns, hash FROM audit ORDER BY sequence"
             ).fetchall()
             self._assert_audit_head(rows)
+            self._validate_audit_row_types(rows)
             return rows
         if self._connection.in_transaction:
             return read()
         with self._connection:
             self._connection.execute("BEGIN")
             return read()
+
+    @staticmethod
+    def _validate_audit_row_types(rows) -> None:
+        for sequence, *body in rows:
+            if type(sequence) is not int or not audit_row_has_valid_types(body):
+                raise ValueError("audit row types invalid")
 
     @property
     def audit(self) -> list[dict[str, Any]]:
@@ -349,7 +358,7 @@ class SQLiteKernelState:
         """Return raw immutable audit row bodies for optional decode/hash workers."""
         rows = self._checked_audit_rows()
         return [
-            (str(event), str(payload_json), str(previous_hash), int(timestamp_ns), str(digest))
+            (event, payload_json, previous_hash, timestamp_ns, digest)
             for _, event, payload_json, previous_hash, timestamp_ns, digest in rows
         ]
 
@@ -368,6 +377,9 @@ class SQLiteKernelState:
                 "FROM audit ORDER BY sequence"
             ).fetchall()
             self._assert_audit_head(rows)
+            # Validate even authenticated cached prefixes. Older optional
+            # verifiers could publish a cache after coercing malformed values.
+            self._validate_audit_row_types(rows)
             cached = self._connection.execute(
                 "SELECT checkpoint_json FROM audit_verification_checkpoint WHERE id = 1"
             ).fetchone()

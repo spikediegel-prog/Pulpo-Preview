@@ -32,6 +32,19 @@ def _hash(value: Any) -> str:
     return sha256(_canonical(value)).hexdigest()
 
 
+def _authorization_hash(*, target_hash: str, order_hash: str, intent_hash: str,
+                        policy_hash: str, permit_hash: str, reservation_id: str,
+                        reserved_cents: int, budget_ceiling_cents: int,
+                        canonical_audit_tip: str) -> str:
+    """The existing custody authorization commitment, shared with its verifier."""
+    return _hash({"schema": "pulpo.custody-authorization.v0",
+                  "target_hash": target_hash, "order_hash": order_hash,
+                  "intent_hash": intent_hash, "policy_hash": policy_hash,
+                  "permit_hash": permit_hash, "reservation_id": reservation_id,
+                  "reserved_cents": reserved_cents, "budget_ceiling_cents": budget_ceiling_cents,
+                  "canonical_audit_tip": canonical_audit_tip})
+
+
 @dataclass(frozen=True)
 class GovernedDomainAttempt:
     attempt_id: str
@@ -41,6 +54,7 @@ class GovernedDomainAttempt:
     policy_hash: str
     reservation_id: str
     reserved_cents: int
+    budget_ceiling_cents: int
     canonical_audit_tip: str
     custody: AttemptAuthorization
 
@@ -134,20 +148,12 @@ class GovernedDomainAttemptCoordinator:
 
         intent_hash = self.kernel.intent_hash(exact_intent)
         permit_hash = sha256(permit.encode()).hexdigest()
-        authorization_hash = _hash(
-            {
-                "schema": "pulpo.custody-authorization.v0",
-                "target_hash": expected_target_hash,
-                "order_hash": order.order_hash,
-                "intent_hash": intent_hash,
-                "policy_hash": self.kernel.policy_hash,
-                "permit_hash": permit_hash,
-                "reservation_id": reservation.reservation_id,
-                "reserved_cents": reservation.reserved_cents,
-                "budget_ceiling_cents": self.budget.ceiling_cents,
-                "canonical_audit_tip": canonical_audit_tip,
-            }
-        )
+        authorization_hash = _authorization_hash(
+            target_hash=expected_target_hash, order_hash=order.order_hash,
+            intent_hash=intent_hash, policy_hash=self.kernel.policy_hash,
+            permit_hash=permit_hash, reservation_id=reservation.reservation_id,
+            reserved_cents=reservation.reserved_cents, budget_ceiling_cents=self.budget.ceiling_cents,
+            canonical_audit_tip=canonical_audit_tip)
 
         # The trusted coordinator, not the worker, reads the current custody
         # head. Worker-local epoch/root copies are therefore never authority.
@@ -168,6 +174,7 @@ class GovernedDomainAttemptCoordinator:
             policy_hash=self.kernel.policy_hash,
             reservation_id=reservation.reservation_id,
             reserved_cents=reservation.reserved_cents,
+            budget_ceiling_cents=self.budget.ceiling_cents,
             canonical_audit_tip=canonical_audit_tip,
             custody=custody_authorization,
         )
