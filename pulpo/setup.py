@@ -58,6 +58,25 @@ def _verify_profile(tuner: AuditPerformanceTuner) -> bool:
         engine.close()
 
 
+def run_doctor() -> dict[str, object]:
+    """Check synthetic audit verification without reading or saving profiles.
+
+    This is an installation diagnostic, not a live-state or deployment check.
+    """
+    fingerprint = SystemFingerprint.detect()
+    verified = _verify_profile(AuditPerformanceTuner.conservative())
+    return {
+        "schema": "pulpo.doctor-report.v1",
+        "environment": asdict(fingerprint),
+        "audit_verification": {"status": "PASS" if verified else "FAIL"},
+        "ready_for_test_use": bool(verified),
+        "authority_effect": "none",
+        "governance_changes": "none",
+        "production_readiness_claim": False,
+        "claim_boundary": "synthetic audit self-check only; no live state or deployment validation",
+    }
+
+
 def run_setup(
     *,
     profile_path: str | Path = ".pulpo/audit-performance-profile.json",

@@ -6,7 +6,24 @@ import argparse
 import json
 from pathlib import Path
 
-from .setup import run_setup
+from .setup import run_doctor, run_setup
+
+
+def _doctor_command(args: argparse.Namespace) -> int:
+    report = run_doctor()
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        print("PULPO DOCTOR")
+        print(f'Python ................... {report["environment"]["python"]}')
+        print(f'Synthetic audit check .... {report["audit_verification"]["status"]}')
+        print("Authority changes ........ NONE")
+        print("Synthetic self-check only; no live state or deployment validation.")
+        if report["ready_for_test_use"]:
+            print("Next: from the source checkout, run python scripts/demo_orchestrator.py")
+        else:
+            print("Self-check failed. Stop here and share pulpo doctor --json output for diagnosis.")
+    return 0 if report["ready_for_test_use"] else 1
 
 
 def _setup_command(args: argparse.Namespace) -> int:
@@ -103,6 +120,12 @@ def _tune_command(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="pulpo")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    doctor = subparsers.add_parser(
+        "doctor", help="run a quick synthetic self-check without calibration or profile writes",
+    )
+    doctor.add_argument("--json", action="store_true", help="print the diagnostic report as JSON")
+    doctor.set_defaults(func=_doctor_command)
 
     setup = subparsers.add_parser(
         "setup",
