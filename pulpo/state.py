@@ -20,6 +20,32 @@ from typing import Any, Callable, Protocol
 # Reuse the unchanged encoder configuration; per-call state stays in encode().
 _CANONICAL_ENCODER = json.JSONEncoder(sort_keys=True, separators=(",", ":"))
 
+# Shared definitions bind publication and subsequent startup validation to the
+# same protections. Names alone do not establish what a stored trigger does.
+_AUDIT_HEAD_TRIGGERS = {
+    "audit_head_check_insert": """
+        CREATE TRIGGER audit_head_check_insert BEFORE INSERT ON audit BEGIN
+            SELECT CASE WHEN
+                (SELECT COUNT(*) FROM audit_head) != 1 OR
+                NOT EXISTS (SELECT 1 FROM audit_head WHERE id = 1
+                    AND sequence = COALESCE((SELECT sequence FROM audit ORDER BY sequence DESC LIMIT 1), 0)
+                    AND hash = COALESCE((SELECT hash FROM audit ORDER BY sequence DESC LIMIT 1),
+                        '0000000000000000000000000000000000000000000000000000000000000000')
+                    AND hash = NEW.previous_hash)
+                THEN RAISE(ABORT, 'audit head missing or mismatched') END;
+        END
+    """,
+    "audit_head_advance": """
+        CREATE TRIGGER audit_head_advance AFTER INSERT ON audit BEGIN
+            UPDATE audit_head SET sequence = NEW.sequence, hash = NEW.hash WHERE id = 1;
+        END
+    """,
+}
+
+
+def _normalized_trigger_sql(sql: str) -> str:
+    return " ".join(sql.split()).rstrip(";").casefold()
+
 
 def _canonical(value: Any) -> bytes:
     return _CANONICAL_ENCODER.encode(value).encode()
@@ -230,14 +256,18 @@ class SQLiteKernelState:
         if "parent_directive_hash" not in columns:
             self._connection.execute("ALTER TABLE permit_directives ADD COLUMN parent_directive_hash TEXT")
         if upgraded:
-            if self._connection.execute("SELECT * FROM audit_integrity_schema").fetchall() != [(1, 1)]:
+            versions = self._connection.execute("SELECT * FROM audit_integrity_schema").fetchall()
+            if (versions != [(1, 1)]
+                    or any(type(value) is not int for row in versions for value in row)):
                 raise ValueError("audit head schema invalid")
             self._assert_audit_head()
-            triggers = {row[0] for row in self._connection.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'trigger'"
-            )}
-            if not {"audit_head_check_insert", "audit_head_advance"} <= triggers:
-                raise ValueError("audit head triggers missing")
+            triggers = dict(self._connection.execute(
+                "SELECT name, sql FROM sqlite_master WHERE type = 'trigger' AND tbl_name = 'audit'"
+            ))
+            for name, expected in _AUDIT_HEAD_TRIGGERS.items():
+                actual = triggers.get(name)
+                if not isinstance(actual, str) or _normalized_trigger_sql(actual) != _normalized_trigger_sql(expected):
+                    raise ValueError("audit head trigger missing or substituted")
             return
 
         # Legacy adoption cannot establish whether history was lost before this
@@ -281,23 +311,8 @@ class SQLiteKernelState:
         self._connection.execute("INSERT INTO audit_integrity_schema VALUES (1, 1)")
         # Both existing canonical append paths (kernel and custody projection)
         # advance this subordinate tip metadata in the audit insert transaction.
-        self._connection.execute("""
-            CREATE TRIGGER audit_head_check_insert BEFORE INSERT ON audit BEGIN
-                SELECT CASE WHEN
-                    (SELECT COUNT(*) FROM audit_head) != 1 OR
-                    NOT EXISTS (SELECT 1 FROM audit_head WHERE id = 1
-                        AND sequence = COALESCE((SELECT sequence FROM audit ORDER BY sequence DESC LIMIT 1), 0)
-                        AND hash = COALESCE((SELECT hash FROM audit ORDER BY sequence DESC LIMIT 1),
-                            '0000000000000000000000000000000000000000000000000000000000000000')
-                        AND hash = NEW.previous_hash)
-                    THEN RAISE(ABORT, 'audit head missing or mismatched') END;
-            END
-        """)
-        self._connection.execute("""
-            CREATE TRIGGER audit_head_advance AFTER INSERT ON audit BEGIN
-                UPDATE audit_head SET sequence = NEW.sequence, hash = NEW.hash WHERE id = 1;
-            END
-        """)
+        for sql in _AUDIT_HEAD_TRIGGERS.values():
+            self._connection.execute(sql)
 
     def _assert_audit_head(self, rows=None) -> None:
         if rows is None:
@@ -307,7 +322,9 @@ class SQLiteKernelState:
         else:
             tip = (rows[-1][0], rows[-1][-1]) if rows else (0, "0" * 64)
         heads = self._connection.execute("SELECT id, sequence, hash FROM audit_head").fetchall()
-        if heads != [(1, *tip)]:
+        valid_types = (len(heads) == 1 and type(heads[0][0]) is int
+                       and type(heads[0][1]) is int and type(heads[0][2]) is str)
+        if not valid_types or heads != [(1, *tip)]:
             raise ValueError("audit head missing or mismatched")
 
     def _checked_audit_rows(self):

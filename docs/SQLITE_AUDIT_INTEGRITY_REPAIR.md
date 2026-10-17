@@ -3,6 +3,10 @@
 Base: `12d07e37a34c979fc054872299191bb26c8ad387`.
 Status: local candidate, not published or admitted. Date: 2026-10-17.
 
+Follow-up evidence and two additional patches are recorded in
+`SQLITE_ADVERSARIAL_RESULTS_20261017.md`. Counts below describe the first repair;
+the follow-up record contains the latest test totals and source binding.
+
 ## Failure and resulting behavior
 
 Initialization previously ran `executescript` followed by a legacy `ALTER` without

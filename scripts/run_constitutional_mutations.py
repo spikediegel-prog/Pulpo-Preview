@@ -35,6 +35,20 @@ class Mutation:
 
 MUTATIONS: tuple[Mutation, ...] = (
     Mutation(
+        "audit_trigger_definition_check_removed",
+        "pulpo/state.py",
+        'if not isinstance(actual, str) or _normalized_trigger_sql(actual) != _normalized_trigger_sql(expected):',
+        'if not isinstance(actual, str):',
+        ("tests.test_audit_adversarial.AuditAdversarialTests.test_same_name_trigger_substitution_is_rejected",),
+    ),
+    Mutation(
+        "audit_head_strict_types_removed",
+        "pulpo/state.py",
+        'if not valid_types or heads != [(1, *tip)]:',
+        'if heads != [(1, *tip)]:',
+        ("tests.test_audit_adversarial.AuditAdversarialTests.test_malformed_preexisting_heads_fail_without_mutation",),
+    ),
+    Mutation(
         "sqlite_upgrade_transaction_removed",
         "pulpo/state.py",
         'self._connection.execute("BEGIN IMMEDIATE")\n            self._initialize_transaction',
@@ -44,8 +58,8 @@ MUTATIONS: tuple[Mutation, ...] = (
     Mutation(
         "durable_audit_head_comparison_removed",
         "pulpo/state.py",
-        'if heads != [(1, *tip)]:',
-        'if False and heads != [(1, *tip)]:',
+        'if not valid_types or heads != [(1, *tip)]:',
+        'if False and (not valid_types or heads != [(1, *tip)]):',
         ("tests.test_audit_integrity_migration.AuditIntegrityMigrationTests.test_preexisting_mismatched_head_rejects_and_rolls_back",),
     ),
     Mutation(
