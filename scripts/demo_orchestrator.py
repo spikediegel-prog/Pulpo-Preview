@@ -8,6 +8,7 @@ authority, protected storage, or production containment.
 
 from __future__ import annotations
 
+import argparse
 from dataclasses import replace
 import json
 from pathlib import Path
@@ -42,8 +43,8 @@ class DemoAuthorityClient:
         return "demo-request", "https://authority.pulpo.ai/human/approval/demo-request"
 
     def poll_approval(self, request_id):
-        assert request_id == "demo-request"
-        assert self.request is not None
+        _require(request_id == "demo-request", "Unexpected demo approval request")
+        _require(self.request is not None, "Missing demo approval request")
         self.polls += 1
         intent = Intent(
             self.request.principal,
@@ -79,7 +80,13 @@ def directive_envelope(kernel, verifier, operation, directive, approval_id, nonc
     )
 
 
-def main() -> None:
+def _require(condition: bool, message: str) -> None:
+    if not condition:
+        raise RuntimeError(message)
+
+
+def run_demo() -> dict[str, object]:
+    """Exercise the existing in-memory control path and return checked results."""
     state = InMemoryKernelState()
     verifier = HmacTestVerifier()
     policy = Policy(
@@ -105,15 +112,18 @@ def main() -> None:
     target = orchestrator.lock_target("demo-deploy", intent)
     handle = orchestrator.request_target_approval(target, requested_ttl_ns=500)
     tampered = orchestrator.authorize_target(replace(handle, target_hash="0" * 64))
-    assert tampered.resolution.reason == "target_hash_mismatch"
-    assert client.polls == 0
+    _require(tampered.resolution.reason == "target_hash_mismatch", "Changed target was not blocked")
+    _require(client.polls == 0, "Changed target reached the demo authority")
+    authority_polls_after_tamper = client.polls
 
     # Exact target: verified envelope reaches the kernel; capability is one-use.
     approved = orchestrator.authorize_target(handle)
-    assert approved.decision is not None and approved.decision.outcome == "allow"
+    _require(approved.decision is not None and approved.decision.outcome == "allow",
+             "Exact target was not authorized")
     first_consume = orchestrator.consume_authorized_target(approved)
     replay_consume = orchestrator.consume_authorized_target(approved)
-    assert first_consume is True and replay_consume is False
+    _require(first_consume is True, "Authorized permit was not consumed")
+    _require(replay_consume is False, "Permit replay was not blocked")
 
     # Directive: activation needs separate authority; once active it constrains
     # an otherwise policy-allowed write. Revocation then invalidates the already
@@ -137,15 +147,17 @@ def main() -> None:
         "approval-demo-activate",
         "nonce-demo-activate",
     )
-    assert orchestrator.activate_directive(
+    activated = orchestrator.activate_directive(
         directive,
         activation,
         operator_principal=OPERATOR,
-    ).outcome == "allow"
+    )
+    _require(activated.outcome == "allow", "Demo directive was not activated")
 
     directive_intent = Intent("agent:builder", "write", "repo:directive.txt", 1)
     preissued = orchestrator.evaluate_directive(directive_intent, directive)
-    assert preissued.outcome == "allow" and preissued.permit is not None
+    _require(preissued.outcome == "allow" and preissued.permit is not None,
+             "Directive-bound permit was not issued")
 
     revocation = directive_envelope(
         kernel,
@@ -155,39 +167,61 @@ def main() -> None:
         "approval-demo-revoke",
         "nonce-demo-revoke",
     )
-    assert orchestrator.revoke_directive(
+    revoked = orchestrator.revoke_directive(
         directive,
         revocation,
         operator_principal=OPERATOR,
-    ).outcome == "allow"
+    )
+    _require(revoked.outcome == "allow", "Demo directive was not revoked")
     revoked_preissued_permit = kernel.consume(preissued.permit, directive_intent)
-    assert revoked_preissued_permit is False
+    _require(revoked_preissued_permit is False, "Revoked permission was not blocked")
 
     evidence = orchestrator.evidence_snapshot()
-    assert evidence.audit_valid is True
-    print(
-        json.dumps(
-            {
-                "schema": "pulpo.orchestrator-demo.result.v0",
-                "target_mismatch_denied": tampered.resolution.reason,
-                "authority_polls_after_tamper": 0,
-                "exact_target_authorized": approved.decision.outcome,
-                "first_permit_consume": first_consume,
-                "replay_permit_consume": replay_consume,
-                "revoked_preissued_directive_permit": revoked_preissued_permit,
-                "audit_valid": evidence.audit_valid,
-                "audit_records": evidence.audit_records,
-                "audit_tip": evidence.audit_tip,
-                "claim_boundary": (
-                    "test-only authority semantics; no deployed independent authority, "
-                    "protected storage, external containment, or production execution"
-                ),
-            },
-            indent=2,
-            sort_keys=True,
-        )
-    )
+    _require(evidence.audit_valid is True, "Demo audit did not verify")
+    return {
+        "schema": "pulpo.orchestrator-demo.result.v0",
+        "target_mismatch_denied": tampered.resolution.reason,
+        "authority_polls_after_tamper": authority_polls_after_tamper,
+        "exact_target_authorized": approved.decision.outcome,
+        "first_permit_consume": first_consume,
+        "replay_permit_consume": replay_consume,
+        "revoked_preissued_directive_permit": revoked_preissued_permit,
+        "audit_valid": evidence.audit_valid,
+        "audit_records": evidence.audit_records,
+        "audit_tip": evidence.audit_tip,
+        "claim_boundary": (
+            "test-only authority semantics; no deployed independent authority, "
+            "protected storage, external containment, or production execution"
+        ),
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Try Pulpo's existing synthetic governance demo")
+    parser.add_argument("--json", action="store_true", help="print the checked result as JSON")
+    args = parser.parse_args(argv)
+    try:
+        result = run_demo()
+    except (RuntimeError, ValueError) as exc:
+        print(f"PULPO DEMO FAILED: {exc}", file=sys.stderr)
+        print("Stop here and report the failure with the source commit SHA.", file=sys.stderr)
+        return 1
+    if args.json:
+        print(json.dumps(result, indent=2, sort_keys=True))
+    else:
+        print("PULPO PREVIEW: GUIDED DEMO")
+        print("Synthetic example using test-only authority and in-memory state.\n")
+        print("PASS  Changed target blocked before approval polling.")
+        print("PASS  Exact authorized permit used once.")
+        print("PASS  Permit replay blocked.")
+        print("PASS  Revoked permission blocked.")
+        print(f'PASS  Demo audit verified ({result["audit_records"]} records).')
+        print("\nThese results verify this synthetic run only.")
+        print("They do not prove independent human authority, protected storage,")
+        print("external containment, or production readiness.")
+        print("\nFor troubleshooting: rerun with --json and record git rev-parse HEAD.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
