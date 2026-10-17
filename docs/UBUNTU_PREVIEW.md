@@ -26,8 +26,8 @@ python -m pip install .
 pulpo doctor
 ```
 
-Until the Phase 1 PR is merged, check out `feat/ubuntu-first-doctor` instead of
-`preview` to test these new commands. Record `git rev-parse HEAD` with feedback.
+Record `git rev-parse HEAD` with feedback. Downloadable tester kits and feedback
+forms live in [Pulpo Preview Testers](https://github.com/spikediegel-prog/Pulpo-Preview-Testers).
 If Python is older than 3.11, stop and use a supported Python environment.
 If creating the environment reports missing `ensurepip`, install
 `python3-venv` for the selected Python version and retry. In a new terminal,
@@ -55,7 +55,14 @@ From the source checkout, with the virtual environment active:
 python scripts/demo_orchestrator.py
 ```
 
-Read the JSON result in this order:
+The default output explains each checked result in plain language. To print
+the machine-readable result for troubleshooting:
+
+```bash
+python scripts/demo_orchestrator.py --json
+```
+
+Read that JSON result in this order:
 
 1. `target_mismatch_denied` is `target_hash_mismatch`: changed target identity
    stops before the demo authority is polled.
@@ -69,6 +76,8 @@ exercises synthetic governance transitions through the existing orchestrator;
 it does not deploy anything or prove independent human authority, protected
 storage, or external containment. The demo depends on checkout-only test
 fixtures and is not shipped as an installed package command.
+If a boundary check fails, the demo exits with status 1 and reports the failure
+instead of printing a success summary. Checks remain active under `python -O`.
 
 Optional later: `pulpo setup` performs bounded calibration and saves a local
 performance profile. It is not required to try doctor or the demo.
