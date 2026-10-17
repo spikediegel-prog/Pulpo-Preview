@@ -1,0 +1,16 @@
+{
+  "audit_verification": {
+    "status": "PASS"
+  },
+  "authority_effect": "none",
+  "claim_boundary": "synthetic audit self-check only; no live state or deployment validation",
+  "environment": {
+    "cpu_count": 32,
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "python": "3.14.4"
+  },
+  "governance_changes": "none",
+  "production_readiness_claim": false,
+  "ready_for_test_use": true,
+  "schema": "pulpo.doctor-report.v1"
+}

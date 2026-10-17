@@ -1,0 +1,13 @@
+{
+  "audit_records": 22,
+  "audit_tip": "cb3f65d5d8238507c5b872ae1f406e81e9b8a9ea9750c3b20d4e75b1404d00b6",
+  "audit_valid": true,
+  "authority_polls_after_tamper": 0,
+  "claim_boundary": "test-only authority semantics; no deployed independent authority, protected storage, external containment, or production execution",
+  "exact_target_authorized": "allow",
+  "first_permit_consume": true,
+  "replay_permit_consume": false,
+  "revoked_preissued_directive_permit": false,
+  "schema": "pulpo.orchestrator-demo.result.v0",
+  "target_mismatch_denied": "target_hash_mismatch"
+}
