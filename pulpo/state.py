@@ -197,14 +197,31 @@ class SQLiteKernelState:
     def _initialize(self, *, index_audit_events: bool) -> None:
         self._connection.execute("PRAGMA foreign_keys = ON")
         self._connection.execute("PRAGMA synchronous = FULL")
-        self._connection.executescript("""
+        # executescript commits an existing transaction before running. Execute
+        # each DDL statement under one explicit transaction instead, including
+        # validation, legacy ALTERs, head adoption and trigger publication.
+        with self._connection:
+            self._connection.execute("BEGIN IMMEDIATE")
+            self._initialize_transaction(index_audit_events=index_audit_events)
+
+    def _initialize_transaction(self, *, index_audit_events: bool) -> None:
+        tables = {row[0] for row in self._connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        )}
+        upgraded = "audit_integrity_schema" in tables
+        if upgraded and "audit_head" not in tables:
+            raise ValueError("audit head table missing")
+        schema = """
             CREATE TABLE IF NOT EXISTS permits (permit TEXT PRIMARY KEY, intent_hash TEXT NOT NULL, spent INTEGER NOT NULL DEFAULT 0 CHECK (spent IN (0, 1)));
             CREATE TABLE IF NOT EXISTS approvals (approval_id TEXT PRIMARY KEY, nonce TEXT NOT NULL UNIQUE);
             CREATE TABLE IF NOT EXISTS directives (directive_id TEXT NOT NULL, version INTEGER NOT NULL, directive_hash TEXT NOT NULL, revoked INTEGER NOT NULL DEFAULT 0 CHECK (revoked IN (0, 1)), PRIMARY KEY (directive_id, version));
             CREATE TABLE IF NOT EXISTS permit_directives (permit TEXT PRIMARY KEY REFERENCES permits(permit) ON DELETE CASCADE, directive_id TEXT NOT NULL, directive_version INTEGER NOT NULL, directive_hash TEXT NOT NULL, directive_issued_at_ns INTEGER NOT NULL, directive_expires_at_ns INTEGER NOT NULL, parent_directive_hash TEXT);
             CREATE TABLE IF NOT EXISTS audit (sequence INTEGER PRIMARY KEY, event TEXT NOT NULL, payload_json TEXT NOT NULL, previous_hash TEXT NOT NULL, timestamp_ns INTEGER NOT NULL, hash TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS audit_verification_checkpoint (id INTEGER PRIMARY KEY CHECK (id = 1), checkpoint_json TEXT NOT NULL);
-        """)
+        """
+        for statement in schema.split(";"):
+            if statement.strip():
+                self._connection.execute(statement)
         # Opt in for event-heavy histories: the index speeds filtered reads but
         # adds maintenance to every durable audit insert. Existing indexes stay.
         if index_audit_events:
@@ -212,20 +229,111 @@ class SQLiteKernelState:
         columns = {row[1] for row in self._connection.execute("PRAGMA table_info(permit_directives)").fetchall()}
         if "parent_directive_hash" not in columns:
             self._connection.execute("ALTER TABLE permit_directives ADD COLUMN parent_directive_hash TEXT")
+        if upgraded:
+            if self._connection.execute("SELECT * FROM audit_integrity_schema").fetchall() != [(1, 1)]:
+                raise ValueError("audit head schema invalid")
+            self._assert_audit_head()
+            triggers = {row[0] for row in self._connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'trigger'"
+            )}
+            if not {"audit_head_check_insert", "audit_head_advance"} <= triggers:
+                raise ValueError("audit head triggers missing")
+            return
+
+        # Legacy adoption cannot establish whether history was lost before this
+        # upgrade. Validate every existing record before trusting its current tip.
+        previous = "0" * 64
+        for event, encoded, link, timestamp, digest in self._connection.execute(
+            "SELECT event, payload_json, previous_hash, timestamp_ns, hash FROM audit ORDER BY sequence"
+        ):
+            try:
+                payload = json.loads(encoded)
+                valid = (type(event) is str and type(encoded) is str
+                         and isinstance(payload, dict) and type(timestamp) is int
+                         and type(link) is str and type(digest) is str
+                         and link == previous
+                         and digest == _audit_record(link, event, payload, timestamp)["hash"])
+            except (ValueError, TypeError):
+                valid = False
+            if not valid:
+                raise ValueError("legacy audit chain invalid")
+            previous = digest
+        self._connection.execute("""
+            CREATE TABLE IF NOT EXISTS audit_head (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                sequence INTEGER NOT NULL CHECK (sequence >= 0),
+                hash TEXT NOT NULL CHECK (length(hash) = 64)
+            )
+        """)
+        if "audit_head" in tables:
+            # A preexisting head is evidence to reconcile, never overwrite it.
+            self._assert_audit_head()
+        else:
+            tip = self._connection.execute(
+                "SELECT sequence, hash FROM audit ORDER BY sequence DESC LIMIT 1"
+            ).fetchone() or (0, "0" * 64)
+            self._connection.execute("INSERT INTO audit_head VALUES (1, ?, ?)", tip)
+        self._connection.execute("""
+            CREATE TABLE audit_integrity_schema (
+                id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL CHECK (version = 1)
+            )
+        """)
+        self._connection.execute("INSERT INTO audit_integrity_schema VALUES (1, 1)")
+        # Both existing canonical append paths (kernel and custody projection)
+        # advance this subordinate tip metadata in the audit insert transaction.
+        self._connection.execute("""
+            CREATE TRIGGER audit_head_check_insert BEFORE INSERT ON audit BEGIN
+                SELECT CASE WHEN
+                    (SELECT COUNT(*) FROM audit_head) != 1 OR
+                    NOT EXISTS (SELECT 1 FROM audit_head WHERE id = 1
+                        AND sequence = COALESCE((SELECT sequence FROM audit ORDER BY sequence DESC LIMIT 1), 0)
+                        AND hash = COALESCE((SELECT hash FROM audit ORDER BY sequence DESC LIMIT 1),
+                            '0000000000000000000000000000000000000000000000000000000000000000')
+                        AND hash = NEW.previous_hash)
+                    THEN RAISE(ABORT, 'audit head missing or mismatched') END;
+            END
+        """)
+        self._connection.execute("""
+            CREATE TRIGGER audit_head_advance AFTER INSERT ON audit BEGIN
+                UPDATE audit_head SET sequence = NEW.sequence, hash = NEW.hash WHERE id = 1;
+            END
+        """)
+
+    def _assert_audit_head(self, rows=None) -> None:
+        if rows is None:
+            tip = self._connection.execute(
+                "SELECT sequence, hash FROM audit ORDER BY sequence DESC LIMIT 1"
+            ).fetchone() or (0, "0" * 64)
+        else:
+            tip = (rows[-1][0], rows[-1][-1]) if rows else (0, "0" * 64)
+        heads = self._connection.execute("SELECT id, sequence, hash FROM audit_head").fetchall()
+        if heads != [(1, *tip)]:
+            raise ValueError("audit head missing or mismatched")
+
+    def _checked_audit_rows(self):
+        def read():
+            rows = self._connection.execute(
+                "SELECT sequence, event, payload_json, previous_hash, timestamp_ns, hash FROM audit ORDER BY sequence"
+            ).fetchall()
+            self._assert_audit_head(rows)
+            return rows
+        if self._connection.in_transaction:
+            return read()
+        with self._connection:
+            self._connection.execute("BEGIN")
+            return read()
 
     @property
     def audit(self) -> list[dict[str, Any]]:
-        rows = self._connection.execute("SELECT event, payload_json, previous_hash, timestamp_ns, hash FROM audit ORDER BY sequence").fetchall()
-        return [{"event": e, "payload": json.loads(p), "previous_hash": ph, "timestamp_ns": ts, "hash": h} for e,p,ph,ts,h in rows]
+        rows = self._checked_audit_rows()
+        return [{"event": e, "payload": json.loads(p), "previous_hash": ph, "timestamp_ns": ts, "hash": h} for _,e,p,ph,ts,h in rows]
 
     def audit_verification_rows(self) -> list[tuple[str, str, str, int, str]]:
         """Return raw immutable audit row bodies for optional decode/hash workers."""
-        rows = self._connection.execute(
-            "SELECT event, payload_json, previous_hash, timestamp_ns, hash FROM audit ORDER BY sequence"
-        ).fetchall()
+        rows = self._checked_audit_rows()
         return [
             (str(event), str(payload_json), str(previous_hash), int(timestamp_ns), str(digest))
-            for event, payload_json, previous_hash, timestamp_ns, digest in rows
+            for _, event, payload_json, previous_hash, timestamp_ns, digest in rows
         ]
 
     def verify_audit_bootstrap(self, secret: bytes, full_verify: Callable[[], bool]) -> bool:
@@ -242,6 +350,7 @@ class SQLiteKernelState:
                 "SELECT sequence, event, payload_json, previous_hash, timestamp_ns, hash "
                 "FROM audit ORDER BY sequence"
             ).fetchall()
+            self._assert_audit_head(rows)
             cached = self._connection.execute(
                 "SELECT checkpoint_json FROM audit_verification_checkpoint WHERE id = 1"
             ).fetchone()

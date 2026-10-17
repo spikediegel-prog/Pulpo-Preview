@@ -121,19 +121,19 @@ class AuditCheckpointTests(unittest.TestCase):
                 with self.state._connection:
                     self.state._connection.execute("UPDATE audit SET payload_json = ? WHERE sequence = ?", (original, sequence))
 
-    def test_truncation_and_sequence_changes_invalidate_cache(self):
-        original = GovernanceKernel.verify_audit
+    def test_truncation_fails_closed_without_replacing_checkpoint(self):
         with self.state._connection:
             self.state._connection.execute("DELETE FROM audit WHERE sequence = 3")
-        with patch.object(GovernanceKernel, "verify_audit", autospec=True, side_effect=original) as full:
+        with self.assertRaises(StateIntegrityError):
             self.kernel()
-            full.assert_called_once()
-        self.assertEqual(2, self.checkpoint()["sequence"])
+        self.assertEqual(3, self.checkpoint()["sequence"])
+
+    def test_sequence_changes_fail_closed_without_replacing_checkpoint(self):
         with self.state._connection:
-            self.state._connection.execute("UPDATE audit SET sequence = 9 WHERE sequence = 2")
-        with patch.object(GovernanceKernel, "verify_audit", autospec=True, side_effect=original) as full:
+            self.state._connection.execute("UPDATE audit SET sequence = 9 WHERE sequence = 3")
+        with self.assertRaises(StateIntegrityError):
             self.kernel()
-            full.assert_called_once()
+        self.assertEqual(3, self.checkpoint()["sequence"])
 
     def test_unavailable_checkpoint_write_fails_closed_and_rolls_back(self):
         self.state.append("suffix", {}, 10)
