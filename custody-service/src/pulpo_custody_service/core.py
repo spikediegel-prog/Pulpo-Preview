@@ -10,14 +10,13 @@ alternate executors/observers.
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import dataclass
-from types import SimpleNamespace
+from dataclasses import asdict, dataclass
 from typing import Callable, Iterator
 
 from pulpo.authority import ApprovalEnvelope
 from pulpo.commerce import DomainPurchaseOrder, SQLiteBudgetAccount, purchase_intent
-from pulpo.custody import CustodyViolation, SQLiteGovernanceCustody
-from pulpo.custody_domain import GovernedDomainAttemptCoordinator
+from pulpo.custody import AttemptAuthorization, CustodyViolation, SQLiteGovernanceCustody, TransitionReceipt
+from pulpo.custody_domain import GovernedDomainAttempt, GovernedDomainAttemptCoordinator
 from pulpo.custody_evidence import (
     CustodyEvidenceViolation,
     SQLiteCustodyEvidenceConvergence,
@@ -41,6 +40,9 @@ from pulpo.proposal_commitment import (
 
 class ServiceRejected(RuntimeError):
     """A request failed the canonical custody/service boundary."""
+
+
+_ATTEMPT_AUTHORIZATION_EVENT = "custody_domain_authorization"
 
 
 @dataclass(frozen=True)
@@ -264,6 +266,11 @@ class DomainCustodyService:
                     permit=decision.permit,
                     reservation_id=reservation.reservation_id,
                 )
+                # Persist the original commitment preimage and signed receipt in
+                # the existing canonical audit, never in a worker-supplied ref.
+                # A crash before this append loses availability, not authority:
+                # the spent permit is never reissued to manufacture a handle.
+                kernel._append(_ATTEMPT_AUTHORIZATION_EVENT, asdict(governed))
             except Exception as exc:
                 raise ServiceRejected(f"custody_authorization_failed:{exc}") from exc
 
@@ -280,6 +287,11 @@ class DomainCustodyService:
         )
 
     def _ref_and_order(self, handle: AttemptHandle):
+        if (type(handle) is not AttemptHandle
+                or handle.schema != "pulpo.custody-attempt-handle.v0"
+                or handle.state != self.custody.ATTEMPT_AUTHORIZED
+                or type(handle.reserved_cents) is not int):
+            raise ServiceRejected("attempt_handle_invalid")
         snapshot = self.custody.attempt(handle.attempt_id)
         if snapshot is None:
             raise ServiceRejected("attempt_unknown")
@@ -289,18 +301,38 @@ class DomainCustodyService:
             order = self.proposals.order_for_hash(snapshot.object_hash)
         except ProposalCommitmentViolation as exc:
             raise ServiceRejected(f"attempt_provenance_missing:{exc}") from exc
-        return (
-            SimpleNamespace(
-                attempt_id=handle.attempt_id,
-                order_hash=handle.order_hash,
-                reservation_id=handle.reservation_id,
-            ),
-            order,
-        )
+        try:
+            with self._kernel_session() as kernel:
+                records = [row["payload"] for row in kernel.audit
+                    if row["event"] == _ATTEMPT_AUTHORIZATION_EVENT
+                    and type(row["payload"]) is dict
+                    and row["payload"].get("attempt_id") == handle.attempt_id]
+            if len(records) != 1:
+                raise ServiceRejected("attempt_authorization_missing_or_ambiguous")
+            payload = dict(records[0])
+            authorization = payload.pop("custody")
+            if type(authorization) is not dict or set(authorization) != {"attempt_id", "receipt"}:
+                raise ServiceRejected("attempt_authorization_invalid")
+            governed = GovernedDomainAttempt(**payload, custody=AttemptAuthorization(
+                attempt_id=authorization["attempt_id"],
+                receipt=TransitionReceipt(**authorization["receipt"])))
+            if (handle.target_hash != governed.target_hash
+                    or handle.reservation_id != governed.reservation_id
+                    or handle.reserved_cents != governed.reserved_cents):
+                raise ServiceRejected("attempt_handle_binding_mismatch")
+            # Re-resolved audit metadata is a preimage, not fresh authority.
+            # Require the persisted custody commitment and original signature
+            # before even projecting previously pending canonical evidence.
+            self.executor._validate_handle(governed, order)
+            return governed, order
+        except ServiceRejected:
+            raise
+        except Exception as exc:
+            raise ServiceRejected("attempt_authorization_invalid") from exc
 
     def execute(self, handle: AttemptHandle) -> ProviderAttemptClaim | None:
-        self._project_evidence()
         ref, order = self._ref_and_order(handle)
+        self._project_evidence()
         try:
             return self.executor.execute(ref, order, self.registrar)
         except ExternalConsequenceUnknown:
@@ -311,8 +343,8 @@ class DomainCustodyService:
             raise ServiceRejected(f"execution_rejected:{exc}") from exc
 
     def reconcile(self, handle: AttemptHandle) -> DomainReconciliationResult:
-        self._project_evidence()
         ref, order = self._ref_and_order(handle)
+        self._project_evidence()
         try:
             observation = self.observer.observe(ref, order)
             result = self.reconciler.reconcile(ref, order, observation)

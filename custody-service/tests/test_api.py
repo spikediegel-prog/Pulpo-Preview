@@ -1,7 +1,11 @@
 import tempfile
+import json
+import sqlite3
 import unittest
+from contextlib import closing
 from dataclasses import asdict, replace
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -20,7 +24,7 @@ from pulpo.state import SQLiteKernelState
 from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
 
 from pulpo_custody_service.api import create_app
-from pulpo_custody_service.core import DomainCustodyService
+from pulpo_custody_service.core import AttemptHandle, DomainCustodyService, ServiceRejected
 
 
 NOW = 31_000_000
@@ -172,6 +176,136 @@ class CustodyServiceApiTests(unittest.TestCase):
             created_at_ns=NOW - 100,
             expires_at_ns=order.expires_at_ns,
         )
+
+    def test_changed_handle_cannot_flush_pending_evidence_or_reach_adapters(self):
+        client, service, registrar, observer, _, _ = self.build()
+        commitment = self.commit(service, self.order())
+        handle = service.authorize_commitment(commitment.commitment_id)
+        head = service.custody.snapshot()
+        service.custody.authorize_attempt(expected_epoch=head.epoch, expected_state_root=head.state_root,
+            object_hash="1"*64,target_hash="2"*64,permit_hash="3"*64,authorization_hash="4"*64)
+        before = service.custody.snapshot()
+        with service._kernel_session() as kernel:
+            audit = kernel.audit
+        for field, value in [("attempt_id","f"*64),("order_hash","f"*64),("target_hash","f"*64),
+                             ("reservation_id","substitute"),("reserved_cents",1),
+                             ("state","request_transmitted"),("schema","unknown")]:
+            for operation in ["execute","reconcile"]:
+                with self.subTest(field=field, operation=operation):
+                    response = client.post(f"/v1/domain-attempts/{handle.attempt_id}/{operation}",
+                        json={"handle":asdict(replace(handle,**{field:value}))})
+                    self.assertEqual(400 if field == "attempt_id" else 409,response.status_code,response.text)
+                    self.assertEqual(before,service.custody.snapshot())
+                    self.assertEqual(1,service.evidence.pending_count())
+                    self.assertEqual(1000,service.budget.available_cents)
+        with service._kernel_session() as kernel:
+            self.assertEqual(audit,kernel.audit)
+        self.assertEqual((0,0,0),(registrar.preflight_calls,registrar.purchase_calls,observer.calls))
+
+    def test_complete_reference_survives_service_restart_and_replay_remains_denied(self):
+        _, first, original_registrar, _, _, _ = self.build()
+        commitment = self.commit(first,self.order())
+        handle = first.authorize_commitment(commitment.commitment_id)
+        client, second, registrar, _, _, _ = self.build()
+        operation = {"handle":asdict(handle)}
+        response = client.post(f"/v1/domain-attempts/{handle.attempt_id}/execute",json=operation)
+        self.assertEqual(200,response.status_code,response.text)
+        client, third, third_registrar, observer, _, _ = self.build()
+        self.assertEqual(409,client.post(f"/v1/domain-attempts/{handle.attempt_id}/execute",json=operation).status_code)
+        response = client.post(f"/v1/domain-attempts/{handle.attempt_id}/reconcile",json=operation)
+        self.assertEqual(200,response.status_code,response.text)
+        self.assertEqual("success",response.json()["outcome"])
+        self.assertEqual((0,1,0),(original_registrar.purchase_calls,registrar.purchase_calls,third_registrar.purchase_calls))
+        self.assertEqual(1,observer.calls)
+        self.assertEqual(0,third.evidence.pending_count())
+
+    def _alter_authorization_append(self, service, alter):
+        original = service._kernel_factory
+        def factory():
+            kernel = original()
+            append = kernel._append
+            def intercept(event,payload):
+                if event == "custody_domain_authorization":
+                    payload = json.loads(json.dumps(payload))
+                    alter(payload)
+                return append(event,payload)
+            kernel._append = intercept
+            return kernel
+        return patch.object(service,"_kernel_factory",factory)
+
+    def test_missing_authorization_after_append_failure_cannot_be_recreated_from_worker(self):
+        _, service, registrar, _, _, _ = self.build()
+        order = self.order()
+        commitment = self.commit(service,order)
+        def fail(payload):
+            raise RuntimeError("synthetic authorization append failure")
+        with self._alter_authorization_append(service,fail):
+            with self.assertRaises(ServiceRejected):
+                service.authorize_commitment(commitment.commitment_id)
+        with closing(sqlite3.connect(self.path)) as connection:
+            attempt = connection.execute("SELECT attempt_id,target_hash FROM custody_attempts WHERE object_hash=?",(order.order_hash,)).fetchone()
+            reservation = connection.execute("SELECT reservation_id FROM commerce_reservations").fetchone()
+        self.assertIsNotNone(attempt)
+        handle = AttemptHandle(attempt[0],order.order_hash,attempt[1],reservation[0],2000,service.custody.ATTEMPT_AUTHORIZED)
+        before = service.custody.snapshot()
+        self.assertEqual(1,service.evidence.pending_count())
+        with self.assertRaises(ServiceRejected):
+            service.execute(handle)
+        self.assertEqual(before,service.custody.snapshot())
+        self.assertEqual(1,service.evidence.pending_count())
+        self.assertEqual(0,registrar.purchase_calls)
+        with self.assertRaises(ServiceRejected):
+            service.authorize_commitment(commitment.commitment_id)
+        with closing(sqlite3.connect(self.path)) as connection:
+            self.assertEqual((1,1),connection.execute("SELECT COUNT(*),SUM(spent) FROM permits").fetchone())
+
+    def test_duplicate_authorization_preimages_fail_closed(self):
+        _, service, registrar, _, _, _ = self.build()
+        handle = service.authorize_commitment(self.commit(service,self.order()).commitment_id)
+        with service._kernel_session() as kernel:
+            payload = next(row["payload"] for row in kernel.audit if row["event"]=="custody_domain_authorization")
+            kernel._append("custody_domain_authorization",payload)
+        before = service.custody.snapshot()
+        with self.assertRaises(ServiceRejected):
+            service.execute(handle)
+        self.assertEqual(before,service.custody.snapshot())
+        self.assertEqual((0,0),(registrar.preflight_calls,registrar.purchase_calls))
+
+    def test_valid_audit_cannot_ratify_changed_commitment_or_receipt(self):
+        alterations = [lambda p:p.update(policy_hash="f"*64),
+                       lambda p:p["custody"]["receipt"].update(signature="0"*64),
+                       lambda p:p["custody"].update(extra="untrusted")]
+        for number, alter in enumerate(alterations):
+            with self.subTest(number=number), tempfile.TemporaryDirectory() as directory:
+                previous_path = self.path
+                self.path = Path(directory)/"synthetic.sqlite3"
+                try:
+                    _,service,registrar,observer,_,_ = self.build()
+                    with self._alter_authorization_append(service,alter):
+                        handle = service.authorize_commitment(self.commit(service,self.order()).commitment_id)
+                    with service._kernel_session() as kernel:
+                        self.assertTrue(kernel.verify_audit())
+                    before = service.custody.snapshot()
+                    with self.assertRaises(ServiceRejected):
+                        service.execute(handle)
+                    with self.assertRaises(ServiceRejected):
+                        service.reconcile(handle)
+                    self.assertEqual(before,service.custody.snapshot())
+                    self.assertEqual((0,0),(registrar.preflight_calls,registrar.purchase_calls))
+                    self.assertEqual(0,observer.calls)
+                finally:
+                    self.path = previous_path
+
+    def test_valid_handle_can_project_pending_evidence_before_one_transmission(self):
+        _,service,registrar,_,_,_ = self.build()
+        handle = service.authorize_commitment(self.commit(service,self.order()).commitment_id)
+        head = service.custody.snapshot()
+        service.custody.authorize_attempt(expected_epoch=head.epoch,expected_state_root=head.state_root,
+            object_hash="1"*64,target_hash="2"*64,permit_hash="3"*64,authorization_hash="4"*64)
+        claim = service.execute(handle)
+        self.assertIsNotNone(claim)
+        self.assertEqual(1,registrar.purchase_calls)
+        self.assertEqual(0,service.evidence.pending_count())
 
     def test_worker_uses_proposal_reference_then_handle_only(self):
         client, service, registrar, observer, _, _ = self.build()
