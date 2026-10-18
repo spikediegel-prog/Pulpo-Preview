@@ -334,6 +334,8 @@ For the current preview evidence and limitations, start with:
 - [Governance](docs/GOVERNANCE.md)
 - [Persistence](docs/PERSISTENCE.md)
 - [Custody secret configuration and rejected test keys](docs/security/CUSTODY_SECRET_CONFIGURATION.md)
+- [Agent network and disclosure boundaries](docs/security/AGENT_NETWORK_AND_DISCLOSURE_BOUNDARIES.md)
+- [GitHub metadata transport hardening](docs/security/GITHUB_METADATA_TRANSPORT_HARDENING.md)
 
 ## Host bound and Pulpo bound
 
