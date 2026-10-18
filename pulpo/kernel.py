@@ -152,6 +152,11 @@ class GovernanceKernel:
     ) -> None:
         self.policy = policy
         self._secret = secret or secrets.token_bytes(32)
+        # Only explicitly configured keys define a durable issuer identity.
+        # The default random per-process key must not invalidate shared-state
+        # permits merely because another default kernel opens that state.
+        self._permit_issuer = None if secret is None else hmac.new(
+            self._secret, b"pulpo.permit-issuer.v1", sha256).hexdigest()
         self._approval_verifier = approval_verifier
         self._clock = clock or time.time_ns
         self._state = state if state is not None else InMemoryKernelState()
@@ -460,6 +465,8 @@ class GovernanceKernel:
     def _policy_failure(self, intent: Intent) -> str | None:
         if not intent.principal or not intent.session_id or not intent.action or not intent.resource:
             return "incomplete_intent"
+        if type(intent.cost) is not int:
+            return "invalid_cost"
         if intent.cost < 0 or intent.cost > self.policy.max_cost:
             return "budget_exceeded"
         if intent.action not in self.policy.allowed_actions:
@@ -490,7 +497,9 @@ class GovernanceKernel:
         signature = hmac.new(self._secret, payload.encode(), sha256).hexdigest()
         permit = f"{payload}:{signature}"
         issued_at_ns = self._clock() if timestamp_ns is None else timestamp_ns
-        replay = self._state.issue_permit(permit, digest, reason, issued_at_ns, approval)
+        replay = self._state.issue_permit(permit, digest, reason, issued_at_ns, approval,
+            policy_hash=self.policy_hash, issuer_hash=self._permit_issuer,
+            expires_at_ns=None if envelope is None else envelope.expires_at_ns)
         if replay:
             if envelope is None:
                 raise RuntimeError("state rejected an approval-free permit")
@@ -537,7 +546,7 @@ class GovernanceKernel:
 
     def consume(self, permit: str, intent: Intent) -> bool:
         digest = self.intent_hash(intent)
-        return self._state.consume_permit(permit, digest, self._clock())
+        return self._state.consume_permit(permit, digest, self._clock(), policy_hash=self.policy_hash, issuer_hash=self._permit_issuer)
 
     def verify_audit(self) -> bool:
         engine = self._audit_verification_engine

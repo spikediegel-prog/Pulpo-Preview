@@ -85,10 +85,10 @@ def create_app(
 
     @app.post("/v1/approval-requests")
     def request_approval(body: RequestBody, request: FastAPIRequest) -> dict[str, str]:
-        require_worker(request)
+        identity = require_worker(request)
         try:
             request_id, approval_url = service.request_approval(
-                ApprovalRequest(**body.model_dump(by_alias=True))
+                ApprovalRequest(**body.model_dump(by_alias=True)), worker_identity=identity
             )
         except (ValueError, RuntimeError) as exc:
             raise HTTPException(status_code=400, detail="approval request rejected") from exc
@@ -96,10 +96,10 @@ def create_app(
 
     @app.get("/v1/approval-requests/{request_id}")
     def poll_approval(request_id: str, request: FastAPIRequest) -> dict[str, object]:
-        require_worker(request)
+        identity = require_worker(request)
         try:
-            return service.poll(request_id)
-        except KeyError as exc:
+            return service.poll(request_id, worker_identity=identity)
+        except (KeyError, PermissionError) as exc:
             raise HTTPException(status_code=404, detail="unknown approval request") from exc
         except RuntimeError as exc:
             raise HTTPException(status_code=503, detail="authority unavailable") from exc

@@ -1,0 +1,120 @@
+{
+  "base": {
+    "commit": "c66b95edeb8e6a7a0ccb3ab6040697accdeeffc4",
+    "github_tree": "1f4d0b4a871a3197cae628ef542be51de25e07d6",
+    "fixture_tree": "1f4d0b4a871a3197cae628ef542be51de25e07d6",
+    "all_base_bytes_verified": true
+  },
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "passed": 766,
+  "skipped": 6,
+  "new_regressions": 16,
+  "commands": [
+    {
+      "suite": "core",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-governance-pr-p3u4v6_f/source",
+      "environment": {
+        "PYTHONPATH": "/home/spike/pulpo-governance-pr-p3u4v6_f/source:/home/spike/pulpo-governance-pr-p3u4v6_f/source/custody-service/src:/home/spike/pulpo-governance-pr-p3u4v6_f/source/authority-service/src",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "exit_code": 0,
+      "seconds": 39.021
+    },
+    {
+      "suite": "custody",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "custody-service/tests",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-governance-pr-p3u4v6_f/source",
+      "environment": {
+        "PYTHONPATH": "/home/spike/pulpo-governance-pr-p3u4v6_f/source:/home/spike/pulpo-governance-pr-p3u4v6_f/source/custody-service/src:/home/spike/pulpo-governance-pr-p3u4v6_f/source/authority-service/src",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "exit_code": 0,
+      "seconds": 1.286
+    },
+    {
+      "suite": "authority",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "authority-service/tests",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-governance-pr-p3u4v6_f/source",
+      "environment": {
+        "PYTHONPATH": "/home/spike/pulpo-governance-pr-p3u4v6_f/source:/home/spike/pulpo-governance-pr-p3u4v6_f/source/custody-service/src:/home/spike/pulpo-governance-pr-p3u4v6_f/source/authority-service/src",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "exit_code": 0,
+      "seconds": 0.741
+    }
+  ],
+  "suites": {
+    "core": {
+      "tests": 657,
+      "seconds": 38.668,
+      "result": "OK (skipped=2)",
+      "raw_log_sha256": "5ba1464d4ac283c135f0edc6b0773f8c7c6eff8bccdc42c7600eb2e3f3d3fb37"
+    },
+    "custody": {
+      "tests": 45,
+      "seconds": 0.703,
+      "result": "OK",
+      "raw_log_sha256": "1121b75cb1ee2beaa37be5ab660d40795c833ad6520caf80cc6e7adc9616332a"
+    },
+    "authority": {
+      "tests": 70,
+      "seconds": 0.244,
+      "result": "OK (skipped=4)",
+      "raw_log_sha256": "93460181e976a0f5798d33e9e176e938d1cc4f63412174e3497ed62a98bad735"
+    }
+  },
+  "tested_source_sha256": {
+    "authority-service/src/pulpo_authority_service/api.py": "af4beed91a6fd26afeacb0d11b7b726d7b8c09364ef97e47422a1f545f06e4f4",
+    "authority-service/src/pulpo_authority_service/core.py": "90bae2e71cd5bc379a602cc11a06caf29e066d5c98bb27a963246f4b6d852fc3",
+    "authority-service/src/pulpo_authority_service/postgres_state.py": "a9ddc81cf19ffc8bbb17e875fe5fa173f12ae2b08ac3c5c70711531bfdae1101",
+    "authority-service/src/pulpo_authority_service/restart_adapters.py": "6173ea3e3ba635aa5012fcb10bb5912005307c373e39e23d6b24a1528b487bf9",
+    "authority-service/tests/test_request_ownership.py": "e67ac15be9da80424cefc277d330e3816dd1058ea69e01ad5f6050479caf61e3",
+    "pulpo/custody.py": "e3c760276d89bc66d96c9e3d2c4e3c8512f9ad1c8ee5f853dd75c13a42747913",
+    "pulpo/custody_executor.py": "6147caacfb787b4abaab77d6d653c768b72ccc594f0478b374866b84d93d6580",
+    "pulpo/kernel.py": "f1aaa2e2499f74747bf63653bdae80d3e63a4cfe963490a35e497f507fc92490",
+    "pulpo/state.py": "09b3071cf0da13b4b400d6af91f05c7607be71be0e932a802be1841f918c0789",
+    "tests/test_governance_security_regressions.py": "dc9d3fe9dc1d67aa4ee918811e8c06844f3394c1cdf17ce91a9f529077a95f8b",
+    "docs/security/GOVERNANCE_FIXES_20261018.md": "b2238cac8585b682e48f0a46bc292975169a61b706254552ba187ee1be1d428e",
+    "docs/security/PATCH_HISTORY_20261018.md": "ecf6edb8249e4b76e1f4218ca20f4c87c7289b351c43e81dfa8c75795e551f29"
+  }
+}

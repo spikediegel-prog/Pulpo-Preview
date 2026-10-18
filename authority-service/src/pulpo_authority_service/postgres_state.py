@@ -32,7 +32,7 @@ def _canonical(value: object) -> bytes:
 
 
 class _DurableRequestState(RequestState):
-    _TRACKED = {"status", "envelope", "reason", "evidence_hash", "evidence_bundle"}
+    _TRACKED = {"status", "envelope", "reason", "evidence_hash", "evidence_bundle", "worker_identity"}
 
     def __init__(
         self,
@@ -45,6 +45,7 @@ class _DurableRequestState(RequestState):
         reason: str | None = None,
         evidence_hash: str | None = None,
         evidence_bundle: dict[str, object] | None = None,
+        worker_identity: str | None = None,
         *,
         on_change: Callable[[], None],
     ) -> None:
@@ -59,6 +60,7 @@ class _DurableRequestState(RequestState):
             reason,
             evidence_hash,
             evidence_bundle,
+            worker_identity,
         )
         object.__setattr__(self, "_on_change", on_change)
 
@@ -306,6 +308,7 @@ class PostgresAuthorityState:
             value.reason,
             value.evidence_hash,
             value.evidence_bundle,
+            value.worker_identity,
             on_change=self._mark_request_changed,
         )
 
@@ -338,6 +341,7 @@ class PostgresAuthorityState:
                     "reason": item.reason,
                     "evidence_hash": item.evidence_hash,
                     "evidence_bundle": item.evidence_bundle,
+                    "worker_identity": item.worker_identity,
                 }
             )
         return {
@@ -397,6 +401,7 @@ class PostgresAuthorityState:
                 reason=item["reason"],
                 evidence_hash=item["evidence_hash"],
                 evidence_bundle=item.get("evidence_bundle"),
+                worker_identity=item.get("worker_identity"),
                 on_change=self._mark_request_changed,
             )
             loaded_requests[loaded.request_id] = loaded

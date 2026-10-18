@@ -170,6 +170,7 @@ class RequestState:
     reason: str | None = None
     evidence_hash: str | None = None
     evidence_bundle: dict[str, object] | None = None
+    worker_identity: str | None = None
 
 
 class InMemoryState:
@@ -238,7 +239,9 @@ class AuthorityService:
         if signer_trust != configured_trust:
             raise ValueError("signer does not match pinned authority trust")
 
-    def request_approval(self, request: ApprovalRequest) -> tuple[str, str]:
+    def request_approval(self, request: ApprovalRequest, *, worker_identity: str | None = None) -> tuple[str, str]:
+        if worker_identity is not None:
+            _require_text(worker_identity, "worker_identity")
         if request.deployment_id != self.config.trust.deployment_id:
             raise ValueError("deployment mismatch")
         if request.intent_hash != request.recomputed_intent_hash:
@@ -280,7 +283,7 @@ class AuthorityService:
             ).digest()
             if request_id in self.state.requests:
                 raise RuntimeError("request identifier collision")
-            self.state.requests[request_id] = RequestState(request_id, request, unsigned, challenge)
+            self.state.requests[request_id] = RequestState(request_id, request, unsigned, challenge, worker_identity=worker_identity)
         approval_url = f"{self.config.origin}{self.config.approval_path_prefix}{request_id}"
         return request_id, approval_url
 
@@ -386,9 +389,11 @@ class AuthorityService:
         # the exact verified assertion and envelope are already durable.
         return self._complete_evidence(request_id)
 
-    def poll(self, request_id: str) -> dict[str, object]:
+    def poll(self, request_id: str, *, worker_identity: str | None = None) -> dict[str, object]:
         with self.state.lock:
             record = self._record(request_id)
+            if worker_identity is not None and record.worker_identity != worker_identity:
+                raise PermissionError("approval request owner mismatch")
             self._expire(record)
             status = record.status
 
