@@ -17,4 +17,3 @@ test_same_request_race_across_independent_postgres_state_objects_serializes_once
 test_state_payload_tamper_without_matching_hash_fails_closed (test_postgres_state.PostgresAuthorityStateTests.test_state_payload_tamper_without_matching_hash_fails_closed) ... skipped 'PULPO_AUTHORITY_TEST_POSTGRES_DSN not configured'
 Ran 67 tests in 0.229s
 OK (skipped=4)
-
