@@ -1,0 +1,55 @@
+{
+  "scope": "Exact runtime configuration AST only; no service construction or real credentials",
+  "config_tests": [
+    {
+      "field": "PULPO_KERNEL_SECRET_HEX",
+      "case": "missing",
+      "accepted": false,
+      "reason": "missing required environment variable: PULPO_KERNEL_SECRET_HEX"
+    },
+    {
+      "field": "PULPO_KERNEL_SECRET_HEX",
+      "case": "short",
+      "accepted": false,
+      "reason": "PULPO_KERNEL_SECRET_HEX must encode at least 32 bytes"
+    },
+    {
+      "field": "PULPO_KERNEL_SECRET_HEX",
+      "case": "all-zero",
+      "accepted": false,
+      "reason": "PULPO_KERNEL_SECRET_HEX must not be a known fixture or repeated-pattern placeholder; configure a securely generated secret"
+    },
+    {
+      "field": "PULPO_KERNEL_SECRET_HEX",
+      "case": "published-fixture",
+      "accepted": false,
+      "reason": "PULPO_KERNEL_SECRET_HEX must not be a known fixture or repeated-pattern placeholder; configure a securely generated secret"
+    },
+    {
+      "field": "PULPO_CUSTODY_SECRET_HEX",
+      "case": "missing",
+      "accepted": false,
+      "reason": "missing required environment variable: PULPO_CUSTODY_SECRET_HEX"
+    },
+    {
+      "field": "PULPO_CUSTODY_SECRET_HEX",
+      "case": "short",
+      "accepted": false,
+      "reason": "PULPO_CUSTODY_SECRET_HEX must encode at least 32 bytes"
+    },
+    {
+      "field": "PULPO_CUSTODY_SECRET_HEX",
+      "case": "all-zero",
+      "accepted": false,
+      "reason": "PULPO_CUSTODY_SECRET_HEX must not be a known fixture or repeated-pattern placeholder; configure a securely generated secret"
+    },
+    {
+      "field": "PULPO_CUSTODY_SECRET_HEX",
+      "case": "published-fixture",
+      "accepted": false,
+      "reason": "PULPO_CUSTODY_SECRET_HEX must not be a known fixture or repeated-pattern placeholder; configure a securely generated secret"
+    }
+  ],
+  "default_kernel_secret_bytes": 32,
+  "independent_default_kernel_secrets_differ": true
+}

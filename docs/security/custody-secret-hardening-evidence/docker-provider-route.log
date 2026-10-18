@@ -1,0 +1,8 @@
+provider_dns_route_blocked: PASS
+provider_raw_ip_route_blocked: PASS
+worker_to_custody: PASS
+custody_to_provider: PASS
+worker_to_provider_dns: DENIED
+worker_to_provider_raw_ip: DENIED
+exclusive_provider_route_isolation: PASS
+scope: exact Docker proof topology only

@@ -1,4 +1,5 @@
 import tempfile
+import secrets
 import unittest
 from pathlib import Path
 
@@ -24,8 +25,8 @@ class CustodyRuntimeTests(unittest.TestCase):
         )
         self.env = {
             "PULPO_CUSTODY_STATE_PATH": str(self.state_path),
-            "PULPO_KERNEL_SECRET_HEX": "11" * 32,
-            "PULPO_CUSTODY_SECRET_HEX": "22" * 32,
+            "PULPO_KERNEL_SECRET_HEX": secrets.token_hex(32),
+            "PULPO_CUSTODY_SECRET_HEX": secrets.token_hex(32),
             "PULPO_AUTHORITY_PUBLIC_KEY_HEX": public.hex(),
             "PULPO_AUTHORITY_ID": "authority:external-human-v0",
             "PULPO_AUTHORITY_VERIFIER_ID": "verifier:ed25519:custody-v0",
@@ -96,6 +97,61 @@ class CustodyRuntimeTests(unittest.TestCase):
                 env[name] = "aa" * 16
                 with self.assertRaisesRegex(RuntimeConfigError, "at least 32 bytes"):
                     RuntimeConfig.from_environ(env)
+
+    def test_missing_empty_and_malformed_secrets_do_not_fall_back(self):
+        for name in ("PULPO_KERNEL_SECRET_HEX", "PULPO_CUSTODY_SECRET_HEX"):
+            for value in (None, "", "not-hex", "a" * 63):
+                with self.subTest(name=name, value=value):
+                    env = dict(self.env)
+                    if value is None:
+                        env.pop(name)
+                    else:
+                        env[name] = value
+                    with self.assertRaises(RuntimeConfigError):
+                        RuntimeConfig.from_environ(env)
+                    self.assertFalse(self.state_path.exists())
+
+    def test_published_and_repeated_placeholders_fail_before_state_creation(self):
+        placeholders = [bytes([value]) * 32 for value in range(256)]
+        placeholders.extend([
+            b"test" * 8,
+            b"password" * 4,
+            b"0123456789abcdef" * 2,
+            (b"replace-me" * 4)[:33],
+            b"\x00" * 64,
+        ])
+        for name in ("PULPO_KERNEL_SECRET_HEX", "PULPO_CUSTODY_SECRET_HEX"):
+            for raw in placeholders:
+                with self.subTest(name=name, length=len(raw)):
+                    value = raw.hex()
+                    with self.assertRaisesRegex(RuntimeConfigError, "known fixture or repeated-pattern") as caught:
+                        RuntimeConfig.from_environ({**self.env, name: value})
+                    self.assertNotIn(value, str(caught.exception))
+                    self.assertFalse(self.state_path.exists())
+
+    def test_normalized_hex_cannot_disguise_placeholder(self):
+        for name in ("PULPO_KERNEL_SECRET_HEX", "PULPO_CUSTODY_SECRET_HEX"):
+            for value in ("AB" * 32, " ".join(["11"] * 32), "22" * 48):
+                with self.subTest(name=name):
+                    with self.assertRaisesRegex(RuntimeConfigError, "repeated-pattern"):
+                        RuntimeConfig.from_environ({**self.env, name: value})
+
+    def test_generated_secrets_are_preserved_and_restart_configuration_is_stable(self):
+        for length in (32, 48, 64):
+            env = {**self.env, "PULPO_KERNEL_SECRET_HEX": secrets.token_hex(length),
+                   "PULPO_CUSTODY_SECRET_HEX": secrets.token_hex(length)}
+            first = RuntimeConfig.from_environ(env)
+            second = RuntimeConfig.from_environ(env)
+            self.assertEqual(bytes.fromhex(env["PULPO_KERNEL_SECRET_HEX"]), first.kernel_secret)
+            self.assertEqual(bytes.fromhex(env["PULPO_CUSTODY_SECRET_HEX"]), first.custody_secret)
+            self.assertEqual(first, second)
+            self.assertFalse(self.state_path.exists())
+
+    def test_public_verifier_bytes_do_not_receive_secret_placeholder_rule(self):
+        # A public verification key is not a secret; its existing exact-length
+        # check is separate. Cryptographic validation remains with the verifier.
+        config = RuntimeConfig.from_environ({**self.env, "PULPO_AUTHORITY_PUBLIC_KEY_HEX": "00" * 32})
+        self.assertEqual(bytes(32), config.authority_public_key)
 
 
 if __name__ == "__main__":

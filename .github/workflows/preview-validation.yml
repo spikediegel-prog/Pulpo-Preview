@@ -108,6 +108,10 @@ jobs:
           }
           trap cleanup EXIT
 
+          # Ephemeral internal test keys; never reuse published fixture values.
+          kernel_secret="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+          custody_secret="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+
           docker run -d \
             --name "$custody" \
             --network "$network" \
@@ -117,8 +121,8 @@ jobs:
             --security-opt no-new-privileges:true \
             -v "$volume:/var/lib/pulpo:rw" \
             -e PULPO_CUSTODY_STATE_PATH=/var/lib/pulpo/custody.sqlite3 \
-            -e PULPO_KERNEL_SECRET_HEX=1111111111111111111111111111111111111111111111111111111111111111 \
-            -e PULPO_CUSTODY_SECRET_HEX=2222222222222222222222222222222222222222222222222222222222222222 \
+            -e "PULPO_KERNEL_SECRET_HEX=${kernel_secret}" \
+            -e "PULPO_CUSTODY_SECRET_HEX=${custody_secret}" \
             -e PULPO_AUTHORITY_PUBLIC_KEY_HEX=d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a \
             -e PULPO_AUTHORITY_ID=authority:container-test \
             -e PULPO_AUTHORITY_VERIFIER_ID=verifier:container-ed25519 \
