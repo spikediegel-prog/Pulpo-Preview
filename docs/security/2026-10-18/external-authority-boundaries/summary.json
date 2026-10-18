@@ -1,0 +1,107 @@
+{
+  "base_commit": "ef314e313f264281acbb7df3d44573a85598d726",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "test_sha256": "972ad4ffca50031afdbe4209bd2ec0b8e99d88a789e65afe8455f1b6d7cd5475",
+  "all_suites_passed": true,
+  "base_tree": {
+    "head": "ef314e313f264281acbb7df3d44573a85598d726",
+    "github_tree": "ffcb18259718cfd0b87285d15e3d2cdc359adf70",
+    "reconstructed_tree": "ffcb18259718cfd0b87285d15e3d2cdc359adf70",
+    "all_changed_blobs_match": true,
+    "method": "Local base plus GitHub API compare delta; full Git tree SHA matched before adding candidate test."
+  },
+  "commands": [
+    {
+      "label": "core",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-security-pr-verified-nefhme7m/source",
+      "environment": {
+        "PYTHONPATH": "/home/spike/pulpo-security-pr-verified-nefhme7m/source:/home/spike/pulpo-security-pr-verified-nefhme7m/source/custody-service/src:/home/spike/pulpo-security-pr-verified-nefhme7m/source/authority-service/src",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "exit_code": 0,
+      "elapsed_seconds": 39.217
+    },
+    {
+      "label": "custody",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "custody-service/tests",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-security-pr-verified-nefhme7m/source",
+      "environment": {
+        "PYTHONPATH": "/home/spike/pulpo-security-pr-verified-nefhme7m/source:/home/spike/pulpo-security-pr-verified-nefhme7m/source/custody-service/src:/home/spike/pulpo-security-pr-verified-nefhme7m/source/authority-service/src",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "exit_code": 0,
+      "elapsed_seconds": 1.191
+    },
+    {
+      "label": "authority",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "authority-service/tests",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-security-pr-verified-nefhme7m/source",
+      "environment": {
+        "PYTHONPATH": "/home/spike/pulpo-security-pr-verified-nefhme7m/source:/home/spike/pulpo-security-pr-verified-nefhme7m/source/custody-service/src:/home/spike/pulpo-security-pr-verified-nefhme7m/source/authority-service/src",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "exit_code": 0,
+      "elapsed_seconds": 0.707
+    }
+  ],
+  "suites": {
+    "core": {
+      "tests": 644,
+      "seconds": 38.248,
+      "result": "OK (skipped=2)",
+      "log_sha256": "b4f931709f15ae8b4eec2ff34ea6d253ec5614c2055a9ba3635c6197666ecadf"
+    },
+    "custody": {
+      "tests": 45,
+      "seconds": 0.649,
+      "result": "OK",
+      "log_sha256": "d74fe173620ad9243fc52ab1d719b7b5cd67abfb5ddfc2a0022cc6db1d4958f5"
+    },
+    "authority": {
+      "tests": 67,
+      "seconds": 0.229,
+      "result": "OK (skipped=4)",
+      "log_sha256": "493b3d2da2bd60270161d3d78085540d5ff3d271a79d132fd07c73a7e3ec571e"
+    }
+  }
+}
