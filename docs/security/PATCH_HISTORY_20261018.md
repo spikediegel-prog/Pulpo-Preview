@@ -89,3 +89,11 @@ execution interleavings. No production compromise or forged permit is asserted.
 
 Continue decision: synthetic loopback tests and evidence only. No real credential
 duplication, production provider route or production state mutation occurs.
+
+## Governance security fixes — 2026-10-18
+
+Added atomic in-memory replay handling, strict cost validation, custody execution
+deadline checks, policy/configured-issuer/approval-lifetime permit bindings, and
+persistent authenticated ownership of approval requests. See
+[the fix and migration record](GOVERNANCE_FIXES_20261018.md) and
+[PR validation evidence](2026-10-18/governance-fixes/summary.json).

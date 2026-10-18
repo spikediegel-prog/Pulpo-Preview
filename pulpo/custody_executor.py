@@ -122,6 +122,9 @@ class TrustedDomainExecutor:
     ) -> ProviderAttemptClaim:
         self._validate_handle(governed, order)
 
+        head = self.custody.snapshot()
+        if self.custody._custody_now(head) >= order.expires_at_ns:
+            raise CustodyViolation("order_expired")
         self._claim_or_resume(governed.attempt_id)
 
         preflight_hash = adapter.preflight(order)
@@ -136,6 +139,7 @@ class TrustedDomainExecutor:
             expected_state_root=head.state_root,
             attempt_id=governed.attempt_id,
             provider_request_id=provider_request_id,
+            expires_at_ns=order.expires_at_ns,
         )
         try:
             self._project_evidence()
@@ -144,6 +148,10 @@ class TrustedDomainExecutor:
             # and cannot advance again until the obligation is projected.
             raise CustodyViolation("transmission_evidence_not_canonical") from exc
 
+        # Evidence projection may itself take time. The already-recorded
+        # transmission state remains conservative if expiry prevents the call.
+        if self.custody._custody_now(self.custody.snapshot()) >= order.expires_at_ns:
+            raise CustodyViolation("order_expired")
         try:
             result = adapter.purchase(
                 order,
