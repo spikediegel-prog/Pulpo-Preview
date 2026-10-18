@@ -1,0 +1,50 @@
+{
+  "audited_repository": "https://github.com/spikediegel-prog/Pulpo-Preview",
+  "audited_base_sha": "31dd3b757e16af18986b0608b2b94d534a376165",
+  "tested_platform": "Ubuntu 26.04.1 LTS in WSL2",
+  "kernel": "6.18.33.2-microsoft-standard-WSL2",
+  "python": "3.14.4-1ubuntu0.2",
+  "sqlite": "3.46.1-9ubuntu0.3",
+  "openssl": "3.5.5-1ubuntu3.7",
+  "mcp": "2.3.0",
+  "fastapi": "0.141.1",
+  "starlette": "1.8.0",
+  "uvicorn": "0.52.4",
+  "httpx2": "2.12.0",
+  "anyio": "4.14.2",
+  "cryptography": "50.0.1",
+  "webauthn": "3.0.0",
+  "baseline_tests": {
+    "full_core": 632,
+    "full_core_skipped": 2,
+    "custody": 32,
+    "authority": 67,
+    "authority_skipped": 4
+  },
+  "candidate_tests": {
+    "custody": 40,
+    "new_admission": 8,
+    "new_admission_failures_on_baseline": 6
+  },
+  "dependency_scan": {
+    "scanner": "pip-audit 2.10.1",
+    "scanned_distributions": 92,
+    "known_matches": 0
+  },
+  "claim_classification": {
+    "custody_unbounded_admission": "Verified",
+    "custody_large_input_availability_impact": "Inferred; no OOM attempted",
+    "tarfile_CVE_2026_19672": "Verified in OS runtime; no matching Pulpo extraction path found",
+    "isolated_upstream_tarfile_patch_prevents_repro": "Verified; no system Python change"
+  },
+  "authority_delta": "none",
+  "canonical_state_mutations_introduced": [],
+  "unverified": [
+    "native Ubuntu 24.04",
+    "Microsoft WSL kernel CVE status",
+    "live PostgreSQL",
+    "real cloud/provider/human signing/tunnel integrations",
+    "exact Python 3.11 container packages"
+  ],
+  "source_paths_in_copied_json": "Temporary workspace labels normalized; test content and results unchanged"
+}

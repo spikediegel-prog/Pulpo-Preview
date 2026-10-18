@@ -1,0 +1,106 @@
+test_declared_oversize_rejected_before_read_or_service (test_request_limits.CustodyAdmissionTests.test_declared_oversize_rejected_before_read_or_service) ... FAIL
+test_health_route_remains_available (test_request_limits.CustodyAdmissionTests.test_health_route_remains_available) ... ok
+test_invalid_content_length_rejected_before_service (test_request_limits.CustodyAdmissionTests.test_invalid_content_length_rejected_before_service) ... FAIL
+test_negative_content_length_rejected_before_service (test_request_limits.CustodyAdmissionTests.test_negative_content_length_rejected_before_service) ... FAIL
+test_oversize_header_rejected_before_service (test_request_limits.CustodyAdmissionTests.test_oversize_header_rejected_before_service) ... FAIL
+test_oversize_target_rejected_before_service (test_request_limits.CustodyAdmissionTests.test_oversize_target_rejected_before_service) ... FAIL
+test_small_valid_proposal_reaches_existing_service (test_request_limits.CustodyAdmissionTests.test_small_valid_proposal_reaches_existing_service) ... ok
+test_streamed_oversize_stops_before_complete_body (test_request_limits.CustodyAdmissionTests.test_streamed_oversize_stops_before_complete_body) ... FAIL
+
+======================================================================
+FAIL: test_declared_oversize_rejected_before_read_or_service (test_request_limits.CustodyAdmissionTests.test_declared_oversize_rejected_before_read_or_service)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-preview-security-20261017-6sMHwo/candidate/custody-service/tests/test_request_limits.py", line 38, in test_declared_oversize_rejected_before_read_or_service
+    self.assertEqual((413,0,0),self.request(body,headers=[(b'content-length',str(len(body)).encode())]))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (413, 0, 0) != (403, 524313, 1)
+
+First differing element 0:
+413
+403
+
+- (413, 0, 0)
++ (403, 524313, 1)
+
+======================================================================
+FAIL: test_invalid_content_length_rejected_before_service (test_request_limits.CustodyAdmissionTests.test_invalid_content_length_rejected_before_service)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-preview-security-20261017-6sMHwo/candidate/custody-service/tests/test_request_limits.py", line 53, in test_invalid_content_length_rejected_before_service
+    self.assertEqual((400,0,0),self.request(b'{}',headers=[(b'content-length',b'bad')]))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (400, 0, 0) != (422, 2, 0)
+
+First differing element 0:
+400
+422
+
+- (400, 0, 0)
++ (422, 2, 0)
+
+======================================================================
+FAIL: test_negative_content_length_rejected_before_service (test_request_limits.CustodyAdmissionTests.test_negative_content_length_rejected_before_service)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-preview-security-20261017-6sMHwo/candidate/custody-service/tests/test_request_limits.py", line 56, in test_negative_content_length_rejected_before_service
+    self.assertEqual((400,0,0),self.request(b'{}',headers=[(b'content-length',b'-1')]))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (400, 0, 0) != (422, 2, 0)
+
+First differing element 0:
+400
+422
+
+- (400, 0, 0)
++ (422, 2, 0)
+
+======================================================================
+FAIL: test_oversize_header_rejected_before_service (test_request_limits.CustodyAdmissionTests.test_oversize_header_rejected_before_service)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-preview-security-20261017-6sMHwo/candidate/custody-service/tests/test_request_limits.py", line 65, in test_oversize_header_rejected_before_service
+    self.assertEqual((431,0,0),self.request(b'{}',headers=[(b'x-test',b'x'*32768)]))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (431, 0, 0) != (422, 2, 0)
+
+First differing element 0:
+431
+422
+
+- (431, 0, 0)
++ (422, 2, 0)
+
+======================================================================
+FAIL: test_oversize_target_rejected_before_service (test_request_limits.CustodyAdmissionTests.test_oversize_target_rejected_before_service)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-preview-security-20261017-6sMHwo/candidate/custody-service/tests/test_request_limits.py", line 62, in test_oversize_target_rejected_before_service
+    self.assertEqual((414,0,0),self.request(b'{}',path='/'+'x'*8192))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (414, 0, 0) != (404, 0, 0)
+
+First differing element 0:
+414
+404
+
+- (414, 0, 0)
+?   ^
+
++ (404, 0, 0)
+?   ^
+
+
+======================================================================
+FAIL: test_streamed_oversize_stops_before_complete_body (test_request_limits.CustodyAdmissionTests.test_streamed_oversize_stops_before_complete_body)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-preview-security-20261017-6sMHwo/candidate/custody-service/tests/test_request_limits.py", line 43, in test_streamed_oversize_stops_before_complete_body
+    self.assertEqual(413,status)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+AssertionError: 413 != 403
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.057s
+
+FAILED (failures=6)

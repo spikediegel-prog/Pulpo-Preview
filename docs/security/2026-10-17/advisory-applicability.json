@@ -1,0 +1,252 @@
+[
+  {
+    "id": "GHSA-jpw9-pfvf-9f58 / CVE-2026-52869",
+    "topic": "Cross-principal HTTP session access",
+    "affected_versions": "mcp <=1.27.1; fixed 1.27.2",
+    "applicability": "Not applicable to inspected Preview path",
+    "priority": "No immediate patch",
+    "evidence": "Pulpo uses stdio; resolved mcp 2.3.0 is outside the affected range.",
+    "source": "https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-jpw9-pfvf-9f58",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-hvrp-rf83-w775",
+    "topic": "Experimental task ownership",
+    "affected_versions": "mcp >=1.23.0, <=1.27.1; fixed 1.27.2",
+    "applicability": "Not applicable to inspected Preview path",
+    "priority": "No immediate patch",
+    "evidence": "No enable_tasks call; stdio projection registers exactly two tools.",
+    "source": "https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-hvrp-rf83-w775",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-9h52-p55h-vw2f",
+    "topic": "DNS rebinding",
+    "affected_versions": "mcp <1.23.0; fixed 1.23.0",
+    "applicability": "Not applicable to inspected Preview path",
+    "priority": "No immediate patch",
+    "evidence": "No HTTP MCP listener in the inspected entrypoint.",
+    "source": "https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-9h52-p55h-vw2f",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-vj7q-gjh5-988w / CVE-2026-59950",
+    "topic": "WebSocket Host/Origin validation",
+    "affected_versions": "mcp <1.28.1; fixed 1.28.1",
+    "applicability": "Not applicable to inspected Preview path",
+    "priority": "No immediate patch",
+    "evidence": "No WebSocket MCP server; resolved 2.3.0.",
+    "source": "https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-vj7q-gjh5-988w",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-fmmv-w9g8-j3gc / CVE-2026-109527",
+    "topic": "Unbounded HTTP request buffering",
+    "affected_versions": "mcp <1.29.1 or >=2.0.0,<2.1.0; fixed 1.29.1/2.1.0",
+    "applicability": "Not applicable to inspected Preview path",
+    "priority": "No immediate patch",
+    "evidence": "MCP entrypoint is stdio. Custody has a separate analogous application flaw, F1.",
+    "source": "https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-fmmv-w9g8-j3gc",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-84m7-p3x7-pcfv",
+    "topic": "Unreclaimed Streamable HTTP sessions",
+    "affected_versions": "mcp >=1.8.0,<1.30.0 or >=2.0.0,<2.2.0; fixed 1.30.0/2.2.0",
+    "applicability": "Not applicable to inspected Preview path",
+    "priority": "No immediate patch",
+    "evidence": "No stateful HTTP MCP session manager is launched.",
+    "source": "https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-84m7-p3x7-pcfv",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-w4fh-qvv9-3v23",
+    "topic": "Bearer audience validation",
+    "affected_versions": "mcp >=1.10.0,<1.30.0 or >=2.0.0,<2.2.0; fixed 1.30.0/2.2.0",
+    "applicability": "Not applicable to inspected Preview path",
+    "priority": "No immediate patch",
+    "evidence": "No SDK bearer-auth HTTP surface. Future HTTP integrations must enable audience checks; upgrade alone is insufficient.",
+    "source": "https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-w4fh-qvv9-3v23",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-rwrf-2pqf-9j8j",
+    "topic": "Tool output-schema external references",
+    "affected_versions": "mcp >=1.10.0,<1.30.0 or >=2.0.0,<2.2.0; fixed 1.30.0/2.2.0",
+    "applicability": "Not applicable to inspected Preview path",
+    "priority": "No immediate patch",
+    "evidence": "Pulpo builds an MCP server, not an SDK client for untrusted tool servers.",
+    "source": "https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-rwrf-2pqf-9j8j",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-qx49-fqc8-xw99",
+    "topic": "OAuth credential destination confusion",
+    "affected_versions": "mcp >=1.9.1,<1.30.0 or >=2.0.0a1,<2.2.0; fixed 1.30.0/2.2.0",
+    "applicability": "Not applicable to inspected Preview path",
+    "priority": "No immediate patch",
+    "evidence": "No SDK OAuth client. Future unattended providers also need explicit issuer binding.",
+    "source": "https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-qx49-fqc8-xw99",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-5h93-6whr-6q8j",
+    "topic": "Cross-origin HTTP redirect leakage",
+    "affected_versions": "mcp >=1.8.0,<1.30.0 or >=2.0.0,<2.2.0; fixed 1.30.0/2.2.0",
+    "applicability": "Not applicable to inspected Preview path",
+    "priority": "No immediate patch",
+    "evidence": "No SDK HTTP client; Pulpo secure_urlopen independently disables redirects.",
+    "source": "https://github.com/modelcontextprotocol/python-sdk/security/advisories/GHSA-5h93-6whr-6q8j",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-jm63-cq47-j5jp",
+    "topic": "Shared HTTP transport/server response routing",
+    "affected_versions": "@modelcontextprotocol/server >=2.0.0,<2.3.0; fixed 2.3.0",
+    "applicability": "Component absent",
+    "priority": "No patch",
+    "evidence": "No TypeScript SDK or npm dependency manifest in the inspected Preview source.",
+    "source": "https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-jm63-cq47-j5jp",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-46jr-4wx8-v453",
+    "topic": "Validation memory amplification",
+    "affected_versions": "@modelcontextprotocol/sdk >=1.3.0,<1.32.0; @modelcontextprotocol/server >=2.0.0,<2.3.0",
+    "applicability": "Component absent",
+    "priority": "No patch",
+    "evidence": "No TypeScript SDK or npm dependency manifest in the inspected Preview source.",
+    "source": "https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-46jr-4wx8-v453",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-f897-62hf-6gxq",
+    "topic": "HTTP body and JSON-RPC batch limits",
+    "affected_versions": "SDK 1.10.0\u20131.30.0; server/node/hono 2.0.0",
+    "applicability": "Component absent",
+    "priority": "No patch",
+    "evidence": "No TypeScript SDK or npm dependency manifest in the inspected Preview source.",
+    "source": "https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-f897-62hf-6gxq",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "GHSA-345p-7cg4-v4c7 / CVE-2026-25536",
+    "topic": "Cross-client response leakage",
+    "affected_versions": "@modelcontextprotocol/sdk >=1.10.0,<=1.25.3; fixed 1.26.0",
+    "applicability": "Component absent",
+    "priority": "No patch",
+    "evidence": "No TypeScript SDK or npm dependency manifest in the inspected Preview source.",
+    "source": "https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-345p-7cg4-v4c7",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2025-6514 / GHSA-6xpm-ggf7-wc3p",
+    "topic": "mcp-remote OAuth OS command injection",
+    "affected_versions": "mcp-remote >=0.0.5,<0.1.16; fixed 0.1.16",
+    "applicability": "Component absent",
+    "priority": "No patch",
+    "evidence": "Pulpo tunnel launcher uses an operator-installed tunnel-client, not mcp-remote. Its exact binary version remains unknown.",
+    "source": "https://github.com/advisories/GHSA-6xpm-ggf7-wc3p",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2025-68145 / GHSA-j22h-9j4x-23w5",
+    "topic": "mcp-server-git repository path escape",
+    "affected_versions": "mcp-server-git <2025.12.17",
+    "applicability": "Component absent",
+    "priority": "No patch",
+    "evidence": "No mcp-server-git dependency; the two admitted MCP tools do not expose Git execution.",
+    "source": "https://github.com/modelcontextprotocol/servers/security/advisories/GHSA-j22h-9j4x-23w5",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2026-11822, CVE-2026-11824 / USN-8480-1",
+    "topic": "SQLite FTS5 memory corruption",
+    "affected_versions": "Ubuntu 26.04 fixed libsqlite3-0 3.46.1-9ubuntu0.1",
+    "applicability": "Fixed in installed Ubuntu package",
+    "priority": "Routine updates",
+    "evidence": "Installed 3.46.1-9ubuntu0.3 supersedes the fixed package. Do not compare only upstream 3.46.1 vs 3.53.2.",
+    "source": "https://lists.ubuntu.com/archives/ubuntu-security-announce/2026-June/010819.html",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2026-39113 / USN-8775-1",
+    "topic": "SQLite SQLar buffer overflow",
+    "affected_versions": "Ubuntu 26.04 fixed libsqlite3-0 3.46.1-9ubuntu0.3",
+    "applicability": "Fixed in installed Ubuntu package",
+    "priority": "Routine updates",
+    "evidence": "Installed exact fixed revision; SQLar decompression function absent in inspected Python connection.",
+    "source": "https://ubuntu.com/security/notices/USN-8775-1",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2025-3277, CVE-2025-29087, CVE-2025-6965, CVE-2025-7709",
+    "topic": "SQLite concat/SQL/FTS5 preconditions",
+    "affected_versions": "Upstream fixes 3.49.1, 3.50.2, 3.50.3 respectively",
+    "applicability": "No demonstrated Pulpo exploit path",
+    "priority": "Maintain distro security updates",
+    "evidence": "These require arbitrary SQL or attacker-controlled database content. No hostile SQL endpoint or FTS5 query is exposed by the inspected MCP/service paths. No crash payload was run; older-CVE distro backports were not individually exhaustively checked.",
+    "source": "https://www.sqlite.org/cves.html",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2026-4360, CVE-2026-6019, CVE-2026-15308 / USN-8744-1",
+    "topic": "Python extraction, cookies and HTML parsing",
+    "affected_versions": "Ubuntu 26.04 fixed python3.14 3.14.4-1ubuntu0.2",
+    "applicability": "Fixed for this notice",
+    "priority": "Routine updates",
+    "evidence": "Installed exact fixed revision. This does not imply later Python advisories are fixed.",
+    "source": "https://lists.ubuntu.com/archives/ubuntu-security-announce/2026-September/011170.html",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2026-19672",
+    "topic": "tarfile extraction creates outside directories",
+    "affected_versions": "Observed on Ubuntu Python 3.14.4-1ubuntu0.2; upstream fixed in 3.14.8",
+    "applicability": "Runtime reproduced; no Pulpo extraction path found",
+    "priority": "P2 runtime maintenance",
+    "evidence": "10,240-byte generated archive creates an empty outside directory within a disposable root. Exact upstream seven-line fix prevents it. Ubuntu tracker: needs evaluation.",
+    "source": "https://ubuntu.com/security/CVE-2026-19672",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2026-19445",
+    "topic": "Server TLS SNI SSLContext use-after-free",
+    "affected_versions": "Ubuntu python3.14 tracker needs evaluation; upstream fixed 3.14.8",
+    "applicability": "Conditional runtime exposure; path absent",
+    "priority": "P2 monitor runtime; escalate if affected TLS callback added",
+    "evidence": "No sni_callback assignment or TLS server context switching in inspected Preview source; crash/memory corruption was not attempted.",
+    "source": "https://ubuntu.com/security/CVE-2026-19445",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2026-15310, CVE-2026-15806, CVE-2026-19553",
+    "topic": "zipfile allocation, credential scheme, wrap_bio",
+    "affected_versions": "Upstream security fixes in Python 3.14.8",
+    "applicability": "No matching Pulpo code path found; runtime status not fully verified",
+    "priority": "P2 runtime maintenance",
+    "evidence": "No zipfile archive reader, HTTPPasswordMgr, or wrap_bio usage in inspected application code. No claim that installed OS backports fix these.",
+    "source": "https://www.python.org/downloads/release/python-3148/",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2026-82049",
+    "topic": "tarfile hard-link-to-symlink",
+    "affected_versions": "Python 3.14 is not affected per upstream release notes",
+    "applicability": "Not affected on tested 3.14 line",
+    "priority": "No patch for tested line",
+    "evidence": "Relevant to older Python/container lines; those exact runtime binaries were not audited.",
+    "source": "https://www.python.org/downloads/release/python-3148/",
+    "retrieved": "2026-10-17"
+  },
+  {
+    "id": "CVE-2026-31431",
+    "topic": "Linux algif_aead local privilege escalation",
+    "affected_versions": "Ubuntu GA 24.04 fixed 6.8.0-117.117; Ubuntu 26.04 not affected per tracker",
+    "applicability": "WSL kernel applicability unknown",
+    "priority": "Platform verification before native release",
+    "evidence": "WSL runs Microsoft 6.18.33.2, not an Ubuntu GA kernel. No kernel exploit was run and Ubuntu package versions cannot certify this WSL kernel.",
+    "source": "https://ubuntu.com/security/CVE-2026-31431",
+    "retrieved": "2026-10-17"
+  }
+]

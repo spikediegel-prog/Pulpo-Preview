@@ -1,0 +1,6 @@
+{
+  "sha": "16dea1e887ec7dfbed735beedd476b21dcc91a79",
+  "url": "https://github.com/python/cpython/commit/16dea1e887ec7dfbed735beedd476b21dcc91a79",
+  "message": "[3.14] gh-155999: `tarfile`: handle a member that leaves the destination but comes back (GH-156000) (#156041)\n\n(cherry picked from commit 97688346ada2df3e5b9c279348862c3d64ab0823)\n\nCo-authored-by: Stan Ulbrych <stan@python.org>",
+  "file": "Lib/tarfile.py"
+}
