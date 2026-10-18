@@ -136,6 +136,9 @@ class InMemoryKernelState:
     def bind_permit_to_directive(self, permit: str, intent_hash: str, binding: DirectivePermitBinding, timestamp_ns: int) -> None:
         with self._audit_lock:
             if self._issued.get(permit) != intent_hash or permit in self._spent: raise ValueError("permit unavailable for directive binding")
+            context = self._permit_context.get(permit)
+            if context is not None and (timestamp_ns < context[1] or (context[2] is not None and timestamp_ns >= context[2]) or (context[0] is not None and context[2] is None)):
+                raise ValueError("permit unavailable for directive binding")
             if permit in self._permit_directives: raise ValueError("permit directive binding is immutable")
             if self.directive_status(binding.directive_id, binding.version, binding.directive_hash) != "active": raise ValueError("directive is not active for permit binding")
             if binding.parent_directive_hash is not None and self.directive_hash_status(binding.parent_directive_hash) != "active": raise ValueError("parent directive is not active for permit binding")
@@ -147,7 +150,7 @@ class InMemoryKernelState:
             valid = self._issued.get(permit) == intent_hash and permit not in self._spent
             context = self._permit_context.get(permit)
             if policy_hash is not None:
-                valid = valid and context is not None and context[0] == policy_hash and context[3] == issuer_hash
+                valid = valid and context is not None and context[0] == policy_hash and context[3] == issuer_hash and type(context[2]) is int
             if context is not None:
                 valid = valid and type(timestamp_ns) is int and timestamp_ns >= context[1]
                 valid = valid and (context[2] is None or timestamp_ns < context[2])
@@ -486,8 +489,10 @@ class SQLiteKernelState:
     def bind_permit_to_directive(self, permit: str, intent_hash: str, binding: DirectivePermitBinding, timestamp_ns: int) -> None:
         with self._connection:
             self._connection.execute("BEGIN IMMEDIATE")
-            row = self._connection.execute("SELECT intent_hash, spent FROM permits WHERE permit = ?", (permit,)).fetchone()
+            row = self._connection.execute("SELECT intent_hash, spent, issued_at_ns, expires_at_ns, policy_hash FROM permits WHERE permit = ?", (permit,)).fetchone()
             if row is None or row[0] != intent_hash or row[1] != 0: raise ValueError("permit unavailable for directive binding")
+            if ((row[2] is not None and timestamp_ns < row[2]) or (row[3] is not None and timestamp_ns >= row[3]) or (row[4] is not None and row[3] is None)):
+                raise ValueError("permit unavailable for directive binding")
             if self._connection.execute("SELECT 1 FROM permit_directives WHERE permit = ?", (permit,)).fetchone(): raise ValueError("permit directive binding is immutable")
             directive = self._connection.execute("SELECT directive_hash, revoked FROM directives WHERE directive_id = ? AND version = ?", (binding.directive_id, binding.version)).fetchone()
             if directive is None or directive[0] != binding.directive_hash or directive[1] != 0: raise ValueError("directive is not active for permit binding")
@@ -501,7 +506,7 @@ class SQLiteKernelState:
             permit_row = self._connection.execute("SELECT intent_hash, spent, policy_hash, issued_at_ns, expires_at_ns, issuer_hash FROM permits WHERE permit = ?", (permit,)).fetchone()
             valid = permit_row is not None and permit_row[0] == intent_hash and permit_row[1] == 0
             if policy_hash is not None:
-                valid = valid and permit_row[2] == policy_hash and permit_row[3] is not None and permit_row[5] == issuer_hash
+                valid = valid and permit_row[2] == policy_hash and permit_row[3] is not None and permit_row[5] == issuer_hash and type(permit_row[4]) is int
             if permit_row is not None and permit_row[3] is not None:
                 valid = valid and type(timestamp_ns) is int and timestamp_ns >= permit_row[3]
                 valid = valid and (permit_row[4] is None or timestamp_ns < permit_row[4])

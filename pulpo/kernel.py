@@ -109,8 +109,11 @@ class Policy:
     approval_actions: frozenset[str] = frozenset()
     agent_grants: tuple[AgentGrant, ...] = ()
     authority_trust: AuthorityTrust | None = None
+    permit_ttl_ns: int = 300_000_000_000
 
     def __post_init__(self) -> None:
+        if type(self.permit_ttl_ns) is not int or self.permit_ttl_ns <= 0:
+            raise ValueError("permit_ttl_ns must be a positive integer")
         principals = [grant.principal for grant in self.agent_grants]
         if len(principals) != len(set(principals)):
             raise ValueError("agent principals must be unique")
@@ -197,6 +200,7 @@ class GovernanceKernel:
             "approval_actions": sorted(self.policy.approval_actions),
             "agent_grants": grants,
             "authority_trust": asdict(self.policy.authority_trust) if self.policy.authority_trust else None,
+            "permit_ttl_ns": self.policy.permit_ttl_ns,
         }
         return sha256(_canonical(payload)).hexdigest()
 
@@ -496,10 +500,15 @@ class GovernanceKernel:
         payload = f"{digest}:{nonce}"
         signature = hmac.new(self._secret, payload.encode(), sha256).hexdigest()
         permit = f"{payload}:{signature}"
-        issued_at_ns = self._clock() if timestamp_ns is None else timestamp_ns
+        issued_at_ns = self._trusted_now() if timestamp_ns is None else timestamp_ns
+        if type(issued_at_ns) is not int or issued_at_ns <= 0:
+            raise RuntimeError("permit_clock_invalid")
+        expires_at_ns = issued_at_ns + self.policy.permit_ttl_ns
+        if envelope is not None:
+            expires_at_ns = min(expires_at_ns, envelope.expires_at_ns)
         replay = self._state.issue_permit(permit, digest, reason, issued_at_ns, approval,
             policy_hash=self.policy_hash, issuer_hash=self._permit_issuer,
-            expires_at_ns=None if envelope is None else envelope.expires_at_ns)
+            expires_at_ns=expires_at_ns)
         if replay:
             if envelope is None:
                 raise RuntimeError("state rejected an approval-free permit")

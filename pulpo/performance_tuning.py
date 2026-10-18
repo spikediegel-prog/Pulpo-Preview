@@ -13,6 +13,7 @@ import os
 import platform
 from pathlib import Path
 import statistics
+import sys
 import time
 from typing import Iterable, Sequence
 
@@ -292,6 +293,10 @@ class AuditPerformanceTuner:
             )
         )
         candidate_workers = tuple(value for value in candidate_workers if 0 < value <= fingerprint.cpu_count)
+        if getattr(sys, "frozen", False):
+            # Bundled verification stays in the coordinator. Do not label a
+            # local timing sample as multi-process calibration evidence.
+            candidate_workers = (1,)
         candidate_batches = tuple(sorted(set(batch_sizes)))
         if any(value <= 0 for value in candidate_batches):
             raise ValueError("batch_sizes must be positive")

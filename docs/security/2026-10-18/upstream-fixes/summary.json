@@ -1,0 +1,394 @@
+{
+  "base": {
+    "commit": "44c2732ae32bcd1976996676278b56328b26ecb2",
+    "github_tree": "0d77ce71b0a094f62b60b11abdcf32b11f2d8348",
+    "fixture_tree": "0d77ce71b0a094f62b60b11abdcf32b11f2d8348",
+    "all_base_bytes_verified": true
+  },
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "total_passed": 797,
+  "total_skipped": 2,
+  "new_tests": 27,
+  "postgres_version": "18.6",
+  "ci_postgres_version": "16",
+  "postgres_stopped": true,
+  "commands": [
+    {
+      "label": "core",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-upstream-pr-ol040tql/source",
+      "exit_code": 0,
+      "seconds": 40.068
+    },
+    {
+      "label": "custody",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "custody-service/tests",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-upstream-pr-ol040tql/source",
+      "exit_code": 0,
+      "seconds": 1.309
+    },
+    {
+      "label": "constitutional",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "scripts/run_constitutional_mutations.py",
+        "--output",
+        "/mnt/c/Users/spike/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an/outputs/upstream-pr/constitutional.json"
+      ],
+      "cwd": "/home/spike/pulpo-upstream-pr-ol040tql/source",
+      "exit_code": 0,
+      "seconds": 7.232
+    }
+  ],
+  "postgres_commands": [
+    {
+      "label": "postgres-driver",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-m",
+        "pip",
+        "install",
+        "psycopg[binary]==3.3.6"
+      ],
+      "exit_code": 0,
+      "seconds": 0.612
+    },
+    {
+      "label": "postgres-init",
+      "command": [
+        "/home/spike/pulpo-upstream-fixes-64jg2r57/postgres-runtime/usr/lib/postgresql/18/bin/initdb",
+        "-D",
+        "/home/spike/pulpo-upstream-pr-ol040tql/postgres-data",
+        "-U",
+        "pulpo_test",
+        "--auth-local=trust",
+        "--auth-host=trust",
+        "--no-locale",
+        "--encoding=UTF8"
+      ],
+      "exit_code": 0,
+      "seconds": 1.084
+    },
+    {
+      "label": "postgres-start",
+      "command": [
+        "/home/spike/pulpo-upstream-fixes-64jg2r57/postgres-runtime/usr/lib/postgresql/18/bin/pg_ctl",
+        "-D",
+        "/home/spike/pulpo-upstream-pr-ol040tql/postgres-data",
+        "-l",
+        "/home/spike/pulpo-upstream-pr-ol040tql/postgres-server.log",
+        "-o",
+        "-h 127.0.0.1 -p 50637 -k /home/spike/pulpo-upstream-pr-ol040tql/postgres-socket",
+        "-w",
+        "start"
+      ],
+      "exit_code": 0,
+      "seconds": 0.113
+    },
+    {
+      "label": "postgres-createdb",
+      "command": [
+        "/home/spike/pulpo-upstream-fixes-64jg2r57/postgres-runtime/usr/lib/postgresql/18/bin/createdb",
+        "-h",
+        "127.0.0.1",
+        "-p",
+        "50637",
+        "-U",
+        "pulpo_test",
+        "pulpo_authority_test"
+      ],
+      "exit_code": 0,
+      "seconds": 0.114
+    },
+    {
+      "label": "authority-postgres",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-W",
+        "error",
+        "scripts/run_authority_postgres_proof.py"
+      ],
+      "exit_code": 0,
+      "seconds": 1.381
+    },
+    {
+      "label": "postgres-stop",
+      "command": [
+        "/home/spike/pulpo-upstream-fixes-64jg2r57/postgres-runtime/usr/lib/postgresql/18/bin/pg_ctl",
+        "-D",
+        "/home/spike/pulpo-upstream-pr-ol040tql/postgres-data",
+        "-m",
+        "fast",
+        "-w",
+        "stop"
+      ],
+      "exit_code": 0,
+      "seconds": 0.206
+    }
+  ],
+  "tested_source_sha256": {
+    ".github/workflows/ci.yml": "8fd732dcf6181e0b51e44a6e28f5aeaecefbc59fec6235bcf220f2f416280526",
+    "authority-service/pyproject.toml": "cc5b0d2f1bd3154f25105d988d8057bc7215f455d34b1cc637e5b2c760e948c8",
+    "custody-service/tests/test_api.py": "199db75161de2a998ebcf1320cef69c2f38b184b87e1516db4835e85f874b845",
+    "custody-service/tests/test_renewal_integration.py": "08130b6868d8fd095baa235e3e6fe30dc03513694d21a98c45906e28edf62675",
+    "docs/security/PATCH_HISTORY_20261018.md": "d190351ac7ea5e8d9cf54900d545938b6e1751a0bcf75619697803941bda58ef",
+    "docs/security/UPSTREAM_FIXES_20261018.md": "b3cdd133327f9d44c68deb13b23fd8441af5b018722d828458d0836a5f4ac792",
+    "pulpo/_audit_calculation.py": "9ea33f61fe27ae493037926d8c2b4c8f3da94785f38e579ee6721c8e1da2a2c2",
+    "pulpo/audit_parallel.py": "576a4f00ec12ce11a63e0b4fe0b58289a3910ffe4130703762b1a9649f517877",
+    "pulpo/audit_worker_pool.py": "440e64a27431977e8fb1fbcaa0da1a970a9b8d0babb08c5c09d30b988d653942",
+    "pulpo/commerce.py": "6c3508d5ef626b3a90570084d56d68190bd4c2381c55255393f988d7fa88c81a",
+    "pulpo/custody_reconcile.py": "f558dc5d2f5b86eec54ec7252c33a2bee3c3a0b5a465be83bee1f0ef52b80e3f",
+    "pulpo/kernel.py": "8646435a314b116ec49e0aa41e0bd3ef886af89c3c564cdd38cb2b7f08f033a3",
+    "pulpo/namecom.py": "4b56e92ed18b16cdcc4dd2866b32fbe9ab49aa3ebb0162cd3a444c9709ac7520",
+    "pulpo/namecom_core.py": "f5d253f9f6d8cb3959ac02478df4f0d7d498d25c1179ffb423c2b8c99b5778c3",
+    "pulpo/namecom_observer.py": "1ea7aa8ae9671e4eb936f3943145ab732e3e355c11650f73fd71687e1fd2d1f6",
+    "pulpo/state.py": "b40a09eac9ab1ebf1d128f0dea78185398a287b10d823244e70f872ca7237e63",
+    "scripts/run_authority_postgres_proof.py": "5bea55c89c7c985a13f3c6d14330949cee2d901cff52f736466dd32fa31b197f",
+    "tests/test_audit_worker_isolation.py": "e96fdb9fc2ae0fa673eaf7faad487c0646b9e4937176cf4155bfbb1071a66a55",
+    "tests/test_authority_postgres_runner.py": "6f90c56f1f6f4478c2b49ae98ddce2fdc63236f99c4250abeb83c85f487e1318",
+    "tests/test_commerce.py": "496d912cf7547c5e3b0f9414e1a34b19993e7e0679453dd4f5f61e5f0edc55cb",
+    "tests/test_commerce_autorenew_boundary.py": "7c9a4d7b7be0ca6fb8aa0dfa55167a1d74cb73b5e8fa5dd4ce2605e2eafe955f",
+    "tests/test_custody_reconcile.py": "3efcd2c62d159dc4bf21500d02cd11d62e60215153399aff5c664bec8a893107",
+    "tests/test_custody_reconcile_later.py": "6e9ee031f36897402918663017547ceb4eaabd2ccb358b8884de43a1abc85480",
+    "tests/test_issue_153_consequence_reconciliation_v0.py": "43046875e6b341a56272e24d178813017992ef60b7834023467839a29038d44c",
+    "tests/test_permit_lifetime.py": "0fb8b6ca5782060b4571f5e5d0dea74e8ca1da457d3165d6bdc7a55985d09c02",
+    "tests/test_proposal_commitment_autorenew_upgrade.py": "9ea26a490e07f400f0f88c7f868e322a49bf94bea8fad981d0918856ff0e6f87"
+  },
+  "suites": {
+    "core": {
+      "counted": 682,
+      "seconds": 38.966,
+      "result": "OK (skipped=2)",
+      "raw_log_sha256": "e05d64d666f06fa5820d2b8904911b69c5a0f1ea0228e70da646f44a4d6619bb"
+    },
+    "custody": {
+      "counted": 47,
+      "seconds": 0.771,
+      "result": "OK",
+      "raw_log_sha256": "25bbe5c0482f63cb6681e54ba7f194e89d8d752dffeb35fb7424490dfefd1072"
+    },
+    "authority-postgres": {
+      "counted": 70,
+      "seconds": 0.345,
+      "result": "OK",
+      "raw_log_sha256": "feb9de84617a247904e558fad9066672f3cb276f27181547402a1fb1cebeadaa"
+    }
+  },
+  "mutations": {
+    "authority_effect": "none",
+    "mutations": [
+      {
+        "name": "audit_trigger_definition_check_removed",
+        "path": "pulpo/state.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_audit_adversarial.AuditAdversarialTests.test_same_name_trigger_substitution_is_rejected"
+        ]
+      },
+      {
+        "name": "audit_head_strict_types_removed",
+        "path": "pulpo/state.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_audit_adversarial.AuditAdversarialTests.test_malformed_preexisting_heads_fail_without_mutation"
+        ]
+      },
+      {
+        "name": "sqlite_upgrade_transaction_removed",
+        "path": "pulpo/state.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_audit_integrity_migration.AuditIntegrityMigrationTests.test_failed_alter_rolls_back_all_schema_changes"
+        ]
+      },
+      {
+        "name": "durable_audit_head_comparison_removed",
+        "path": "pulpo/state.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_audit_integrity_migration.AuditIntegrityMigrationTests.test_preexisting_mismatched_head_rejects_and_rolls_back"
+        ]
+      },
+      {
+        "name": "audit_insert_head_guard_removed",
+        "path": "pulpo/state.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_audit_integrity_migration.AuditIntegrityMigrationTests.test_tail_deletion_rejects_before_restart_or_another_append"
+        ]
+      },
+      {
+        "name": "global_budget_upper_bound_removed",
+        "path": "pulpo/kernel.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_kernel.GovernanceKernelTests.test_fail_closed_policy_boundaries"
+        ]
+      },
+      {
+        "name": "global_action_allowlist_removed",
+        "path": "pulpo/kernel.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_kernel.GovernanceKernelTests.test_fail_closed_policy_boundaries"
+        ]
+      },
+      {
+        "name": "agent_action_scope_removed",
+        "path": "pulpo/kernel.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_kernel.GovernanceKernelTests.test_agent_role_cannot_expand_its_action_or_resource"
+        ]
+      },
+      {
+        "name": "agent_resource_scope_removed",
+        "path": "pulpo/kernel.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_kernel.GovernanceKernelTests.test_agent_role_cannot_expand_its_action_or_resource"
+        ]
+      },
+      {
+        "name": "agent_budget_upper_bound_removed",
+        "path": "pulpo/kernel.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_kernel.GovernanceKernelTests.test_agent_budget_is_stricter_than_global_budget"
+        ]
+      },
+      {
+        "name": "target_hash_binding_removed",
+        "path": "pulpo/kernel.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_targets.TargetLockTests.test_exact_target_resolves_but_hash_mismatch_fails_closed",
+          "tests.test_targets.TargetLockTests.test_mismatched_target_never_reaches_authority_evaluation"
+        ]
+      },
+      {
+        "name": "approval_intent_binding_removed",
+        "path": "pulpo/kernel.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_authority.VerifiedApprovalTests.test_envelope_bindings_fail_closed_even_with_valid_authority_signature"
+        ]
+      },
+      {
+        "name": "approval_policy_binding_removed",
+        "path": "pulpo/kernel.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_authority.VerifiedApprovalTests.test_envelope_bindings_fail_closed_even_with_valid_authority_signature"
+        ]
+      },
+      {
+        "name": "approval_signature_verdict_ignored",
+        "path": "pulpo/kernel.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_authority.VerifiedApprovalTests.test_invalid_or_missing_signature_fails_closed"
+        ]
+      },
+      {
+        "name": "approval_id_replay_guard_removed",
+        "path": "pulpo/state.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_authority.VerifiedApprovalTests.test_approval_id_and_nonce_are_each_single_use"
+        ]
+      },
+      {
+        "name": "approval_nonce_replay_guard_removed",
+        "path": "pulpo/state.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_authority.VerifiedApprovalTests.test_approval_id_and_nonce_are_each_single_use"
+        ]
+      },
+      {
+        "name": "permit_spent_guard_removed",
+        "path": "pulpo/state.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_kernel.GovernanceKernelTests.test_allowed_intent_gets_bound_one_use_permit"
+        ]
+      },
+      {
+        "name": "directive_revocation_guard_removed",
+        "path": "pulpo/state.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_directives.DirectiveProofTests.test_revoked_directive_invalidates_previously_issued_permit"
+        ]
+      },
+      {
+        "name": "audit_record_hash_check_removed",
+        "path": "pulpo/kernel.py",
+        "status": "killed",
+        "test_returncode": 1,
+        "tests": [
+          "tests.test_kernel.GovernanceKernelTests.test_audit_chain_detects_tampering"
+        ]
+      }
+    ],
+    "mutations_invalid": 0,
+    "mutations_killed": 19,
+    "mutations_survived": 0,
+    "mutations_total": 19,
+    "provider_write_attempted": false,
+    "result": "pass",
+    "schema": "pulpo.constitutional-survival.v0",
+    "survival_score": 1.0
+  }
+}
