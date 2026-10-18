@@ -1,0 +1,41 @@
+{
+  "tested_source_commit": "e7e9aa7bf98d3e27052fd5a85677ef351fb7d902",
+  "audited_base": "31dd3b757e16af18986b0608b2b94d534a376165",
+  "platform": "WSL Ubuntu 26.04.1 LTS / Python 3.14.4-1ubuntu0.2",
+  "installed_packages": "Root authority/mcp extras, custody[test], authority-service[test,gcp-auth,gcp-kms,gcp-storage,gcp-cloud-sql], using reviewed constraints",
+  "exit_codes": {
+    "core": 0,
+    "custody": 0,
+    "authority": 0,
+    "boundary": 0,
+    "runtime": 0,
+    "compile": 0
+  },
+  "tests": {
+    "core": 632,
+    "core_skipped": 2,
+    "custody": 40,
+    "authority": 67,
+    "authority_skipped": 4
+  },
+  "tracked_source_unchanged_by_validation": true,
+  "sha256": {
+    ".github/workflows/preview-security-audit.yml": "ad63ae30780aab72870f2bf692bf767785d679f9be55db9ac96e8cdc155ee247",
+    "constraints/security-audit-ubuntu-py314.txt": "11fb2d6689c2cd40abf9b15266e55d02a0340f57f97506ce15166dc1803c8eb2",
+    "custody-service/src/pulpo_custody_service/api.py": "a1cd5338ce470c4c1ecb343b44d2affb5fc184b884d85945e8534b5b9f85abeb",
+    "custody-service/tests/test_request_limits.py": "0132de8ce527989fb154e9487737777c73b84aacf000852c2f03c51a0e01c356",
+    "pulpo/http_limits.py": "a2b182de499b6f3d1edba6522b0acfcd7ba6174ff685595d38a268d1b2029045",
+    "scripts/security/probe_preview_boundaries.py": "2a0fe2f36a7aaff74fab739cdf8d6bed66930e8cb87c5fa622639710a3a5cecc",
+    "scripts/security/probe_tarfile_19672.py": "83de1f25c8ff4df55082fd94dfcd41746d63246f8376a462fb5376b3fbd6aeb6"
+  },
+  "log_sha256": {
+    "core.log": "d13b1b5b27b0eafc81345e9a4f01e8d3d5c9ca3cc89906b2bd04c715d16018d2",
+    "custody.log": "0af9fd2112fd7af77209350b9e430c74c65a82581fed938c7e1edcbc734554c5",
+    "authority.log": "219666efa0fa6ee3754e207ae545c6797c302ded5a62bb52fb5a315f37a45229",
+    "boundary.log": "d0b1444d571d9d5060c81159e6959d9ca28fa14b50b3d8f387fead88aabf2848",
+    "runtime.log": "20a56f01e17fd417cad3335faad1812fa3f5ff60e5b9aeedd4da71d4437a77b2",
+    "compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pip-check.log": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09"
+  },
+  "scope": "Subsequent evidence-only commits do not change the tested application, tests, probes, workflow or constraints."
+}

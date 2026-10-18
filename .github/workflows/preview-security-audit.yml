@@ -1,0 +1,37 @@
+name: Preview Security Audit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-boundary-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install reviewed Ubuntu audit dependency resolution
+        run: |
+          python -m pip install pip==26.2.1
+          python -m pip install -c constraints/security-audit-ubuntu-py314.txt '.[authority,mcp]' './custody-service[test]'
+          python -m pip check
+      - name: Run custody admission and existing service regressions
+        run: PYTHONPATH=custody-service/src:. python -B -W error -m unittest discover -s custody-service/tests -v
+      - name: Prove real MCP SDK and bounded HTTP admission
+        run: python -B scripts/security/probe_preview_boundaries.py . "$RUNNER_TEMP/preview-security-probes.json" --expect-limited
+      - name: Preserve bounded probe results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-security-probes-${{ github.sha }}
+          path: ${{ runner.temp }}/preview-security-probes.json
+          if-no-files-found: ignore

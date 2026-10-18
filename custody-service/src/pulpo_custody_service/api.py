@@ -13,6 +13,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from pulpo.authority import ApprovalEnvelope
+from pulpo.http_limits import RequestBodyLimitMiddleware
 
 from .core import ApprovalChallenge, AttemptHandle, DomainCustodyService, ServiceRejected
 
@@ -121,6 +122,8 @@ def create_app(service: DomainCustodyService) -> FastAPI:
         redoc_url=None,
         openapi_url=None,
     )
+
+    app.add_middleware(RequestBodyLimitMiddleware)
 
     @app.get("/health")
     def health() -> dict[str, str]:
