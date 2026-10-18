@@ -120,3 +120,18 @@ PYTHONPATH=custody-service/src:. python -B -W error -m unittest discover -s cust
 | Lighten | A repetitive key in an isolated fixture is not evidence that a real deployment uses it. |
 | Amplify | Repeated startup attempts with equivalent decoded bytes stay rejected and leave state absent. |
 | Negate | Require protected operator-supplied generated secrets; avoid automatic rotation, canonical state repair, or a second authority path. |
+
+## Recorded validation
+
+At tested source `c74738a1d4a5b8a1c28d9463eadf4eebf9027845` on WSL Ubuntu 26.04.1:
+
+- Core suite: 632 tests PASS, with 2 Windows-only skips.
+- Custody suite: 45 tests PASS, including both fields and all 256 repeated-byte values.
+- Authority suite: 67 tests, 63 executed PASS, 4 PostgreSQL tests skipped.
+- Container build and fake-provider route-isolation proof: PASS with per-run keys.
+- Dependency, shell syntax and compilation checks: PASS.
+
+The exact baseline/candidate probe and logs are preserved in
+`custody-secret-hardening-evidence/`. The container test used disposable fake
+provider resources and did not change any deployed configuration. Later
+evidence-only commits leave the tested executable source unchanged.
