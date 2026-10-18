@@ -9,8 +9,7 @@ compares every stored hash on every verification pass.
 from __future__ import annotations
 
 from collections import OrderedDict
-from concurrent.futures import ProcessPoolExecutor
-from hashlib import sha256
+from .audit_worker_pool import DigestWorkerPool
 import json
 from threading import RLock
 from typing import Iterable
@@ -34,7 +33,7 @@ def audit_row_has_valid_types(row: object) -> bool:
                     for value in (previous, digest)))
 
 
-# Reuse the unchanged encoder configuration; per-call state stays in encode().
+# Preserve Preview's canonical helper and its tested encoding semantics.
 _CANONICAL_ENCODER = json.JSONEncoder(sort_keys=True, separators=(",", ":"))
 
 
@@ -42,21 +41,7 @@ def _canonical(value: object) -> bytes:
     return _CANONICAL_ENCODER.encode(value).encode()
 
 
-def _digest_body(key: AuditBodyKey) -> str:
-    event, payload_json, previous_hash, timestamp_ns = key
-    payload = json.loads(payload_json)
-    body = {
-        "event": event,
-        "payload": payload,
-        "previous_hash": previous_hash,
-        "timestamp_ns": timestamp_ns,
-    }
-    return sha256(_canonical(body)).hexdigest()
-
-
-def _digest_batch(keys: list[AuditBodyKey]) -> list[str]:
-    """Hash one IPC batch inside a worker process."""
-    return [_digest_body(key) for key in keys]
+from ._audit_calculation import digest_body as _digest_body
 
 
 class AuditDigestCache:
@@ -126,17 +111,21 @@ class AuditVerificationEngine:
         self.parallel_threshold = parallel_threshold
         self.batch_size = batch_size
         self.cache = AuditDigestCache(cache_size)
-        self._executor: ProcessPoolExecutor | None = None
+        self._executor: DigestWorkerPool | None = None
         self._primed = False
         self._lock = RLock()
 
-    def _executor_for_work(self) -> ProcessPoolExecutor:
+    def _executor_for_work(self) -> DigestWorkerPool:
         with self._lock:
             if self._executor is None:
-                self._executor = ProcessPoolExecutor(max_workers=self.workers)
+                self._executor = DigestWorkerPool(self.workers)
             return self._executor
 
     def verify_rows(self, rows: Iterable[AuditRow]) -> bool:
+        with self._lock:
+            return self._verify_rows(rows)
+
+    def _verify_rows(self, rows: Iterable[AuditRow]) -> bool:
         row_list = list(rows)
         previous = "0" * 64
         misses: list[tuple[int, AuditBodyKey]] = []
@@ -171,7 +160,7 @@ class AuditVerificationEngine:
                     keys[start : start + self.batch_size]
                     for start in range(0, len(keys), self.batch_size)
                 ]
-                digest_batches = self._executor_for_work().map(_digest_batch, batches)
+                digest_batches = self._executor_for_work().digest_batches(batches)
                 digests = [digest for batch in digest_batches for digest in batch]
             else:
                 digests = [_digest_body(key) for key in keys]
