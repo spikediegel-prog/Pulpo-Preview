@@ -1,0 +1,222 @@
+{
+  "parent_commit": "33a0d676ea1f789ccb7b22f5682c10a1892ed774",
+  "total_passed": 799,
+  "total_skipped": 2,
+  "new_frozen_tests": 2,
+  "commands": [
+    {
+      "label": "before",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "tests.test_frozen_audit_verification",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-upstream-pr-ol040tql/source",
+      "exit_code": 1,
+      "seconds": 0.318
+    },
+    {
+      "label": "targeted",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "tests.test_frozen_audit_verification",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-upstream-pr-ol040tql/source",
+      "exit_code": 1,
+      "seconds": 0.157
+    },
+    {
+      "label": "baseline",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "tests.test_frozen_audit_verification",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-upstream-pr-ol040tql/source",
+      "exit_code": 1,
+      "seconds": 0.41
+    },
+    {
+      "label": "targeted-corrected",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "tests.test_frozen_audit_verification",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-upstream-pr-ol040tql/source",
+      "exit_code": 0,
+      "seconds": 0.236
+    },
+    {
+      "label": "core",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-upstream-pr-ol040tql/source",
+      "exit_code": 0,
+      "seconds": 38.798
+    },
+    {
+      "label": "custody",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-X",
+        "utf8",
+        "-W",
+        "error",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "custody-service/tests",
+        "-v"
+      ],
+      "cwd": "/home/spike/pulpo-upstream-pr-ol040tql/source",
+      "exit_code": 0,
+      "seconds": 1.878
+    },
+    {
+      "label": "postgres-driver",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-m",
+        "pip",
+        "install",
+        "psycopg[binary]==3.3.6"
+      ],
+      "exit_code": 0,
+      "seconds": 0.602
+    },
+    {
+      "label": "postgres-init",
+      "command": [
+        "/home/spike/pulpo-upstream-fixes-64jg2r57/postgres-runtime/usr/lib/postgresql/18/bin/initdb",
+        "-D",
+        "/home/spike/pulpo-pr20-followup-8w2f17xv/postgres-data",
+        "-U",
+        "pulpo_test",
+        "--auth-local=trust",
+        "--auth-host=trust",
+        "--no-locale",
+        "--encoding=UTF8"
+      ],
+      "exit_code": 0,
+      "seconds": 1.157
+    },
+    {
+      "label": "postgres-start",
+      "command": [
+        "/home/spike/pulpo-upstream-fixes-64jg2r57/postgres-runtime/usr/lib/postgresql/18/bin/pg_ctl",
+        "-D",
+        "/home/spike/pulpo-pr20-followup-8w2f17xv/postgres-data",
+        "-l",
+        "/home/spike/pulpo-pr20-followup-8w2f17xv/postgres-server.log",
+        "-o",
+        "-h 127.0.0.1 -p 58693 -k /home/spike/pulpo-pr20-followup-8w2f17xv/postgres-socket",
+        "-w",
+        "start"
+      ],
+      "exit_code": 0,
+      "seconds": 0.112
+    },
+    {
+      "label": "postgres-createdb",
+      "command": [
+        "/home/spike/pulpo-upstream-fixes-64jg2r57/postgres-runtime/usr/lib/postgresql/18/bin/createdb",
+        "-h",
+        "127.0.0.1",
+        "-p",
+        "58693",
+        "-U",
+        "pulpo_test",
+        "pulpo_authority_test"
+      ],
+      "exit_code": 0,
+      "seconds": 0.108
+    },
+    {
+      "label": "authority-postgres",
+      "command": [
+        "/home/spike/pulpo-security-watch-cyjg_dnl/venv/bin/python",
+        "-B",
+        "-W",
+        "error",
+        "scripts/run_authority_postgres_proof.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.995
+    },
+    {
+      "label": "postgres-stop",
+      "command": [
+        "/home/spike/pulpo-upstream-fixes-64jg2r57/postgres-runtime/usr/lib/postgresql/18/bin/pg_ctl",
+        "-D",
+        "/home/spike/pulpo-pr20-followup-8w2f17xv/postgres-data",
+        "-m",
+        "fast",
+        "-w",
+        "stop"
+      ],
+      "exit_code": 0,
+      "seconds": 0.206
+    }
+  ],
+  "accepted_labels": [
+    "baseline (expected assertion failure)",
+    "targeted-corrected",
+    "core",
+    "custody",
+    "authority-postgres",
+    "postgres-stop"
+  ],
+  "runtime_hashes": {
+    "pulpo/audit_parallel.py": "59608bda5c9bd9514e97f4f274a8ce7e428dab17dca926529d218afb2e887eb8",
+    "pulpo/performance_tuning.py": "e11b07e242d07f90f7e13d99aec8fb17595282ac005847497f495782381ede1c",
+    "tests/test_frozen_audit_verification.py": "4f535459ad96b4d7bf78d65a0db162a51298f1997e334b5c5fff90df5bdf2120"
+  },
+  "logs": {
+    "baseline.log": "bd147377b37ce69cc8431544e115d222c08f80244bd0a9aae7adc351b2603fde",
+    "core.log": "548d46ae614ea2ffa3731907e61128d7637d5eb04019a52c11131811eac412e7",
+    "custody.log": "473168b4fb4644f0a5f3d40159a35a74d5afb721669121936c824b9741d7628f",
+    "authority-postgres.log": "4a2f1a8ed7e0d985baa5f167fdddf0a81ef3b48325a6f1f3e7b1e6d607e0778b",
+    "failed-windows-build.log": "24575bc41dff1a31936f7032b71e7a56c0cbfdefddd8380a66d36a263692549e",
+    "hosted-postgres.log": "4c780bf3c8f1ff8b1c03d18c2044035ae4ce2d787cb2523aec3ca0a171831520"
+  },
+  "hosted_parent_windows_job": 117777195471,
+  "hosted_parent_postgres_job": 117777195422,
+  "postgres_stopped": true,
+  "claim": "WSL simulated frozen runtime verified; actual bundled executable acceptance requires hosted rerun"
+}

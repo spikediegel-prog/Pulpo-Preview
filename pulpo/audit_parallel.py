@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections import OrderedDict
 from .audit_worker_pool import DigestWorkerPool
 import json
+import sys
 from threading import RLock
 from typing import Iterable
 
@@ -152,6 +153,10 @@ class AuditVerificationEngine:
             keys = [key for _, key in misses]
             use_pool = (
                 self._primed
+                # A frozen sys.executable is the application, not a Python
+                # interpreter. Keep the same strict coordinator verification
+                # locally; never relaunch the governor as a worker.
+                and not getattr(sys, "frozen", False)
                 and self.workers > 1
                 and len(keys) >= self.parallel_threshold
             )

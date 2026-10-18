@@ -110,3 +110,7 @@ Exact log SHA-256 evidence:
 - `authority-postgres.log`: `d901cf22f0697f2106c41bd4a2ba7fbb6955971b2c7db9b35f5d50ed6dd1fab1`
 - `constitutional.json`: `8dd82ddf268390d8f6e8dd43cc620efb6e15654ce5f9af4bb49ca8d9d64b24b3`
 - `baseline-expiry-negative.log`: `7899d7110a3a6370dcf2ca60de23519d32f76875dc1dd87d33bcb7d61f4bea86`
+
+## PR #20 bundled-runtime calibration repair — 2026-10-18
+
+**Verified, bounded WSL:** frozen executables now retain strict coordinator audit verification without relaunching the application as a Python worker. Bundled calibration records one effective worker. Two new regressions reproduce the old failure and pass after repair; 684 core (two Windows-only skips), 47 custody and 70 live disposable PostgreSQL tests pass: 799 passed / 2 skipped. Source-worker failures still fail closed; no authority or canonical mutation path was added. The original hosted PostgreSQL 16.15 job passed; actual Windows executable acceptance of this follow-up awaits the hosted rerun. See [the follow-up record](UPSTREAM_FIXES_20261018.md#bundled-runtime-follow-up-for-pr-20) and [commands/hash evidence](2026-10-18/upstream-fixes/frozen-runtime-summary.json).
