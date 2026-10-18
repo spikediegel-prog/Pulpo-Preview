@@ -1,0 +1,106 @@
+{
+  "source": "/tmp/pulpo-round2-pr-dm18gu/repo",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "probe_sha256": "8cd5844795f50b8be8cdb7c4d9d9b6c27cb038bf697017199abb60f7cc3374bc",
+  "source_sha256": {
+    "pulpo/github_execution_context.py": "550df8092fc0f966fa71b8687b4473f68751ec1f9597157037cb8c1d0099a6c3",
+    "pulpo/state.py": "423a47f667dedf5ab341c9336bef60eb7fe4342fc46a2ff52d42807b8ab950fa",
+    "pulpo/kernel.py": "b72c0ccdb5c177a8d3468aa5ed5831caa373633c24161abd32bdded541e5eb03",
+    "pulpo/custody_executor.py": "9b9588965f12090e750da52b8adf919f8f37f988d8689bc523cf427cfcb043a6",
+    "pulpo/custody.py": "b7194b62b6f12ee8f1cbb3cb87c9ed8ba0da9309cab7bf848b38a696d2711364",
+    "pulpo/commerce.py": "6d8eb18fb66bfe99243208ef4a5a68eeb9906a80a52d80c5f2cdca1a4a67f8f8"
+  },
+  "scope": "Loopback TLS, independent spawned Linux processes, disposable SQLite, durable fake-provider effect log; no live credentials, no external network.",
+  "transport": {
+    "tls_fixture_only": true,
+    "positive_tls_authenticated_read": true,
+    "cross_origin_destination_calls": 0,
+    "synthetic_bearer_received": false,
+    "reader_error": "GitHubContextAttestationError",
+    "oversized_metadata_accepted": false,
+    "response_read_limit": 1048577,
+    "response_closed": true
+  },
+  "concurrency": {
+    "independent_processes": 8,
+    "permit_results": [
+      {
+        "consumed": true
+      },
+      {
+        "consumed": false
+      },
+      {
+        "consumed": false
+      },
+      {
+        "consumed": false
+      },
+      {
+        "consumed": false
+      },
+      {
+        "consumed": false
+      },
+      {
+        "consumed": false
+      },
+      {
+        "consumed": false
+      }
+    ],
+    "verified_consumption_events": 1,
+    "budget_results": [
+      "reserved",
+      "insufficient_available_budget",
+      "insufficient_available_budget",
+      "insufficient_available_budget",
+      "insufficient_available_budget",
+      "insufficient_available_budget",
+      "insufficient_available_budget",
+      "insufficient_available_budget"
+    ],
+    "reserved_cents": 2000,
+    "available_cents": 1000
+  },
+  "crash_recovery": [
+    {
+      "kill_boundary": "preflight",
+      "exit_signal": "SIGKILL",
+      "durable_state_after_kill": "attempt_claimed",
+      "retry_rejected": false,
+      "durable_fake_provider_effects": 1,
+      "budget_remains_reserved_cents": 2000
+    },
+    {
+      "kill_boundary": "before_effect",
+      "exit_signal": "SIGKILL",
+      "durable_state_after_kill": "request_transmitted",
+      "retry_rejected": true,
+      "durable_fake_provider_effects": 0,
+      "budget_remains_reserved_cents": 2000
+    },
+    {
+      "kill_boundary": "after_effect",
+      "exit_signal": "SIGKILL",
+      "durable_state_after_kill": "request_transmitted",
+      "retry_rejected": true,
+      "durable_fake_provider_effects": 1,
+      "budget_remains_reserved_cents": 2000
+    }
+  ],
+  "additional_state": {
+    "execution_processes": 6,
+    "execution_results": [
+      "rejected:stale_governance_head",
+      "rejected:stale_governance_head",
+      "executed",
+      "rejected:stale_governance_head",
+      "rejected:stale_governance_head",
+      "rejected:stale_governance_head"
+    ],
+    "durable_fake_provider_effects": 1,
+    "preopened_other_process_consumed_after_revocation": false,
+    "audit_valid": true
+  }
+}
