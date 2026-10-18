@@ -1,0 +1,44 @@
+{
+  "tested_source_commit": "66b3a3a9d6beda11edbde833095d781443800595",
+  "base_commit": "c391f3083326e1d5fd95be4a77b3023fd02ed061",
+  "platform": "WSL Ubuntu 26.04.1 / Python 3.14.4 / SQLite 3.46.1",
+  "claim_classification": "Verified within isolated fixtures; production exploitability Unknown",
+  "tests": {
+    "core": 642,
+    "core_windows_skips": 2,
+    "custody": 45,
+    "authority": 67,
+    "authority_postgres_skips": 4
+  },
+  "probes": "Loopback TLS redirect blocked; metadata size bounded; process permit/budget/executor races and three SIGKILL boundaries passed",
+  "canonical_mutation_introduced": "none",
+  "authority_delta": "narrows transport and input admission; no policy, key custody or permit expansion",
+  "source_files": {
+    "README.md": "c77a80c9b19026db95bbeee718bbac34d5ef2b0039e8ce1bd11b0089ad9a4884",
+    "docs/security/AGENT_NETWORK_AND_DISCLOSURE_BOUNDARIES.md": "a7edd0b0417379d195ad4eb78764d1ff6fdff1476b1ef9ab0413759372e10e69",
+    "docs/security/GITHUB_METADATA_TRANSPORT_HARDENING.md": "d586ff0f4e572021d760ffed431180b33e5f7aabef2cb65e4e7a6cfa4072727c",
+    "pulpo/github_execution_context.py": "0b3eb7a6db8fadd0de122ce3ff593cc41c52a1a873cd9523007e0d33d86a9a63",
+    "tests/test_github_execution_context.py": "ad2f93372569afaaf5ad943fc61996e5168f07bffd16c8ebb7fa05ae54b064de",
+    "tests/test_github_transport_security.py": "9eecdcf91e06d6da08c7fa6cd10d18986285d2a2ea0b15db6451af54e20107db",
+    "tests/test_security_boundaries.py": "e4c973bf863f9c8758bcdac76b968cd57b17a01a9cfbe9b850390afcc86b7d1f"
+  },
+  "evidence_files": {
+    "authority.log": "97d506b5af6080a8a01391d8937dc21b51ad1b80162c1ac2910a3ae63997131f",
+    "baseline-new-regressions.log": "a1533529ff998d4a362903d6558ccaf387f2bdb60ce91cf2e938501bc42e02b3",
+    "baseline-results.json": "31205fcac79820e22efc47bef4a2d25c0d3c90f423a72d24a2b2936f9248a4c5",
+    "core.log": "0196c45bfa6c8d306db96b9bee9e6f36e9b76744ae54ac5c40ca589f97833f57",
+    "custody.log": "c566197e69f4e310d2ad2d092a52070be8230902458000e197013c4db0495c31",
+    "exit-codes.txt": "4b0a46720372c4ec5dacab147fa88016876f675b01fb7f9ef91c985eb357407f",
+    "pip-check.log": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09",
+    "probe-results.json": "6b780b6141cea2b11f924edb6493cf5e5df26a9c76be272171dc3f373716c76f",
+    "probe_round2.py": "8cd5844795f50b8be8cdb7c4d9d9b6c27cb038bf697017199abb60f7cc3374bc",
+    "runtime.txt": "65b81059abc6b1ad6cfeb63a7b9e6c0282fb8b92f8c6f61e8ae74e8a3dfa65be",
+    "tested-commit.txt": "286708fac24aab1782d7d11d269d3e500bebbb698115b497ea985be1671cc81f"
+  },
+  "limits": [
+    "Synthetic TLS origin substitution; no proof of attacker control of GitHub responses",
+    "Fake-provider effects use an independent append-and-fsync file, not actual provider HTTP execution",
+    "Bounded schedules and process SIGKILL; no physical power loss or native non-WSL certification",
+    "No deployment, real credential access, key rotation or historical organizational-learning transfer"
+  ]
+}

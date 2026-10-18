@@ -16,14 +16,16 @@ from dataclasses import dataclass
 import json
 from typing import Any, Callable, Mapping
 from urllib.parse import quote
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from .execution_context import ExecutionContext
+from .transport import secure_urlopen
 
 
 _GITHUB_API_ORIGIN = "https://api.github.com"
 _GITHUB_ACCEPT = "application/vnd.github+json"
 _GITHUB_API_VERSION = "2022-11-28"
+_MAX_METADATA_RESPONSE_BYTES = 1_048_576
 
 
 class GitHubContextAttestationError(RuntimeError):
@@ -55,7 +57,7 @@ class GitHubRESTMetadataReader:
         self,
         token: str,
         *,
-        opener: Callable[..., Any] = urlopen,
+        opener: Callable[..., Any] = secure_urlopen,
         timeout_seconds: float = 10.0,
     ) -> None:
         if not isinstance(token, str) or not token.strip():
@@ -81,12 +83,19 @@ class GitHubRESTMetadataReader:
         )
         try:
             response = self._opener(request, timeout=self._timeout_seconds)
-            payload = response.read()
-            status = getattr(response, "status", 200)
-        except Exception as exc:  # provider/network failures fail closed
-            raise GitHubContextAttestationError("GitHub context read failed") from exc
-        if status != 200:
-            raise GitHubContextAttestationError(f"GitHub context read returned HTTP {status}")
+            try:
+                status = getattr(response, "status", 200)
+                if status != 200:
+                    raise GitHubContextAttestationError(f"GitHub context read returned HTTP {status}")
+                payload = response.read(_MAX_METADATA_RESPONSE_BYTES + 1)
+                if len(payload) > _MAX_METADATA_RESPONSE_BYTES:
+                    raise GitHubContextAttestationError("GitHub context response too large")
+            finally:
+                response.close()
+        except GitHubContextAttestationError:
+            raise
+        except Exception:  # Do not expose token-bearing transport exceptions.
+            raise GitHubContextAttestationError("GitHub context read failed") from None
         try:
             value = json.loads(payload.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:

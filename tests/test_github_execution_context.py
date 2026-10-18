@@ -24,8 +24,11 @@ class _FakeResponse:
         self._payload = json.dumps(payload).encode("utf-8")
         self.status = status
 
-    def read(self):
-        return self._payload
+    def read(self, size=-1):
+        return self._payload if size < 0 else self._payload[:size]
+
+    def close(self):
+        pass
 
 
 class _RecordingOpener:

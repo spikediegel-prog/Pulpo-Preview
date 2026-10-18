@@ -1,0 +1,55 @@
+test_body_read_failure_closes_and_sanitizes_transport_error (tests.test_github_transport_security.GitHubMetadataAdmissionTests.test_body_read_failure_closes_and_sanitizes_transport_error) ... FAIL
+test_default_reader_rejects_cross_origin_redirect_before_token_release (tests.test_github_transport_security.GitHubMetadataAdmissionTests.test_default_reader_rejects_cross_origin_redirect_before_token_release) ... FAIL
+test_exact_response_bound_accepts_and_closes (tests.test_github_transport_security.GitHubMetadataAdmissionTests.test_exact_response_bound_accepts_and_closes) ... FAIL
+test_oversized_response_rejects_after_bounded_read_and_closes (tests.test_github_transport_security.GitHubMetadataAdmissionTests.test_oversized_response_rejects_after_bounded_read_and_closes) ... FAIL
+test_rejected_status_does_not_read_and_closes (tests.test_github_transport_security.GitHubMetadataAdmissionTests.test_rejected_status_does_not_read_and_closes) ... FAIL
+
+======================================================================
+FAIL: test_body_read_failure_closes_and_sanitizes_transport_error (tests.test_github_transport_security.GitHubMetadataAdmissionTests.test_body_read_failure_closes_and_sanitizes_transport_error)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-round2-validated-8G2bSU/baseline/tests/test_github_transport_security.py", line 52, in test_body_read_failure_closes_and_sanitizes_transport_error
+    self.assertTrue(response.closed)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_default_reader_rejects_cross_origin_redirect_before_token_release (tests.test_github_transport_security.GitHubMetadataAdmissionTests.test_default_reader_rejects_cross_origin_redirect_before_token_release)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-round2-validated-8G2bSU/baseline/tests/test_github_transport_security.py", line 90, in test_default_reader_rejects_cross_origin_redirect_before_token_release
+    with self.assertRaises(GitHubContextAttestationError):GitHubRESTMetadataReader(token).fetch_authenticated_user()
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: GitHubContextAttestationError not raised
+
+======================================================================
+FAIL: test_exact_response_bound_accepts_and_closes (tests.test_github_transport_security.GitHubMetadataAdmissionTests.test_exact_response_bound_accepts_and_closes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-round2-validated-8G2bSU/baseline/tests/test_github_transport_security.py", line 27, in test_exact_response_bound_accepts_and_closes
+    self.assertTrue(response.closed)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_oversized_response_rejects_after_bounded_read_and_closes (tests.test_github_transport_security.GitHubMetadataAdmissionTests.test_oversized_response_rejects_after_bounded_read_and_closes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-round2-validated-8G2bSU/baseline/tests/test_github_transport_security.py", line 35, in test_oversized_response_rejects_after_bounded_read_and_closes
+    with self.assertRaisesRegex(GitHubContextAttestationError,'too large'):
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: GitHubContextAttestationError not raised
+
+======================================================================
+FAIL: test_rejected_status_does_not_read_and_closes (tests.test_github_transport_security.GitHubMetadataAdmissionTests.test_rejected_status_does_not_read_and_closes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/pulpo-round2-validated-8G2bSU/baseline/tests/test_github_transport_security.py", line 44, in test_rejected_status_does_not_read_and_closes
+    self.assertTrue(response.closed)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.567s
+
+FAILED (failures=5)
