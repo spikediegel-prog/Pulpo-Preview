@@ -55,6 +55,16 @@ def _hex_secret(name: str, environ: dict[str, str], *, exact_bytes: int | None =
             raise RuntimeConfigError(f"{name} must encode exactly {exact_bytes} bytes")
     elif len(raw) < 32:
         raise RuntimeConfigError(f"{name} must encode at least 32 bytes")
+    if exact_bytes is None and any(
+        raw == (raw[:size] * ((len(raw) + size - 1) // size))[:len(raw)]
+        for size in range(1, 17)
+    ):
+        # Includes the published 11/22 fixtures, zero keys, and short repeated
+        # placeholder phrases. This is a deny rule, not an entropy estimator.
+        raise RuntimeConfigError(
+            f"{name} must not be a known fixture or repeated-pattern placeholder; "
+            "configure a securely generated secret"
+        )
     return raw
 
 

@@ -333,6 +333,7 @@ For the current preview evidence and limitations, start with:
 - [Architecture](docs/ARCHITECTURE.md)
 - [Governance](docs/GOVERNANCE.md)
 - [Persistence](docs/PERSISTENCE.md)
+- [Custody secret configuration and rejected test keys](docs/security/CUSTODY_SECRET_CONFIGURATION.md)
 
 ## Host bound and Pulpo bound
 
