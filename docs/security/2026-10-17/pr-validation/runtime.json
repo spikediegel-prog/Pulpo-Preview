@@ -1,0 +1,11 @@
+{
+  "cve": "CVE-2026-19672",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "tarfile_module": "/usr/lib/python3.14/tarfile.py",
+  "archive_bytes": 10240,
+  "error": null,
+  "empty_directory_created_outside_extraction_destination": true,
+  "file_inside_destination": true,
+  "all_paths_within_disposable_root": true,
+  "changes_to_pulpo_canonical_state": false
+}

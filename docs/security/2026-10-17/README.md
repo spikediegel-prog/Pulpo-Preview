@@ -178,3 +178,14 @@ DSN. The exact Python 3.11 container packages were not inspected; Ubuntu runtime
 results cannot certify those Debian-based images. Windows testing is separate.
 No host package update, production data operation, merge or deployment is part
 of this patch.
+
+## PR source validation
+
+The complete packaged candidate at `e7e9aa7bf98d3e27052fd5a85677ef351fb7d902` was installed in a fresh
+WSL Ubuntu environment using the reviewed constraints. Core: 632 tests PASS
+(2 Windows-only skips); custody: 40 PASS; authority: 67 tests with 4 PostgreSQL
+skips. The enforcing real SDK/admission probe, compilation and dependency
+consistency check passed. `pr-validation/` preserves exact logs, source hashes
+and exit codes. Subsequent evidence-only commits leave that executable source
+unchanged. The runtime probe still reports the separately tracked OS tarfile
+issue; it is not a claim that the host runtime was patched.
