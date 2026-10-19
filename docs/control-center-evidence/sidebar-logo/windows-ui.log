@@ -1,0 +1,20 @@
+test_activity_filters_pause_review_export_and_lifecycle (tests.test_control_center.ControlCenterTests.test_activity_filters_pause_review_export_and_lifecycle) ... ok
+test_activity_reference_scope_no_duplicates_no_authority_or_source_reads (tests.test_control_center.ControlCenterTests.test_activity_reference_scope_no_duplicates_no_authority_or_source_reads) ... ok
+test_connection_reports_separate_auth_freshness_failures_and_governance (tests.test_control_center.ControlCenterTests.test_connection_reports_separate_auth_freshness_failures_and_governance) ... ok
+test_destroy_releases_tk_variables_and_callback_cycles_on_owner_thread (tests.test_control_center.ControlCenterTests.test_destroy_releases_tk_variables_and_callback_cycles_on_owner_thread) ... ok
+test_evidence_source_rates_filters_alerts_pause_and_failure_clears_values (tests.test_control_center.ControlCenterTests.test_evidence_source_rates_filters_alerts_pause_and_failure_clears_values) ... ok
+test_existing_launch_comparison_and_explicit_save (tests.test_control_center.ControlCenterTests.test_existing_launch_comparison_and_explicit_save) ... ok
+test_governance_selection_refresh_failure_cancel_and_clear (tests.test_control_center.ControlCenterTests.test_governance_selection_refresh_failure_cancel_and_clear) ... ok
+test_graph_history_gaps_ranges_and_pause (tests.test_control_center.ControlCenterTests.test_graph_history_gaps_ranges_and_pause) ... ok
+test_navigation_refresh_and_repeated_visits_do_not_create_state (tests.test_control_center.ControlCenterTests.test_navigation_refresh_and_repeated_visits_do_not_create_state) ... ok
+test_session_activity_is_bounded_and_not_persisted (tests.test_control_center.ControlCenterTests.test_session_activity_is_bounded_and_not_persisted) ... ok
+test_small_window_reflows_and_scrolls_and_keyboard_changes_page (tests.test_control_center.ControlCenterTests.test_small_window_reflows_and_scrolls_and_keyboard_changes_page) ... ok
+test_status_expansion_and_resource_alerts_never_attest_enforcement (tests.test_control_center.ControlCenterTests.test_status_expansion_and_resource_alerts_never_attest_enforcement) ... ok
+test_system_diagnostics_benchmark_failure_cancel_and_explicit_save (tests.test_control_center.ControlCenterTests.test_system_diagnostics_benchmark_failure_cancel_and_explicit_save) ... ok
+test_udm_guide_requires_review_and_explicit_site_choice (tests.test_control_center.ControlCenterTests.test_udm_guide_requires_review_and_explicit_site_choice) ... ok
+test_missing_malformed_and_stale_profiles_never_become_verified (tests.test_control_center.ProfileObservationTests.test_missing_malformed_and_stale_profiles_never_become_verified) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 28.877s
+
+OK

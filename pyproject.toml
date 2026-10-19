@@ -15,3 +15,6 @@ pulpo-mcp-tunnel = "pulpo.mcp_tunnel:main"
 
 [tool.setuptools]
 packages = ["pulpo"]
+
+[tool.setuptools.package-data]
+pulpo = ["assets/*.png"]

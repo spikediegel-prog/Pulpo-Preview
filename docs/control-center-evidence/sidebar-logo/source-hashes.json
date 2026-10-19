@@ -1,0 +1,13 @@
+{
+  "source_encoding": "UTF-8, LF-normalized",
+  "sources": {
+    "pulpo/control_center.py": "65204a8fb632a5fa612ed49a50bf4d96794a0025c627e39001c4a4759babeec8",
+    "pyproject.toml": "50a9c436bd6a56825a119058c416b5f171abfe2206a9c8ec85d464ba28fcea02",
+    "tests/test_control_center.py": "26ce050f8a6d75481a55a8ce92924a9c86559486756d04c9152c7e64966142e7"
+  },
+  "asset_sha256": "55c7015e3aa82a42ff7e66456657faf23326d0a8faa82a230b0f98e2090a3708",
+  "logs": {
+    "windows-ui.log": "4ac83a01a22b5d560ab897f31575e7d604a472701967bf8693aaf11fb237b6b8",
+    "ubuntu-ui.log": "aed98630b3bfeb20800855df46430e4067f15d3c039091d0307676284e5d8fb5"
+  }
+}

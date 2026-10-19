@@ -16,6 +16,14 @@ new dependency, GPU effect, animation, timer, worker or system setting. No full
 window opacity is reduced, so labels and plots stay crisp. Real compositor blur
 is outside this increment; it is not needed to run the Control Center.
 
+The user-supplied Pulpo badge is packaged unchanged in `pulpo/assets/pulpo-badge.png`
+and centered immediately above the sidebar motto. Tk displays a smaller cached
+image in windows shorter than 720 pixels, keeping navigation and the motto visible.
+The decorative image does not take keyboard focus; unavailable image data does not
+prevent diagnostics from opening. Images are released on the UI thread at shutdown.
+See the [logo follow-up evidence](control-center-evidence/sidebar-logo/README.md)
+for packaging verification and UI regression results after this addition.
+
 The dark header uses a separate wrapped caption; narrow layouts retain stacked
 charts, expanded status summaries and the existing page scrolling. Purple focus
 outlines and contrasting selection states remain visible. Numeric checks cover

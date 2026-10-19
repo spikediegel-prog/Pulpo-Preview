@@ -123,9 +123,24 @@ class ControlCenter:
             button.pack(fill="x", pady=3)
             self.navigation[name] = button
             root.bind(f"<Alt-Key-{number}>", lambda event, page=name: self.show(page, focus=True))
-        tk.Label(self.sidebar, text="Intelligence proposes.\nGovernance disposes.", justify="left",
+        branding = tk.Frame(self.sidebar, background=PALETTE["sidebar"])
+        branding.pack(side="bottom", fill="x", pady=(8, 12))
+        self.sidebar_logo_images = {}
+        self.sidebar_logo_size = None
+        self.sidebar_logo = tk.Label(branding, background=PALETTE["sidebar"], borderwidth=0, takefocus=False)
+        try:
+            source = tk.PhotoImage(master=root, file=str(Path(__file__).with_name("assets") / "pulpo-badge.png"))
+            for size in (96, 128):
+                factor = max(1, (max(source.width(), source.height()) + size - 1) // size)
+                self.sidebar_logo_images[size] = source.subsample(factor, factor)
+            self.sidebar_logo.pack(pady=(0, 10))
+            self.sidebar.bind("<Configure>", self._resize_sidebar_logo, add="+")
+        except tk.TclError:
+            pass  # Decorative branding must not prevent diagnostics from opening.
+        root.bind("<Destroy>", self._release_sidebar_logo, add="+")
+        tk.Label(branding, text="Intelligence proposes.\nGovernance disposes.", justify="left",
                  foreground=PALETTE["sidebar_text"], background=PALETTE["sidebar"],
-                 font=("TkDefaultFont", 9)).pack(side="bottom", anchor="w", pady=12)
+                 font=("TkDefaultFont", 9)).pack(anchor="w")
 
         self.main = ttk.Frame(root, padding=(24, 20))
         self.main.pack(fill="both", expand=True)
@@ -161,6 +176,16 @@ class ControlCenter:
         self._system()
         self.show("Overview")
         self.main.bind("<Configure>", self._resize, add="+")
+
+    def _resize_sidebar_logo(self, event):
+        size = 96 if event.height < 720 else 128
+        if size != self.sidebar_logo_size and size in self.sidebar_logo_images:
+            self.sidebar_logo.configure(image=self.sidebar_logo_images[size])
+            self.sidebar_logo_size = size
+
+    def _release_sidebar_logo(self, event):
+        if event.widget is self.root:
+            self.sidebar_logo_images.clear()  # Release Tcl images on their owning UI thread.
 
     def text(self, parent, value, style="TLabel"):
         label = ttk.Label(parent, text=value, style=style, wraplength=700, justify="left")

@@ -2,6 +2,11 @@
 
 **Recorded**, 2026-10-19. Base: `fb382ba7b2a763896c2dfbc48c3ccc387da2853f`.
 
+The initial theme captures, source hashes and test runs below bind implementation
+commit `d623501515724663dc326bca85cdf2f613b4622a`. The subsequent user-supplied sidebar
+logo has separate [current placement, package and UI regression evidence](../sidebar-logo/README.md).
+The original screenshots intentionally retain their pre-logo appearance.
+
 ## Native inspection
 
 | Before | Glass-inspired opaque layers |

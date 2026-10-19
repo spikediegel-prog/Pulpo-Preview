@@ -1,0 +1,12 @@
+{
+  "classification": "Recorded packaging check",
+  "asset": "pulpo/assets/pulpo-badge.png",
+  "unchanged_from_user_supplied_file": true,
+  "included_in_built_wheel": true,
+  "dimensions": [
+    1254,
+    1254
+  ],
+  "bytes": 1633764,
+  "sha256": "55c7015e3aa82a42ff7e66456657faf23326d0a8faa82a230b0f98e2090a3708"
+}
