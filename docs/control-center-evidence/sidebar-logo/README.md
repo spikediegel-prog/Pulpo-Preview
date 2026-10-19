@@ -3,6 +3,10 @@
 **Recorded**, 2026-10-19. Increment from appearance commit
 `d623501515724663dc326bca85cdf2f613b4622a`, for the user-requested logo placement.
 
+The initial placement captures and checks below bind commit
+`c75e66ef3161149424be30827e8bf14e6f16e11e`. Its pixel-skipping display scaling is
+superseded by the [anti-aliasing follow-up](antialias/README.md).
+
 ![Badge immediately above the sidebar motto](pulpo-sidebar-logo.png)
 
 ![Minimum-size placement](pulpo-sidebar-logo-narrow.png)

@@ -1,0 +1,17 @@
+{
+  "source_encoding": "UTF-8, LF-normalized",
+  "sources": {
+    "pulpo/control_center.py": "478f75e002a78eab10c7a4382ed44543524ea23fc52553f2f712b4679635ed76",
+    "scripts/prepare_sidebar_logo.py": "630273f3294cc3d33d3a0d8f24fe583fe9ee5cc1427ba956942f249d7c190b87",
+    "tests/test_control_center.py": "26ce050f8a6d75481a55a8ce92924a9c86559486756d04c9152c7e64966142e7"
+  },
+  "assets": {
+    "pulpo/assets/pulpo-badge.png": "55c7015e3aa82a42ff7e66456657faf23326d0a8faa82a230b0f98e2090a3708",
+    "pulpo/assets/pulpo-badge-96.png": "4923d25ae843ba5c3c18961e4698217de78c45a2e51b52c47873af9511368ca1",
+    "pulpo/assets/pulpo-badge-128.png": "3664cece18de9234d175bce48540ddeb5c85272b53f2a962b4a9af4d0f9d65fd"
+  },
+  "logs": {
+    "windows-ui.log": "e3190f8b11193d3edca7665edf63d84f141f683453a2b2515d816640e4d3947a",
+    "ubuntu-ui.log": "a880f6d6e07149f3fa676c02a9458cdd992df6c33e7eb6e2bbefdf80715e8ce1"
+  }
+}

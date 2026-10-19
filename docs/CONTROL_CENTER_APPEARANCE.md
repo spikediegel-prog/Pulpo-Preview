@@ -19,6 +19,10 @@ is outside this increment; it is not needed to run the Control Center.
 The user-supplied Pulpo badge is packaged unchanged in `pulpo/assets/pulpo-badge.png`
 and centered immediately above the sidebar motto. Tk displays a smaller cached
 image in windows shorter than 720 pixels, keeping navigation and the motto visible.
+The 96- and 128-pixel display assets are prepared using Lanczos anti-aliasing and
+loaded at their exact size, avoiding Tk's pixel-skipping subsampling. The original
+artwork stays unchanged. `scripts/prepare_sidebar_logo.py` uses Pillow only when
+regenerating these bundled assets; the application has no Pillow dependency.
 The decorative image does not take keyboard focus; unavailable image data does not
 prevent diagnostics from opening. Images are released on the UI thread at shutdown.
 See the [logo follow-up evidence](control-center-evidence/sidebar-logo/README.md)

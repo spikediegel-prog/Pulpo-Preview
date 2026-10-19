@@ -129,10 +129,9 @@ class ControlCenter:
         self.sidebar_logo_size = None
         self.sidebar_logo = tk.Label(branding, background=PALETTE["sidebar"], borderwidth=0, takefocus=False)
         try:
-            source = tk.PhotoImage(master=root, file=str(Path(__file__).with_name("assets") / "pulpo-badge.png"))
             for size in (96, 128):
-                factor = max(1, (max(source.width(), source.height()) + size - 1) // size)
-                self.sidebar_logo_images[size] = source.subsample(factor, factor)
+                self.sidebar_logo_images[size] = tk.PhotoImage(
+                    master=root, file=str(Path(__file__).with_name("assets") / f"pulpo-badge-{size}.png"))
             self.sidebar_logo.pack(pady=(0, 10))
             self.sidebar.bind("<Configure>", self._resize_sidebar_logo, add="+")
         except tk.TclError:
