@@ -90,8 +90,10 @@ Keyboard navigation, focus, resize and status wording are covered; the Windows
 accessibility tree exposes many Tk widgets as panes, so screen-reader support is
 not qualified. `pulpo tune --show` remains available as structured terminal text.
 Ubuntu CLI/profile/core regression evidence does not prove Ubuntu desktop visual
-behavior: the available Ubuntu interpreter lacks tkinter and no native desktop
-visual claim is made. An Ubuntu desktop check (including scaling and an assistive
-technology check) remains a review item. No merge, deployment, provider connection,
+behavior: the initial Ubuntu interpreter lacked tkinter and no native desktop
+visual claim was made in the initial review. A later [WSLg native follow-up](control-center-evidence/WSL_GUI.md)
+installs Tk, passes all 36 focused checks without skips and verifies the desktop
+layout and resize behavior. High-DPI and assistive-technology checks remain
+review items. No merge, deployment, provider connection,
 authority enrollment, real canonical audit verification or live containment test
 is performed by this change.

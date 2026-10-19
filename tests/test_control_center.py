@@ -122,6 +122,7 @@ class ControlCenterTests(unittest.TestCase):
         finally:
             for root in windows:
                 root.destroy()
+                self.assertFalse(root.tk.call("after", "info"), "Window left a scheduled callback after destruction")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,9 @@
 
 Claim classification: **Verified** for the bounded tests and Windows visual
 observations below. **Unknown** for deployment enforcement, live connections,
-Ubuntu desktop rendering and assistive-technology compatibility.
+and assistive-technology compatibility. Initial Ubuntu desktop rendering was
+unqualified; the later [WSLg test record](WSL_GUI.md) verifies the local native
+window, resizing and all 36 focused checks without skips.
 
 Base: `ff2a4821035b62a99b31d5a4647b0dd4309d9954`.
 This PR changes native presentation and test coverage only; authority and

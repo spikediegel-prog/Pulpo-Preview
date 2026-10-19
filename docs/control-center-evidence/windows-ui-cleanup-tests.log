@@ -1,0 +1,10 @@
+test_existing_launch_comparison_and_explicit_save (tests.test_control_center.ControlCenterTests.test_existing_launch_comparison_and_explicit_save) ... ok
+test_navigation_refresh_and_repeated_visits_do_not_create_state (tests.test_control_center.ControlCenterTests.test_navigation_refresh_and_repeated_visits_do_not_create_state) ... ok
+test_session_activity_is_bounded_and_not_persisted (tests.test_control_center.ControlCenterTests.test_session_activity_is_bounded_and_not_persisted) ... ok
+test_small_window_reflows_and_scrolls_and_keyboard_changes_page (tests.test_control_center.ControlCenterTests.test_small_window_reflows_and_scrolls_and_keyboard_changes_page) ... ok
+test_missing_malformed_and_stale_profiles_never_become_verified (tests.test_control_center.ProfileObservationTests.test_missing_malformed_and_stale_profiles_never_become_verified) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 5.165s
+
+OK

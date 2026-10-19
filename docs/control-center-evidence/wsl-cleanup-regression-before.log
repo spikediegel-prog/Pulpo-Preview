@@ -1,0 +1,16 @@
+test_existing_launch_comparison_and_explicit_save (tests.test_control_center.ControlCenterTests.test_existing_launch_comparison_and_explicit_save) ... FAIL
+
+======================================================================
+FAIL: test_existing_launch_comparison_and_explicit_save (tests.test_control_center.ControlCenterTests.test_existing_launch_comparison_and_explicit_save)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/c/Users/spike/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an-2/work/Pulpo-Preview/tests/test_control_center.py", line 125, in test_existing_launch_comparison_and_explicit_save
+    self.assertFalse(root.tk.call("after", "info"), "Window left a scheduled callback after destruction")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('after#5',) is not false : Window left a scheduled callback after destruction
+
+----------------------------------------------------------------------
+Ran 1 test in 0.654s
+
+FAILED (failures=1)
+Confirmed: pre-fix launch fails the queued-callback regression assertion.
