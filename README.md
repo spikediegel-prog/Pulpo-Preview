@@ -228,6 +228,22 @@ Performance configuration is not an authority credential.
 
 ## Test the preview
 
+### Local Control Center
+
+Run `pulpo tune` (or `python -m pulpo.cli tune`) to open the existing native
+window with Overview, Connections, Governance, Activity, Evidence and System
+navigation. On an Ubuntu graphical desktop, install `python3-tk` for the Python
+interpreter used by your environment if Tk is missing.
+
+The window opens with onboarding and performs no automatic checks or writes.
+Evidence retains the existing validated performance settings and disposable
+benchmarks. Connections and enforcement remain **Unknown** because this window
+has no live observer or canonical authority client. Activity is session output,
+not the canonical audit. A local comparison never proves deployed enforcement.
+For terminal access to the same resolved tuning settings, use `pulpo tune --show`.
+
+See [design alternatives and qualification boundaries](docs/CONTROL_CENTER_DESIGN.md).
+
 ```powershell
 git clone --branch preview https://github.com/spikediegel-prog/Pulpo-Preview.git Pulpo-preview
 cd Pulpo-preview

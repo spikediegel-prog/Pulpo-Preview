@@ -50,6 +50,8 @@ def check_gui():
     root = tk.Tk()
     root.withdraw()
     try:
+        from .control_center import ControlCenter
+        ControlCenter(root, default_profile_path())
         ttk.Frame(root).pack()
         ttk.Button(root, text="Apply setting").pack()
         ttk.Spinbox(root, from_=0, to=16).pack()
@@ -95,43 +97,46 @@ def launch(profile=None):
     from tkinter import ttk, messagebox, filedialog
     profile = Path(profile) if profile else default_profile_path()
     root = tk.Tk()
-    root.title("Pulpo performance tuning — Preview")
-    root.geometry("920x610")
-    panel = ttk.Frame(root, padding=20)
+    from .control_center import ControlCenter
+    center = ControlCenter(root, profile)
+    panel = ttk.Frame(center.pages["Evidence"])
     panel.pack(fill="both", expand=True)
-    ttk.Label(panel, text="Tune evidence collection", font=("Segoe UI", 18, "bold")).pack(anchor="w")
-    ttk.Label(panel, text=f"{machine()['logical_cpus']} logical CPUs • worker limit {thread_limit()}").pack(anchor="w", pady=8)
-    ttk.Label(panel, text="Approval, audit and evidence rules are fixed. Settings take effect on the next collection.").pack(anchor="w")
+    center.text(panel, "Tune evidence collection", "Heading.TLabel")
+    center.text(panel, f"Recorded • {machine()['logical_cpus']} logical CPUs • worker limit {thread_limit()}")
+    center.text(panel, "Compare settings on disposable fixtures before saving a local performance hint. "
+                "Approval, audit and evidence rules stay fixed. Settings take effect on the next collection.")
     resolved = load_settings(profile)
     mode = tk.StringVar(value="Recommended" if resolved == recommended() else "Custom")
     workers = tk.StringVar(value=str(resolved.workers))
     choices = ttk.Frame(panel)
     choices.pack(fill="x", pady=14)
     ttk.Radiobutton(choices, text="Default (serial, no helpers)", variable=mode,
-                    value="Recommended").pack(side="left")
-    ttk.Radiobutton(choices, text="Opt in: helper count", variable=mode, value="Custom").pack(side="left", padx=12)
+                    value="Recommended").grid(row=0, column=0, columnspan=2, sticky="w", pady=6)
+    ttk.Radiobutton(choices, text="Opt in: helper count", variable=mode, value="Custom").grid(row=1, column=0, sticky="w", pady=6)
     spin = ttk.Spinbox(choices, from_=0, to=thread_limit(), width=5, textvariable=workers)
-    spin.pack(side="left")
-    ttk.Label(panel, text="0 or 1 collects serially. More workers may increase memory use; no hard RAM cap is promised.").pack(anchor="w")
-    ttk.Label(panel, text=f"Profile: {profile}", wraplength=740).pack(anchor="w", pady=8)
+    spin.grid(row=1, column=1, padx=12)
+    ttk.Label(choices, text="Evidence worker count").grid(row=2, column=1, padx=12)
+    def sync_mode(*_):
+        spin.configure(state="normal" if mode.get() == "Custom" else "disabled")
+    mode.trace_add("write", sync_mode)
+    sync_mode()
+    center.text(panel, "0 or 1 collects serially. More workers may increase memory use; no hard RAM cap is promised.")
+    center.text(panel, f"Profile: {profile}")
     if profile != default_profile_path():
-        ttk.Label(panel, text="Custom profile: runtime use requires passing it to create_collector().").pack(anchor="w")
-    output = tk.Text(panel, height=15, wrap="word", state="disabled")
-    output.pack(fill="both", expand=True, pady=8)
+        center.text(panel, "Custom profile: runtime use requires passing it to create_collector().")
+    center.text(panel, "Results appear in Activity. Save results exports the latest measurements only.", "Muted.TLabel")
     buttons = ttk.Frame(panel)
-    buttons.pack(fill="x")
-    status = tk.StringVar(value="Ready. Process collectors are available for experiments only.")
-    ttk.Label(panel, textvariable=status, wraplength=740).pack(anchor="w", pady=10)
+    buttons.pack(fill="x", pady=10)
+    status = tk.StringVar(value="Ready. No check has run in this session.")
+    status_label = center.text(panel, "")
+    status_label.configure(textvariable=status)
     events = queue.Queue()
     active = False
     controls = []
     latest_report = None
 
     def append(message):
-        output.configure(state="normal")
-        output.insert("end", message + "\n")
-        output.see("end")
-        output.configure(state="disabled")
+        center.append(message)
 
     def selected():
         return recommended() if mode.get() == "Recommended" else EvidenceSettings(int(workers.get())).validate()
@@ -144,6 +149,8 @@ def launch(profile=None):
         for control in controls:
             control.configure(state="disabled")
         status.set("Working on temporary fixtures…")
+        append("Recorded: operation started on disposable fixtures. Awaiting result.")
+        center.show("Activity")
         def run():
             try:
                 events.put(("result", operation()))
@@ -250,12 +257,14 @@ def launch(profile=None):
             except OSError as exc:
                 messagebox.showerror("Save failed", str(exc))
 
-    for label, action in (("Compare thread settings", compare), ("Apply setting", apply),
+    for index, (label, action) in enumerate((("Compare thread settings", compare), ("Apply setting", apply),
                           ("Serial default", restore), ("Undo setting", rollback), ("Process experiment", experiment),
-                          ("Save results", export)):
+                          ("Save results", export))):
         button = ttk.Button(buttons, text=label, command=action)
-        button.pack(side="left", padx=(0, 8))
+        button.grid(row=index // 2, column=index % 2, sticky="ew", padx=(0, 8), pady=4)
         controls.append(button)
+    for column in (0, 1):
+        buttons.columnconfigure(column, weight=1)
 
     def poll():
         nonlocal active, latest_report
@@ -268,9 +277,11 @@ def launch(profile=None):
                 active = False
                 for control in controls:
                     control.configure(state="normal")
-                status.set("Ready. Process experiments never apply runtime settings.")
+                center.refresh_profile()
+                status.set("Finished. Review the result in Activity. Process experiments never apply runtime settings.")
             elif kind == "error":
-                append("FAILED: " + value + "\nNo setting was applied by the failed operation.")
+                append("FAILED: " + value + "\nReview System troubleshooting. "
+                       "Refresh the local profile status to inspect the effective fallback.")
             elif kind == "report":
                 latest_report = value
             else:
