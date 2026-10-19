@@ -1,0 +1,6 @@
+{
+  "pulpo/governance_observer.py": "be75fbbf7997983f8ff60b17f0cd4fca57195718999de6b445b3ff7f73123c90",
+  "pulpo/control_center.py": "a7d6921c4abdb7b55aecca44f95e5418ff1c130d4d61809cf90d31011de0a8c4",
+  "tests/test_governance_observer.py": "f8de2e42ef960598f65a4946616c3c9b736dfb965e0313d0c03be1c5558dc7ab",
+  "tests/test_control_center.py": "746cd969e9f4c3848955987caca9c25275deef6c75095d9d296523176fae51c6"
+}

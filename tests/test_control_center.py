@@ -124,6 +124,34 @@ class ControlCenterTests(unittest.TestCase):
         self.assertIsNone(monitor.sampler.previous_cpu)
         self.assertFalse(self.profile.exists())
 
+    def test_governance_selection_refresh_failure_cancel_and_clear(self):
+        from dataclasses import asdict
+        import json
+        from pulpo.mcp_boundary import MCPReadSnapshot
+        path = Path(self.temporary.name) / "snapshot.json"
+        path.write_text(json.dumps(asdict(MCPReadSnapshot("a" * 64, True, 0, None))))
+        path.chmod(0o600)
+        original = path.read_bytes()
+        self.center.show("Governance")
+        with patch("tkinter.filedialog.askopenfilename", return_value=str(path)):
+            self.center.select_governance_snapshot()
+        self.assertIn("a" * 64, self.center.governance_fields["policy"].cget("text"))
+        self.assertEqual("Unknown", self.center.status_rows["Governance"].state)
+        self.assertEqual(original, path.read_bytes())
+        with patch("tkinter.filedialog.askopenfilename", return_value=""):
+            self.center.select_governance_snapshot()
+        self.assertEqual(path, self.center.governance_path)
+        path.write_text("{}")
+        self.center.governance_refresh.invoke()
+        self.assertNotIn("a" * 64, self.center.governance_fields["policy"].cget("text"))
+        self.assertEqual("Attention", self.center.status_rows["Governance"].state)
+        self.center.clear_governance()
+        self.assertIsNone(self.center.governance_path)
+        self.assertEqual("disabled", str(self.center.governance_refresh.cget("state")))
+        self.assertEqual("Unknown", self.center.status_rows["Governance"].state)
+        self.assertEqual("{}", path.read_text())
+        self.assertFalse(self.profile.exists())
+
     def test_existing_launch_comparison_and_explicit_save(self):
         self.root.withdraw()
         windows = []

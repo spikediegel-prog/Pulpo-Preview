@@ -47,7 +47,8 @@ class StatusRow:
         self.body = ttk.Frame(self.frame, style="Card.TFrame", padding=(8, 10))
         self.detail = ttk.Label(self.body, text=detail, style="Card.TLabel", justify="left", wraplength=720)
         self.detail.pack(fill="x")
-        ttk.Button(self.body, text=f"Open {name.lower()}", command=open_page).pack(anchor="w", pady=(10, 0))
+        if open_page is not None:
+            ttk.Button(self.body, text=f"Open {name.lower()}", command=open_page).pack(anchor="w", pady=(10, 0))
         self.bar.bind("<Configure>", lambda event: self.draw())
         self.frame.bind("<Configure>", self._resize)
 
@@ -279,16 +280,73 @@ class ControlCenter:
 
     def _governance(self):
         page = self.pages["Governance"]
-        self.section(page, "Unknown • Enforcement not verified here",
-                     "This window has no canonical kernel, state writer, signer or authority-service client. "
-                     "It cannot grant, revoke or attest authority.")
-        self.section(page, "Evidence required for a governed claim",
-                     "Use the deployment's existing authority and evidence path to establish identity, "
-                     "policy, exact intent, valid one-use permit and consequence reconciliation. "
-                     "A passing local benchmark is not that evidence.")
-        self.section(page, "Keep uncertainty visible",
-                     "An unknown consequence is not permission to retry. Local tuning success does not "
-                     "prove provider containment, credential revocation or host integrity.")
+        from .governance_observer import GovernanceObservation
+        self.governance_path = None
+        self.governance_status = self.text(page, "", "Heading.TLabel")
+        self.text(page, "Read-only observation • Connected does not mean governed. "
+                  "This window cannot approve, grant, revoke or execute.", "Muted.TLabel")
+        controls = ttk.Frame(page)
+        controls.pack(fill="x", pady=(0, 12))
+        ttk.Button(controls, text="Select snapshot…", command=self.select_governance_snapshot).pack(side="left")
+        self.governance_refresh = ttk.Button(controls, text="Re-read", state="disabled",
+                                             command=self.refresh_governance)
+        self.governance_refresh.pack(side="left", padx=6)
+        ttk.Button(controls, text="Clear", command=self.clear_governance).pack(side="left")
+        self.governance_source = self.text(page, "", "Muted.TLabel")
+        self.governance_fields = {}
+        self.governance_rows = {}
+        for name, title in (("policy", "Policy"), ("decisions", "Decisions"), ("integrity", "Audit integrity")):
+            row = StatusRow(page, title, "", None)
+            self.governance_rows[name] = row
+            self.governance_fields[name] = row.detail
+        self.text(page, "Expand a row for its evidence and limitations. Gray means Unknown; "
+                  "red means a reported problem needs attention.", "Muted.TLabel")
+        self.section(page, "Connect an observation source",
+                     "Select a frozen read snapshot exported by your trusted Pulpo process "
+                     "(pulpo.mcp-read-snapshot.v0 JSON). Do not select a state database, credential or raw audit file. "
+                     "Selection stays in this session. On Ubuntu the export must be readable only by its owner.")
+        self.section(page, "What needs further evidence",
+                     "Deployment identity, current rules and grants, human authority, individual decisions, "
+                     "permits, execution evidence and unresolved consequences remain Unknown. "
+                     "Unknown consequences never authorize retry.")
+        self._render_governance(GovernanceObservation())
+
+    def select_governance_snapshot(self):
+        from tkinter import filedialog
+        selected = filedialog.askopenfilename(parent=self.root, title="Select frozen Pulpo read snapshot",
+                                              filetypes=(("JSON snapshot", "*.json"),))
+        if selected:
+            self.governance_path = Path(selected)
+            self.governance_refresh.configure(state="normal")
+            self.refresh_governance()
+
+    def refresh_governance(self):
+        from .governance_observer import observe_snapshot
+        if self.governance_path is not None:
+            self._render_governance(observe_snapshot(self.governance_path))
+
+    def clear_governance(self):
+        from .governance_observer import GovernanceObservation
+        self.governance_path = None
+        self.governance_refresh.configure(state="disabled")
+        self._render_governance(GovernanceObservation())
+
+    def _render_governance(self, observation):
+        self.governance_status.configure(text=observation.summary,
+                                         foreground=PALETTE["error"] if observation.state == "Attention" else PALETTE["muted"])
+        location = f"Selected file: {self.governance_path}\n" if self.governance_path else ""
+        self.governance_source.configure(text=location + observation.source)
+        summaries = {"policy": "Unknown · No policy observation", "decisions": "Unknown · Decision records unavailable",
+                     "integrity": "Unknown · No audit observation"}
+        if observation.policy.startswith("Recorded"):
+            summaries["policy"] = "Recorded · Source-reported fingerprint"
+            summaries["integrity"] = ("Attention · Source reports audit check FAILED" if observation.state == "Attention"
+                                       else "Recorded · Source reports audit check passed")
+        for name, row in self.governance_rows.items():
+            state = "Attention" if name == "integrity" and observation.state == "Attention" else "Unknown"
+            row.update(state, summaries[name], getattr(observation, name))
+        self.status_rows["Governance"].update(observation.state, observation.summary,
+                                               "Enforcement remains unassessed. " + observation.source)
 
     def _activity(self):
         page = self.pages["Activity"]
