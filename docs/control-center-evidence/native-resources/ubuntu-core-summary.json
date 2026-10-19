@@ -1,0 +1,19 @@
+{
+  "python": "3.14.4",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "repo": "/mnt/c/Users/spike/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an-2/work/Pulpo-Preview",
+  "results": [
+    {
+      "suite": "core",
+      "returncode": 1,
+      "process_returncode": 0,
+      "resource_warnings": 3,
+      "summary": [
+        "Ran 704 tests in 50.870s",
+        "OK (skipped=2)"
+      ],
+      "log": "/mnt/c/Users/spike/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an-2/work/resource-core-final-results/core.log",
+      "log_sha256": "c2b86339f8d5dd5683760e66920b4a14fa37dc91d5c780791fd56bc0ab2808a9"
+    }
+  ]
+}
