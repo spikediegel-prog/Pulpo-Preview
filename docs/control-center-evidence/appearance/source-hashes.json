@@ -1,0 +1,17 @@
+{
+  "source_commit": "d623501515724663dc326bca85cdf2f613b4622a",
+  "source_encoding": "UTF-8, LF-normalized",
+  "sources": {
+    "pulpo/control_center_theme.py": "dce39070f9f3d1de89b5eb2470bcde32f189b66fc3c1819f4fb825e474cc9420",
+    "pulpo/control_center.py": "eba586472a9ad66bf4b5b2e7c259db2f86a66e4f84cb12c413119ca4fc82f2eb",
+    "pulpo/resource_monitor.py": "4b0cd0122ff947ba23692182b71bfd567daf57954bc2d7da33f68aa327c25a35",
+    "pulpo/evidence_page.py": "3894994d03386960dab7fc75d7973a29b50bfea8d198d2e5d7e0d86749957060",
+    "pulpo/activity_page.py": "08d2777a00e6a73fa0e7d41ddec1d7c97aba787a114fcd589b884869ed71abcd",
+    "tests/test_control_center.py": "1b0d456ae819bf1ea651d81833f583f329960b43291457fdbea2b219bab36441"
+  },
+  "logs": {
+    "windows-focused.log": "511e507f6e9c57e5fc84179edeee631b8aa8ab9d548698347bbe17d5bb2666ed",
+    "ubuntu-focused.log": "7b1529ca385309a1a30d81f7000bacd1c4da03f93c0bfe2b7c75da760b216313",
+    "ubuntu-core.log": "d4f66c76573b4da806fd5670c08ce975dcbff16094a3ea19100b6b271b20725d"
+  }
+}

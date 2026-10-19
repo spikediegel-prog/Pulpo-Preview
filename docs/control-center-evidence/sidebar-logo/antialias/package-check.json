@@ -1,0 +1,34 @@
+{
+  "classification": "Recorded",
+  "generator_pillow": "12.3.0",
+  "resampling": "Lanczos",
+  "assets": [
+    {
+      "asset": "pulpo/assets/pulpo-badge.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "sha256": "55c7015e3aa82a42ff7e66456657faf23326d0a8faa82a230b0f98e2090a3708",
+      "wheel_bytes_match": true
+    },
+    {
+      "asset": "pulpo/assets/pulpo-badge-96.png",
+      "dimensions": [
+        96,
+        96
+      ],
+      "sha256": "4923d25ae843ba5c3c18961e4698217de78c45a2e51b52c47873af9511368ca1",
+      "wheel_bytes_match": true
+    },
+    {
+      "asset": "pulpo/assets/pulpo-badge-128.png",
+      "dimensions": [
+        128,
+        128
+      ],
+      "sha256": "3664cece18de9234d175bce48540ddeb5c85272b53f2a962b4a9af4d0f9d65fd",
+      "wheel_bytes_match": true
+    }
+  ]
+}

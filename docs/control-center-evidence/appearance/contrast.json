@@ -1,0 +1,174 @@
+{
+  "classification": "Recorded numeric sRGB contrast checks; not an accessibility certification",
+  "checks": [
+    {
+      "pair": "text on background",
+      "foreground": "#2B2633",
+      "background": "#EEEBF3",
+      "ratio": 12.48,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "muted on background",
+      "foreground": "#62586D",
+      "background": "#EEEBF3",
+      "ratio": 5.68,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "text on surface",
+      "foreground": "#2B2633",
+      "background": "#FCFAFE",
+      "ratio": 14.18,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "accent on surface",
+      "foreground": "#674396",
+      "background": "#FCFAFE",
+      "ratio": 7.18,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "accent on selected",
+      "foreground": "#674396",
+      "background": "#E4DAEF",
+      "ratio": 5.52,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "warning on background",
+      "foreground": "#865200",
+      "background": "#EEEBF3",
+      "ratio": 5.53,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "error on background",
+      "foreground": "#A32935",
+      "background": "#EEEBF3",
+      "ratio": 6.09,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "sidebar_text on sidebar",
+      "foreground": "#E8E2EF",
+      "background": "#242129",
+      "ratio": 12.5,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "header_text on header",
+      "foreground": "#FAF8FD",
+      "background": "#302A3A",
+      "ratio": 13.12,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "header_muted on header",
+      "foreground": "#D6CDDF",
+      "background": "#302A3A",
+      "ratio": 9.0,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "header_text on accent",
+      "foreground": "#FAF8FD",
+      "background": "#674396",
+      "ratio": 7.06,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "chart_muted on chart",
+      "foreground": "#CFC5DC",
+      "background": "#2B2633",
+      "ratio": 8.88,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "chart Normal",
+      "foreground": "#B79ADF",
+      "background": "#2B2633",
+      "ratio": 6.09,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "chart Elevated",
+      "foreground": "#F2BD62",
+      "background": "#2B2633",
+      "ratio": 8.57,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "chart Attention",
+      "foreground": "#FF929C",
+      "background": "#2B2633",
+      "ratio": 6.89,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "chart Unknown",
+      "foreground": "#BBB4C5",
+      "background": "#2B2633",
+      "ratio": 7.32,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "evidence Reads",
+      "foreground": "#B79ADF",
+      "background": "#2B2633",
+      "ratio": 6.09,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "evidence Writes",
+      "foreground": "#78C8DD",
+      "background": "#2B2633",
+      "ratio": 7.78,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "evidence Commits",
+      "foreground": "#F2BD62",
+      "background": "#2B2633",
+      "ratio": 8.57,
+      "threshold": 4.5,
+      "passes": true
+    },
+    {
+      "pair": "control border",
+      "foreground": "#887797",
+      "background": "#FCFAFE",
+      "ratio": 3.94,
+      "threshold": 3,
+      "passes": true
+    },
+    {
+      "pair": "scrollbar thumb",
+      "foreground": "#887797",
+      "background": "#EEEBF3",
+      "ratio": 3.47,
+      "threshold": 3,
+      "passes": true
+    }
+  ],
+  "method": "Linearized sRGB relative luminance; (Lmax + 0.05)/(Lmin + 0.05). Thresholds apply to listed pairs only."
+}

@@ -512,12 +512,15 @@ class ControlCenterTests(unittest.TestCase):
             page = center.evidence_view
             self.assertIs(root, page.filter._root)
             variable = weakref.ref(page.filter)
+            logo = weakref.ref(center.sidebar_logo_images[128])
             page.set_active(True)
             root.destroy()
             destroyed = True
             self.assertIsNone(page.filter)
             self.assertIsNone(page.center)
             self.assertIsNone(variable())
+            self.assertFalse(center.sidebar_logo_images)
+            self.assertIsNone(logo())
             self.assertIsNone(center.monitor.on_update)
             self.assertIsNone(page.timer)
             # Later worker collection must have no Tk variable left to finalize.

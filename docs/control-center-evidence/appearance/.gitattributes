@@ -1,0 +1,2 @@
+# Preserve test-log bytes, including Windows line endings, for evidence hashes.
+*.log -text whitespace=cr-at-eol
