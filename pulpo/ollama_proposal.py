@@ -117,7 +117,12 @@ def _request(method: str, path: str, payload=None):
 
 
 def request_local_proposal(prompt: str, model: LocalModel) -> str:
-    """Generate one bounded proposal string using an already installed model.
+    """Preserve the existing content-only proposal API."""
+    return request_local_proposal_with_usage(prompt, model)[0]
+
+
+def request_local_proposal_with_usage(prompt: str, model: LocalModel):
+    """Return one bounded proposal string and optional provider-reported usage.
 
     This function sends the caller-supplied prompt to the existing daemon.
     Supply only data already permitted for model context. No files are read.
@@ -158,7 +163,13 @@ def request_local_proposal(prompt: str, model: LocalModel) -> str:
     content = message["content"]
     # Validate before returning. JSON/schema output alone is not authority.
     _proposal_fields(content)
-    return content
+    from .evidence_observation import AIUsage, number
+    input_tokens, output_tokens = response.get("prompt_eval_count"), response.get("eval_count")
+    # Usage is provider-reported, never authorization or an inferred price.
+    usage = AIUsage("Ollama", input_tokens if number(input_tokens) else None,
+                    output_tokens if number(output_tokens) else None,
+                    scope="latest_completed_request")
+    return content, usage
 
 
 def _proposal_fields(content: str):

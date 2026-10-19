@@ -1,0 +1,19 @@
+{
+  "normalization": "CRLF to LF",
+  "sha256": {
+    "pulpo/control_center.py": "2e1bc4f9c201cfc5e7596ea0168a31f2f9a279ea261821ab3050d58e4162847a",
+    "pulpo/database_activity.py": "c1dfa48910df5a285a90eb803039ed027f9f76ff8f33aa575bdd29daf05c72c5",
+    "pulpo/evidence_export.py": "674adecd37b4fe3109d1352c737cda290b6a7fd7dbefe55e9ca2b002e311acde",
+    "pulpo/evidence_observation.py": "15edcd668ae1f07c5bc47c9930e153a15d47ffbc77b9b2cf636a68078de06a44",
+    "pulpo/evidence_page.py": "8ba84cc56d2bb0393abe5437c921353ec08d9415740b56482d4f675548f4420b",
+    "pulpo/mcp_boundary.py": "53519707a5e518db33e70d5edd7617d85055ba1fcab589c698a40e527493c6f3",
+    "pulpo/mcp_plugin.py": "860fb8c436f2e02eb92b8dcf5ef06b3f3d52f8baf4038cea702346af2a049829",
+    "pulpo/ollama_proposal.py": "ce1216fac33c7dc7aa9c55ecb218143c5b9fc6d05bcce133dbd9bcb16caf5b08",
+    "pulpo/resource_monitor.py": "82fee2fdc8ac8241cf9005bf8eb9e97a45d8aa1c4b304bd30b04a3a2f7ffc3ee",
+    "pulpo/state.py": "6ad5bcbd3e5fcc74341917875fdb3b84ce6cc9dba0c790a25f72b02de013033b",
+    "pulpo/tuning_app.py": "77258ea947a8178b5491a3570ef04f00c4135891df87448c89f54d20ae3da53f",
+    "tests/test_control_center.py": "f4cc3cc0f4976a6021a513ef006385705555669bfe7b8a33ff7e27d3a4b0d4fd",
+    "tests/test_evidence_observation.py": "88ebff14800ab2d9e2db33a608ef162df39f95f347e1fba820f3bd583f3059cb",
+    "tests/test_resource_lifecycle.py": "bcd2413470f192992e0a7bcfb93570b13dab3464e83f32bf5cd28f2dfed365d5"
+  }
+}

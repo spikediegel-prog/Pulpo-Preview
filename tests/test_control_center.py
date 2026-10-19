@@ -152,9 +152,75 @@ class ControlCenterTests(unittest.TestCase):
         self.assertEqual("{}", path.read_text())
         self.assertFalse(self.profile.exists())
 
+    def test_evidence_source_rates_filters_alerts_pause_and_failure_clears_values(self):
+        from dataclasses import asdict, replace
+        import json
+        from pulpo.evidence_observation import EvidenceObservation, EvidenceEvent
+        page = self.center.evidence_view
+        self.center.show("Evidence")
+        path = Path(self.temporary.name) / "observation.json"
+        now = time.time_ns()
+        snapshot = EvidenceObservation("a" * 32, now - 4_000_000_000, False, 2, health="ok",
+            reads=10, writes=3, commits=1, volume_total=1000, volume_free=30, permit_rejected=1,
+            events=(EvidenceEvent(now, "decision", "blocked_by_policy", "b" * 64),
+                    EvidenceEvent(now, "permit_rejected", "rejected", "c" * 64)))
+        def write(value):
+            path.write_text(json.dumps(asdict(value)))
+            path.chmod(0o600)
+        write(snapshot)
+        with patch("tkinter.filedialog.askopenfilename", return_value=str(path)):
+            page.select()
+        self.assertEqual("Normal", page.rows["health"].state)
+        self.assertEqual("Attention", page.rows["integrity"].state)
+        self.assertEqual("Attention", page.rows["storage"].state)
+        self.assertIn("Frozen owner observation loaded", self.center.status_rows["Evidence"].detail.cget("text"))
+        self.assertIn("AI usage incomplete", page.warnings.cget("text"))
+        self.assertIsNone(page.history.points[-1][1]["reads"])
+        snapshot = replace(snapshot, observed_at_ns=now - 2_000_000_000, reads=16, commits=3)
+        write(snapshot)
+        original = path.read_bytes()
+        page.refresh_button.invoke()
+        self.assertEqual(3, page.history.points[-1][1]["reads"])
+        page.filter.set("Permit events")
+        page.render_logs()
+        self.assertIn("c" * 64, page.logs.get("1.0", "end"))
+        self.assertNotIn("b" * 64, page.logs.get("1.0", "end"))
+        self.assertEqual("disabled", str(page.logs.cget("state")))
+        page.review_button.invoke()
+        self.assertTrue(page.reviewing)
+        self.assertIsNone(page.timer)
+        self.assertIn("Paused for review", page.source.cget("text"))
+        self.assertEqual("Unknown", page.rows["health"].state)
+        with patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("Paused page read")):
+            page.tick()
+        page.review_button.invoke()
+        self.assertFalse(page.reviewing)
+        self.center.show("Overview")
+        self.assertIsNone(page.timer)
+        with patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("Hidden page read")):
+            page.tick()
+        self.assertEqual(original, path.read_bytes())
+        path.write_text('{"permit":"PRIVATE"}')
+        page.refresh()
+        self.assertIsNone(page.snapshot)
+        self.assertFalse(page.history.points)
+        self.assertNotIn("PRIVATE", page.logs.get("1.0", "end"))
+        self.assertNotIn("3.0/s", page.values["reads"].cget("text"))
+        page.clear()
+        self.assertIsNone(page.path)
+        self.assertIsNone(page.timer)
+
     def test_existing_launch_comparison_and_explicit_save(self):
+        import weakref
         self.root.withdraw()
         windows = []
+        variables = []
+        original_variable = tk.StringVar
+        def owned_variable(*args, **kwargs):
+            variable = original_variable(*args, **kwargs)
+            self.assertIs(kwargs["master"], variable._root)
+            variables.append(weakref.ref(variable))
+            return variable
         def inspect(root):
             windows.append(root)
             def descendants(widget):
@@ -191,12 +257,43 @@ class ControlCenterTests(unittest.TestCase):
             self.assertEqual(0, tuning.load_settings(self.profile).workers)
             self.assertTrue(self.profile.exists())
         try:
-            with patch.object(tk.Tk, "mainloop", inspect):
+            with patch.object(tk.Tk, "mainloop", inspect), patch.object(tk, "StringVar", side_effect=owned_variable):
                 tuning_app.launch(self.profile)
         finally:
             for root in windows:
                 root.destroy()
                 self.assertFalse(root.tk.call("after", "info"), "Window left a scheduled callback after destruction")
+            self.assertTrue(variables)
+            self.assertTrue(all(reference() is None for reference in variables), "Closed window retained a Tk variable")
+
+    def test_destroy_releases_tk_variables_and_callback_cycles_on_owner_thread(self):
+        import gc
+        import threading
+        import weakref
+        root = tk.Tk()
+        destroyed = False
+        try:
+            center = ControlCenter(root, self.profile)
+            root.update()
+            page = center.evidence_view
+            self.assertIs(root, page.filter._root)
+            variable = weakref.ref(page.filter)
+            page.set_active(True)
+            root.destroy()
+            destroyed = True
+            self.assertIsNone(page.filter)
+            self.assertIsNone(page.center)
+            self.assertIsNone(variable())
+            self.assertIsNone(center.monitor.on_update)
+            self.assertIsNone(page.timer)
+            # Later worker collection must have no Tk variable left to finalize.
+            worker = threading.Thread(target=gc.collect)
+            worker.start()
+            worker.join(timeout=5)
+            self.assertFalse(worker.is_alive())
+        finally:
+            if not destroyed:
+                root.destroy()
 
 
 if __name__ == "__main__":

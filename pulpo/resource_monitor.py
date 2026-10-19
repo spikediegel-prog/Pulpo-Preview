@@ -88,6 +88,7 @@ class ResourceMonitor:
     def _destroy(self, event):
         if event.widget is self.root:
             self.closed = True
+            self.on_update = None  # Break the center/monitor cycle on the Tk thread.
             if self.timer is not None:
                 self.root.after_cancel(self.timer)
                 self.timer = None

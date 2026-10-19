@@ -179,6 +179,8 @@ class ControlCenter:
         self._overview()
         self._connections()
         self._governance()
+        from .evidence_page import EvidencePage
+        self.evidence_view = EvidencePage(self)
         self._activity()
         self._system()
         self.show("Overview")
@@ -207,6 +209,8 @@ class ControlCenter:
         self.canvas.yview_moveto(0)
         if hasattr(self, "monitor"):
             self.monitor.set_active(name == "Overview")
+        if hasattr(self, "evidence_view"):
+            self.evidence_view.set_active(name == "Evidence")
         if focus:
             self.navigation[name].focus_set()
 
