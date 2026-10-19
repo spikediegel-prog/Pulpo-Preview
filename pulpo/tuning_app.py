@@ -266,8 +266,10 @@ def launch(profile=None):
     for column in (0, 1):
         buttons.columnconfigure(column, weight=1)
 
+    poll_handle = None
+
     def poll():
-        nonlocal active, latest_report
+        nonlocal active, latest_report, poll_handle
         while True:
             try:
                 kind, value = events.get_nowait()
@@ -286,7 +288,15 @@ def launch(profile=None):
                 latest_report = value
             else:
                 append(value)
-        root.after(100, poll)
+        poll_handle = root.after(100, poll)
+
+    def cancel_poll(event):
+        nonlocal poll_handle
+        if event.widget is root and poll_handle is not None:
+            root.after_cancel(poll_handle)
+            poll_handle = None
+
+    root.bind("<Destroy>", cancel_poll, add="+")
 
     def close():
         if active:
