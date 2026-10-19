@@ -53,6 +53,42 @@ class GitHubMetadataAdmissionTests(unittest.TestCase):
         self.assertEqual('GitHub context read failed',str(error.exception))
         self.assertTrue(error.exception.__suppress_context__)
 
+    def test_raised_http_error_closes_body_without_reading_or_token_echo(self):
+        from urllib.error import HTTPError
+        class UnreadBody(Response):
+            def read(self, size=-1):
+                raise AssertionError("rejected body must not be read")
+        body = UnreadBody(b"synthetic-sensitive-provider-material")
+        error = HTTPError("https://api.github.com/user", 302,
+                          "synthetic-sensitive-provider-material", {}, body)
+        def opener(*args, **kwargs):
+            raise error
+        with self.assertRaises(GitHubContextAttestationError) as caught:
+            GitHubRESTMetadataReader("synthetic", opener=opener).fetch_authenticated_user()
+        self.assertTrue(body.closed)
+        self.assertEqual("GitHub context read failed", str(caught.exception))
+        self.assertTrue(caught.exception.__suppress_context__)
+
+    def test_http_error_cleanup_failure_stays_sanitized(self):
+        from urllib.error import HTTPError
+        body = Response(b"synthetic-sensitive-provider-material")
+        class BrokenClose(HTTPError):
+            attempted = False
+            def close(self):
+                self.attempted = True
+                super().close()
+                raise OSError("synthetic-sensitive-provider-material")
+        error = BrokenClose("https://api.github.com/user", 403,
+                            "synthetic-sensitive-provider-material", {}, body)
+        def opener(*args, **kwargs):
+            raise error
+        with self.assertRaises(GitHubContextAttestationError) as caught:
+            GitHubRESTMetadataReader("synthetic", opener=opener).fetch_authenticated_user()
+        self.assertTrue(error.attempted)
+        self.assertTrue(body.closed)
+        self.assertEqual("GitHub context read failed", str(caught.exception))
+        self.assertTrue(caught.exception.__suppress_context__)
+
     @unittest.skipUnless(sys.platform.startswith('linux') and shutil.which('openssl'),'Ubuntu TLS fixture needs openssl')
     def test_default_reader_rejects_cross_origin_redirect_before_token_release(self):
         from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
