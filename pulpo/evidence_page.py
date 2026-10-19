@@ -3,6 +3,7 @@ from pathlib import Path
 import time
 
 from .evidence_observation import ActivityHistory, freshness, load_observation
+from .control_center_theme import PALETTE, surface
 
 
 SERIES = {"reads": ("Reads", "#B79ADF"), "writes": ("Writes", "#78C8DD"), "commits": ("Commits", "#F2BD62")}
@@ -29,22 +30,24 @@ class EvidencePage:
         self.seconds = 60
         page = center.pages["Evidence"]
         center.text(page, "Database activity", "Heading.TLabel")
-        self.graph = tk.Frame(page, background="#242329", padx=12, pady=12)
-        self.graph.pack(fill="x", pady=(0, 10))
+        shadow, border = surface(page, dark=True)
+        shadow.pack(fill="x", pady=(0, 10))
+        self.graph = tk.Frame(border, background=PALETTE["chart"], padx=12, pady=12)
+        self.graph.pack(fill="x")
         self.values = {}
-        legend = tk.Frame(self.graph, background="#242329")
+        legend = tk.Frame(self.graph, background=PALETTE["chart"])
         legend.pack(fill="x")
         for index, (key, (title, color)) in enumerate(SERIES.items()):
-            label = tk.Label(legend, text=f"{title}\nUnknown", foreground=color, background="#242329",
+            label = tk.Label(legend, text=f"{title}\nUnknown", foreground=color, background=PALETTE["chart"],
                              font=("TkDefaultFont", 11, "bold"), anchor="w", justify="left")
             label.grid(row=0, column=index, sticky="ew", padx=4)
             legend.columnconfigure(index, weight=1)
             self.values[key] = label
-        self.chart = tk.Canvas(self.graph, height=150, highlightthickness=0, background="#242329")
+        self.chart = tk.Canvas(self.graph, height=150, highlightthickness=0, background=PALETTE["chart"])
         self.chart.pack(fill="x", pady=8)
         self.chart.bind("<Configure>", lambda event: self.draw())
         self.scale = tk.Label(self.graph, text="Calls/s · awaiting two owner observations", anchor="w",
-                              foreground="#E8E5ED", background="#242329", wraplength=700, justify="left")
+                              foreground=PALETTE["header_text"], background=PALETTE["chart"], wraplength=700, justify="left")
         self.scale.pack(fill="x")
         self.graph.bind("<Configure>", lambda event: self.scale.configure(wraplength=max(240, event.width - 24)))
         ranges = ttk.Frame(page)
@@ -77,7 +80,7 @@ class EvidencePage:
         self.ai = center.text(page, "")
         center.text(page, "Warnings and alerts", "Heading.TLabel")
         self.warnings = center.text(page, "")
-        self.warnings.configure(foreground="#865200")
+        self.warnings.configure(foreground=PALETTE["warning"])
         center.text(page, "Evidence event index", "Heading.TLabel")
         center.text(page, "Latest 24 redacted canonical event references, not a second audit log. "
                     "Select and copy a record hash to locate full evidence through the existing trusted audit path. "
@@ -90,7 +93,9 @@ class EvidencePage:
         log_frame = ttk.Frame(page)
         log_frame.pack(fill="x", pady=(0, 12))
         self.logs = tk.Text(log_frame, height=10, wrap="word", state="disabled", padx=10, pady=10,
-                            background="#FDFCFD", foreground="#29262F", font=("TkDefaultFont", 10))
+                            background=PALETTE["surface"], foreground=PALETTE["text"], font=("TkDefaultFont", 10),
+                            relief="flat", highlightthickness=1, highlightbackground=PALETTE["border"],
+                            highlightcolor=PALETTE["accent"], selectbackground=PALETTE["accent"], selectforeground=PALETTE["header_text"])
         log_scroll = ttk.Scrollbar(log_frame, command=self.logs.yview)
         log_scroll.pack(side="right", fill="y")
         self.logs.configure(yscrollcommand=log_scroll.set)
@@ -282,7 +287,7 @@ class EvidencePage:
         usable = self.snapshot is not None and not self.reviewing and freshness(self.snapshot) == "recent source timestamp"
         values = [v for _, rates in points for v in rates.values() if v is not None]
         peak = max(1, max(values, default=0))
-        for y in (20, 75, 130): self.chart.create_line(0, y, width, y, fill="#3A363F")
+        for y in (20, 75, 130): self.chart.create_line(0, y, width, y, fill=PALETTE["chart_grid"])
         for key, (title, color) in SERIES.items():
             latest = self.history.points[-1][1][key] if self.history.points and usable else None
             self.values[key].configure(text=f"{title}\n" + ("Unknown" if latest is None else f"{latest:.1f}/s"))
@@ -299,5 +304,5 @@ class EvidencePage:
                 self.chart.create_oval(x-2, y-2, x+2, y+2, fill=color, outline="")
                 previous = x, y, at
         if not values:
-            self.chart.create_text(width / 2, height / 2, text="Awaiting two distinct owner observations", fill="#E8E5ED")
+            self.chart.create_text(width / 2, height / 2, text="Awaiting two distinct owner observations", fill=PALETTE["header_text"])
         self.scale.configure(text=f"0–{peak:.1f} calls/s · last {self.seconds // 60} min · connection-scoped counters, session-only history")

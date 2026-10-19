@@ -5,14 +5,9 @@ from pathlib import Path
 import time
 
 from . import evidence_tuning as tuning
+from .control_center_theme import PALETTE, configure, surface
 
 
-PALETTE = {
-    "sidebar": "#242329", "sidebar_text": "#E8E5ED",
-    "background": "#F5F4F7", "surface": "#FDFCFD",
-    "text": "#29262F", "muted": "#615B6B", "accent": "#674396",
-    "selected": "#EAE3F2", "warning": "#865200", "error": "#A32935",
-}
 PAGES = ("Overview", "Connections", "Governance", "Activity", "Evidence", "System")
 
 
@@ -32,9 +27,11 @@ class StatusRow:
     """Expandable text-first state; gradient positions are discrete, not scores."""
     def __init__(self, parent, name, detail, open_page):
         self.name, self.state, self.expanded = name, "Unknown", False
-        self.frame = ttk.Frame(parent, style="Card.TFrame", padding=(12, 10))
-        self.frame.pack(fill="x", pady=(0, 2))
-        self.header = ttk.Frame(self.frame, style="Card.TFrame")
+        self.frame, border = surface(parent)
+        self.frame.pack(fill="x", pady=(0, 7))
+        content = ttk.Frame(border, style="Card.TFrame", padding=(12, 10))
+        content.pack(fill="both", expand=True)
+        self.header = ttk.Frame(content, style="Card.TFrame")
         self.header.pack(fill="x")
         self.header.columnconfigure(2, weight=1)
         self.button = ttk.Button(self.header, text="▸ " + name, style="Row.TButton", width=13, command=self.toggle)
@@ -44,7 +41,7 @@ class StatusRow:
         self.summary = ttk.Label(self.header, text="Unknown · No observations", style="Card.TLabel",
                                  justify="left", wraplength=470)
         self.summary.grid(row=0, column=2, sticky="ew")
-        self.body = ttk.Frame(self.frame, style="Card.TFrame", padding=(8, 10))
+        self.body = ttk.Frame(content, style="Card.TFrame", padding=(8, 10))
         self.detail = ttk.Label(self.body, text=detail, style="Card.TLabel", justify="left", wraplength=720)
         self.detail.pack(fill="x")
         if open_page is not None:
@@ -110,34 +107,7 @@ class ControlCenter:
         self.root.geometry("1200x900")
         self.root.minsize(640, 600)
         self.root.configure(background=PALETTE["background"])
-        style = ttk.Style(root)
-        style.theme_use("clam")
-        style.configure("TFrame", background=PALETTE["background"])
-        style.configure("TLabel", background=PALETTE["background"],
-                        foreground=PALETTE["text"], font=("TkDefaultFont", 11))
-        style.configure("TButton", padding=(10, 8), font=("TkDefaultFont", 10))
-        style.configure("TButton", background=PALETTE["surface"], foreground=PALETTE["accent"],
-                        bordercolor="#D7D1DF", focuscolor=PALETTE["accent"], borderwidth=1)
-        style.map("TButton", foreground=[("disabled", PALETTE["muted"])],
-                  background=[("active", PALETTE["selected"])])
-        style.configure("Nav.TButton", background=PALETTE["sidebar"],
-                        foreground=PALETTE["sidebar_text"], anchor="w", borderwidth=0)
-        style.map("Nav.TButton", background=[("pressed", PALETTE["accent"]),
-                  ("active", PALETTE["accent"])], foreground=[("active", "#FFFFFF")])
-        style.configure("Selected.Nav.TButton", background=PALETTE["accent"], foreground="#FFFFFF")
-        style.configure("Title.TLabel", font=("TkDefaultFont", 22, "bold"))
-        style.configure("Heading.TLabel", font=("TkDefaultFont", 13, "bold"))
-        style.configure("Muted.TLabel", foreground=PALETTE["muted"])
-        style.configure("Status.TLabel", foreground=PALETTE["warning"])
-        style.configure("TRadiobutton", background=PALETTE["background"], foreground=PALETTE["text"],
-                        font=("TkDefaultFont", 10))
-        style.configure("Card.TFrame", background=PALETTE["surface"])
-        style.configure("Card.TLabel", background=PALETTE["surface"])
-        style.configure("CardHeading.TLabel", background=PALETTE["surface"], font=("TkDefaultFont", 13, "bold"))
-        style.configure("Range.TButton", padding=(6, 4), font=("TkDefaultFont", 9))
-        style.configure("Active.Range.TButton", padding=(6, 4), font=("TkDefaultFont", 9), background=PALETTE["selected"])
-        style.configure("Row.TButton", background=PALETTE["surface"], foreground=PALETTE["text"],
-                        anchor="w", borderwidth=0, padding=(0, 4), font=("TkDefaultFont", 11, "bold"))
+        configure(root)
 
         self.sidebar = tk.Frame(root, background=PALETTE["sidebar"], padx=12, pady=20)
         self.sidebar.pack(side="left", fill="y")
@@ -159,9 +129,15 @@ class ControlCenter:
 
         self.main = ttk.Frame(root, padding=(24, 20))
         self.main.pack(fill="both", expand=True)
-        self.page_title = ttk.Label(self.main, style="Title.TLabel")
+        header_shadow, header_border = surface(self.main, dark=True)
+        header_shadow.pack(fill="x")
+        header = ttk.Frame(header_border, style="Header.TFrame", padding=(18, 14))
+        header.pack(fill="both", expand=True)
+        self.page_title = ttk.Label(header, style="HeaderTitle.TLabel")
         self.page_title.pack(anchor="w")
-        self.text(self.main, "Local resource observations • Live enforcement is not observed", "Muted.TLabel")
+        self.page_caption = ttk.Label(header, text="Local resource observations • Live enforcement is not observed",
+                                      style="HeaderMuted.TLabel", wraplength=700, justify="left")
+        self.page_caption.pack(fill="x", pady=(4, 0))
         viewport = ttk.Frame(self.main)
         viewport.pack(fill="both", expand=True, pady=(16, 0))
         self.canvas = tk.Canvas(viewport, background=PALETTE["background"], highlightthickness=0)
@@ -372,6 +348,7 @@ class ControlCenter:
         if event.widget is not self.main:
             return
         width = max(260, event.width - 72)
+        self.page_caption.configure(wraplength=max(220, event.width - 96))
         for label in self.labels:
             label.configure(wraplength=width)
         if width < 650:

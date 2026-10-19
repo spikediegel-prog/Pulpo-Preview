@@ -4,6 +4,7 @@ import time
 
 from .activity_model import ACTIONS, CATEGORIES, LEVELS, OUTCOMES, SessionActivity
 from .evidence_observation import freshness
+from .control_center_theme import surface
 
 
 class ActivityPage:
@@ -25,8 +26,10 @@ class ActivityPage:
         center.text(page, "Observed activity", "Heading.TLabel")
         center.text(page, "Local session events and evidence references have separate coverage. "
                     "This view cannot approve, retry, revoke or execute actions.", "Muted.TLabel")
-        self.chart = tk.Canvas(page, height=105, highlightthickness=0, background=PALETTE["sidebar"])
-        self.chart.pack(fill="x", pady=(0, 8))
+        shadow, border = surface(page, dark=True)
+        shadow.pack(fill="x", pady=(0, 8))
+        self.chart = tk.Canvas(border, height=105, highlightthickness=0, background=PALETTE["chart"])
+        self.chart.pack(fill="x", padx=10, pady=8)
         self.chart.bind("<Configure>", lambda event: self.draw())
         self.coverage = center.text(page, "", "Muted.TLabel")
         self.attention = center.text(page, "", "Status.TLabel")
@@ -98,7 +101,9 @@ class ActivityPage:
         details = ttk.Frame(page)
         details.pack(fill="x", pady=(0, 8))
         self.output = tk.Text(details, height=8, wrap="word", state="disabled", padx=10, pady=10,
-                              background=PALETTE["surface"], foreground=PALETTE["text"], takefocus=True, font=("TkDefaultFont", 10))
+                              background=PALETTE["surface"], foreground=PALETTE["text"], takefocus=True, font=("TkDefaultFont", 10),
+                              relief="flat", highlightthickness=1, highlightbackground=PALETTE["border"],
+                              highlightcolor=PALETTE["accent"], selectbackground=PALETTE["accent"], selectforeground=PALETTE["header_text"])
         self.output.pack(side="left", fill="both", expand=True)
         scroll = ttk.Scrollbar(details, command=self.output.yview)
         scroll.pack(side="right", fill="y")
@@ -332,13 +337,13 @@ class ActivityPage:
     def draw(self):
         self.chart.delete("all")
         if not self.chart_local:
-            self.chart.create_text(16, 38, anchor="w", text="Evidence index · complete event volume and rates Unknown", fill="#E8E5ED", width=max(150, self.chart.winfo_width() - 32))
+            self.chart.create_text(16, 38, anchor="w", text="Evidence index · complete event volume and rates Unknown", fill=self.palette["header_text"], width=max(150, self.chart.winfo_width() - 32))
             return
         bins = self.chart_bins
         width = max(240, self.chart.winfo_width())
         peak = max(1, *(sum(row.values()) for row in bins))
         minute = self.chart_minute
-        self.chart.create_text(12, 14, anchor="w", text=f"Retained local events / minute · scale 0–{peak} · purple Info / amber Warning / red Error", fill="#E8E5ED", width=width - 24)
+        self.chart.create_text(12, 14, anchor="w", text=f"Retained local events / minute · scale 0–{peak} · purple Info / amber Warning / red Error", fill=self.palette["header_text"], width=width - 24)
         for i, row in enumerate(bins):
             if minute - 9 + i < self.model.started_at_ns // 60_000_000_000:
                 continue
@@ -348,7 +353,7 @@ class ActivityPage:
                 if height:
                     self.chart.create_rectangle(x, bottom - height, x + (width - 24) / 10 - 4, bottom, fill=color, outline="")
                 bottom -= height
-        self.chart.create_text(12, 96, anchor="w", text="−9 min → now · gaps before session start; counts may be truncated by retention", fill="#E8E5ED", width=width - 24)
+        self.chart.create_text(12, 96, anchor="w", text="−9 min → now · gaps before session start; counts may be truncated by retention", fill=self.palette["header_text"], width=width - 24)
 
     def destroy(self, event):
         if event.widget is self.root:

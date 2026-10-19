@@ -4,6 +4,7 @@ from __future__ import annotations
 import time
 
 from .local_resources import ResourceHistory, ResourceSampler, level
+from .control_center_theme import PALETTE, surface
 
 CHART_COLORS = {"Normal": "#B79ADF", "Elevated": "#F2BD62", "Attention": "#FF929C", "Unknown": "#BBB4C5"}
 
@@ -43,26 +44,28 @@ class ResourceMonitor:
         self.area.pack(fill="x")
         self.panels = {}
         for key, title in (("cpu", "CPU"), ("memory", "Memory"), ("storage", "Storage")):
-            panel = tk.Frame(self.area, background="#242329", padx=14, pady=12)
-            top = tk.Frame(panel, background="#242329")
+            shadow, border = surface(self.area, dark=True)
+            panel = tk.Frame(border, background=PALETTE["chart"], padx=14, pady=12)
+            panel.pack(fill="both", expand=True)
+            top = tk.Frame(panel, background=PALETTE["chart"])
             top.pack(fill="x")
-            tk.Label(top, text=title, background="#242329", foreground="#E8E5ED",
+            tk.Label(top, text=title, background=PALETTE["chart"], foreground=PALETTE["header_text"],
                      font=("TkDefaultFont", 11)).pack(side="left")
-            status = tk.Label(top, text="Unknown", background="#242329", foreground=CHART_COLORS["Unknown"],
+            status = tk.Label(top, text="Unknown", background=PALETTE["chart"], foreground=CHART_COLORS["Unknown"],
                               font=("TkDefaultFont", 10))
             status.pack(side="right")
-            value = tk.Label(panel, text="—", background="#242329", foreground="#F5F4F7",
+            value = tk.Label(panel, text="—", background=PALETTE["chart"], foreground=PALETTE["header_text"],
                              font=("TkDefaultFont", 24, "bold"), anchor="w")
             value.pack(fill="x", pady=(8, 0))
-            note = tk.Label(panel, text="No observations yet", background="#242329", foreground="#C8C0D2",
+            note = tk.Label(panel, text="No observations yet", background=PALETTE["chart"], foreground=PALETTE["chart_muted"],
                             font=("TkDefaultFont", 10), anchor="w", justify="left", wraplength=220)
             note.pack(fill="x")
-            chart = tk.Canvas(panel, height=100, background="#242329", highlightthickness=0)
+            chart = tk.Canvas(panel, height=100, background=PALETTE["chart"], highlightthickness=0)
             chart.pack(fill="x", pady=(8, 0))
-            scale = tk.Label(panel, text="0–100%", background="#242329", foreground="#BDB5C9",
+            scale = tk.Label(panel, text="0–100%", background=PALETTE["chart"], foreground=PALETTE["chart_muted"],
                              font=("TkDefaultFont", 9), anchor="w")
             scale.pack(fill="x")
-            self.panels[key] = {"frame": panel, "status": status, "value": value, "note": note,
+            self.panels[key] = {"frame": shadow, "status": status, "value": value, "note": note,
                                 "chart": chart, "scale": scale}
             chart.bind("<Configure>", lambda event, name=key: self.draw(name))
         self.caption = ttk.Label(self.frame, text=f"Source: {self.sampler.source} · volume {self.sampler.volume} · collecting observations",
@@ -163,12 +166,12 @@ class ResourceMonitor:
         chart.delete("all")
         for value in (25, 50, 75):
             y = height - 6 - value / 100 * (height - 12)
-            chart.create_line(2, y, width - 2, y, fill="#3A363F")
+            chart.create_line(2, y, width - 2, y, fill=PALETTE["chart_grid"])
         now = time.monotonic()
         points = self.history.points(name, self.seconds, now)
         if not points or not any(value is not None for _, value in points):
             chart.create_text(width / 2, height / 2, text="No observations yet" if not points else "Reading unavailable",
-                              fill="#C8C0D2", font=("TkDefaultFont", 10))
+                              fill=PALETTE["chart_muted"], font=("TkDefaultFont", 10))
         previous = None
         for observed, value in points:
             if value is None:
