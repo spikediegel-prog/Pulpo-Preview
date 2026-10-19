@@ -142,26 +142,25 @@ def launch(profile=None):
     status_label.configure(textvariable=status)
     events = queue.Queue()
     active = False
+    job_action, job_outcome = "check", "Completed"
     center.performance_busy = lambda: active
     controls = []
     latest_report = None
 
-    def append(message):
-        center.append(message)
-
     def selected():
         return recommended() if mode.get() == "Recommended" else EvidenceSettings(int(workers.get())).validate()
 
-    def job(operation):
-        nonlocal active
+    def job(operation, *, action="check", outcome="Completed"):
+        nonlocal active, job_action, job_outcome
         if active or center.system_view.busy or center.system_view.cleanup_blocked:
             status.set("Another performance operation is running. Review System or wait for cleanup.")
             return
         active = True
+        job_action, job_outcome = action, outcome
         for control in controls:
             control.configure(state="disabled")
         status.set("Working on temporary fixtures…")
-        append("Recorded: operation started on disposable fixtures. Awaiting result.")
+        center.record_activity("Recorded: operation started on disposable fixtures. Awaiting result.", category="Evidence", action=action, outcome="Started")
         center.show("Activity")
         def run():
             try:
@@ -178,13 +177,13 @@ def launch(profile=None):
         except ValueError as exc:
             messagebox.showerror("Invalid setting", str(exc))
             return
-        job(lambda: f"Saved {settings.workers} workers after fresh correctness checks: {save_settings(settings, profile)}")
+        job(lambda: f"Saved {settings.workers} workers after fresh correctness checks: {save_settings(settings, profile)}", action="profile_save", outcome="Saved")
 
     def restore():
-        job(lambda: f"Restored recommended settings after correctness checks: {save_settings(recommended(), profile)}")
+        job(lambda: f"Restored recommended settings after correctness checks: {save_settings(recommended(), profile)}", action="profile_restore", outcome="Restored")
 
     def rollback():
-        job(lambda: f"Restored previous settings after fresh checks: {restore_previous(profile)}")
+        job(lambda: f"Restored previous settings after fresh checks: {restore_previous(profile)}", action="profile_restore", outcome="Restored")
 
     def compare():
         try:
@@ -265,7 +264,7 @@ def launch(profile=None):
         if name:
             try:
                 Path(name).write_text(json.dumps(latest_report, indent=2) + "\n", encoding="utf-8")
-                append("Measurements saved: " + name)
+                center.record_activity("Measurements saved: " + name, category="Evidence", action="export", outcome="Completed")
             except OSError as exc:
                 messagebox.showerror("Save failed", str(exc))
 
@@ -294,12 +293,13 @@ def launch(profile=None):
                 center.refresh_profile()
                 status.set("Finished. Review the result in Activity. Process experiments never apply runtime settings.")
             elif kind == "error":
-                append("FAILED: " + value + "\nReview System troubleshooting. "
-                       "Refresh the local profile status to inspect the effective fallback.")
+                center.record_activity("FAILED: " + value + "\nReview System troubleshooting. "
+                       "Refresh the local profile status to inspect the effective fallback.",
+                       category="Evidence", action=job_action, outcome="Failed", severity="Error")
             elif kind == "report":
                 latest_report = value
             else:
-                append(value)
+                center.record_activity(value, category="Evidence", action=job_action, outcome=job_outcome)
         poll_handle = root.after(100, poll)
 
     def cancel_poll(event):

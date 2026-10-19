@@ -86,9 +86,90 @@ class ControlCenterTests(unittest.TestCase):
 
     def test_session_activity_is_bounded_and_not_persisted(self):
         for index in range(600):
-            self.center.append(f"Recorded: local message {index}")
+            self.assertIsNone(self.center.append(f"Recorded: local message {index}"))
         self.assertLessEqual(int(self.center.output.index("end-1c").split(".")[0]), 501)
         self.assertEqual("disabled", self.center.output.cget("state"))
+        self.assertFalse(self.profile.exists())
+
+    def test_activity_filters_pause_review_export_and_lifecycle(self):
+        import json
+        page = self.center.activity_view
+        self.center.record_activity("fixture PRIVATE /private/path", action="benchmark", outcome="Failed", severity="Error")
+        self.assertIn("(2)", self.center.navigation["Activity"].cget("text"))
+        self.center.show("Activity")
+        self.root.update()
+        self.assertEqual("Activity", self.center.navigation["Activity"].cget("text"))
+        page.only_attention.set(True)
+        page.render()
+        self.assertEqual(1, len(page.displayed))
+        page.copy()
+        self.assertNotIn("PRIVATE", self.root.clipboard_get())
+        page.toggle_pause()
+        frozen = page.public_rows()
+        self.center.record_activity("cancelled", action="benchmark", outcome="Cancelled")
+        self.root.update()
+        self.assertEqual(frozen, page.public_rows())
+        self.assertEqual(1, page.unread)
+        destination = Path(self.temporary.name) / "safe.json"
+        with patch("tkinter.filedialog.asksaveasfilename") as dialog:
+            preview = page.preview_export()
+            preview.destroy()
+            dialog.assert_not_called()
+        preview = page.preview_export()
+        self.center.record_activity("arrived after preview; exclude from frozen export")
+        def descendants(widget):
+            for child in widget.winfo_children():
+                yield child
+                yield from descendants(child)
+        save = next(w for w in descendants(preview) if w.winfo_class() == "TButton" and w.cget("text") == "Save as…")
+        with patch("tkinter.filedialog.asksaveasfilename", return_value=str(destination)):
+            save.invoke()
+        exported = json.loads(destination.read_text())
+        self.assertEqual(frozen, exported["rows"])
+        self.assertNotIn("PRIVATE", destination.read_text())
+        page.review()
+        self.assertEqual("Failed", page.displayed[0].outcome)
+        page.toggle_pause()
+        self.assertFalse(page.displayed)
+        self.assertIn("0 unreviewed", page.attention.cget("text"))
+        page.only_attention.set(False)
+        page.variables["Category"].set("AI")
+        page.render()
+        self.assertFalse(page.displayed)
+        self.assertIn("does not prove", page.empty.cget("text"))
+        self.center.show("Overview")
+        self.assertIsNone(page.timer)
+        self.assertFalse(self.profile.exists())
+
+    def test_activity_reference_scope_no_duplicates_no_authority_or_source_reads(self):
+        from pulpo.evidence_observation import EvidenceObservation, EvidenceEvent
+        page = self.center.activity_view
+        snapshot = EvidenceObservation("a" * 32, time.time_ns() - 30_000_000_000, True, 2,
+            events=(EvidenceEvent(time.time_ns(), "decision", "blocked_by_policy", "b" * 64),
+                    EvidenceEvent(time.time_ns(), "permit_rejected", "rejected", "c" * 64)))
+        self.center.evidence_view.snapshot = snapshot
+        page.variables["View"].set("Evidence references")
+        self.center.show("Activity")
+        with patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("Activity must not read files")):
+            for _ in range(3): page.render()
+        self.assertEqual(2, len(page.references))
+        self.assertIn("maximum 24", page.coverage.cget("text"))
+        self.assertIn("stale", page.coverage.cget("text"))
+        self.assertEqual("disabled", str(page.review_button.cget("state")))
+        page.variables["Outcome"].set("blocked_by_policy")
+        page.render()
+        self.assertEqual(1, len(page.references))
+        page.copy()
+        self.assertEqual("b" * 64, self.root.clipboard_get())
+        self.assertIn("do not attest", page.output.get("1.0", "end"))
+        self.assertEqual("Unknown", self.center.status_rows["Governance"].state)
+        page.toggle_pause()
+        self.center.evidence_view.snapshot = None
+        self.center.evidence_view.error = "invalid"
+        self.assertEqual(1, len(page.references))
+        page.toggle_pause()
+        self.assertFalse(page.references)
+        self.assertIn("read failed", page.coverage.cget("text"))
         self.assertFalse(self.profile.exists())
 
     def test_status_expansion_and_resource_alerts_never_attest_enforcement(self):
