@@ -1,0 +1,16 @@
+{
+  "source_encoding": "UTF-8, LF-normalized",
+  "sources": {
+    "pulpo/udm_setup.py": "07ed58425d2ca940933bab3aaa54e6fa9ef5e373ba4278b8528f9e68d7c0d7c9",
+    "pulpo/udm_setup_guide.py": "7f910a67fcfd69ee20c670e7ddd26d2d32b62b458d8f82cb6653002ec57f7517",
+    "pulpo/connections_page.py": "8c69bbdc33fbfb0e27c71607fdc6b9ffbe46403e3e533c6f68c4f36d8008cd2a",
+    "pulpo/connection_collector.py": "f062525c7f66dd3b11d0393f027baa5eb378a316e19117adb389aaf6cfd2c6a1",
+    "tests/test_udm_setup.py": "a1f7bdc415d96804b9a80aa78958a08d801231c571a939739989b110fdfaaeb0",
+    "tests/test_control_center.py": "1b0d456ae819bf1ea651d81833f583f329960b43291457fdbea2b219bab36441"
+  },
+  "logs": {
+    "windows-focused.log": "ead7e00dc7b25579bc25b832a94ac4890ff6f6e2c1f2b936f069d0822e3c3e1e",
+    "ubuntu-focused.log": "4fffe05a0efb04a75bd3068e50c83f6a28e41df4812cab9c21c3cbb983b2eb32",
+    "ubuntu-core.log": "2b4da2024083c9011d7f15ba2259b295b2cdeac488aae385c08d0cfb7095069a"
+  }
+}

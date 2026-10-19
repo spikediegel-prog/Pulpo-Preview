@@ -66,7 +66,7 @@ def _pairs(items):
 def _request(host, path, context, *, token=None, api_key=None, form=None, deadline):
     # Internal fixed-route guard also rejects query/path substitution.
     unifi = re.fullmatch(r"/proxy/network/integration/v1/sites/[0-9a-f-]{36}/(?:devices|clients)\?offset=0&limit=100", path)
-    reads = ("/v2/devices?pageSize=100", "/v2/alerts", "/devices/queries/devices/v1?limit=100&offset=0",
+    reads = ("/proxy/network/integration/v1/sites?offset=0&limit=100", "/v2/devices?pageSize=100", "/v2/alerts", "/devices/queries/devices/v1?limit=100&offset=0",
              "/alerts/queries/alerts/v2?limit=100&offset=0")
     if form is not None:
         if path not in ("/ws/oauth/token", "/oauth2/token") or token or api_key:
@@ -187,30 +187,72 @@ def collect(provider, origin, *, api_key=None, site_id=None, client_id=None, cli
         return replace(observation, observed_at_ns=time.time_ns(), reason="configuration")
 
 
+def discover_sites(origin, api_key, ca_file=None):
+    from .udm_setup import UdmSites, discovery_source
+    observation = ConnectionObservation("UniFi UDM", time.time_ns())
+    try:
+        host = _origin("UniFi UDM", origin)
+        _text(api_key)
+        observation = replace(observation, source_id=discovery_source(origin))
+        response = _request(host, "/proxy/network/integration/v1/sites?offset=0&limit=100",
+                            ssl.create_default_context(cafile=ca_file), api_key=api_key, deadline=time.monotonic()+20)
+        rows = _unifi_page(response)
+        try:
+            return UdmSites(time.time_ns(), observation.source_id, tuple(row.get("id") for row in rows), response["totalCount"] > len(rows))
+        except (ValueError, TypeError):
+            raise CollectionError("response", True) from None
+    except CollectionError as error:
+        return replace(observation, observed_at_ns=time.time_ns(), reason=error.reason,
+            reachability="Responded" if error.responded else "Unknown",
+            authentication="Rejected" if error.reason == "authentication" else "Unknown")
+    except (ValueError, TypeError, OSError):
+        return replace(observation, observed_at_ns=time.time_ns(), reason="configuration")
+
+
 def main(argv=None):
     import argparse
     from pathlib import Path
     from .mcp_boundary import _publish_snapshot
     parser = argparse.ArgumentParser(description="Explicit trusted-owner read collector; no provider changes or retries.")
     parser.add_argument("provider", choices=("unifi", "ninjaone", "crowdstrike"))
-    parser.add_argument("--origin", required=True, help="Exact HTTPS origin; UDM requires a private numeric IP and trusted TLS")
+    parser.add_argument("--origin", help="Exact HTTPS origin; UDM requires a private numeric IP and trusted TLS")
     parser.add_argument("--site-id", help="UniFi site UUID from the official List Local Sites API")
     parser.add_argument("--ca-file", type=Path, help="Explicit trusted certificate authority file, never a TLS bypass")
-    parser.add_argument("--output", required=True, type=Path, help="Absolute owner-private observation destination")
+    parser.add_argument("--output", type=Path, help="Absolute owner-private observation destination")
+    parser.add_argument("--setup-profile", type=Path, help="Non-secret UDM setup saved by the guide; replaces all other connection options")
+    parser.add_argument("--discover-sites", action="store_true", help="UDM only: export at most 100 site UUIDs, without names")
     args = parser.parse_args(argv)
-    if not args.output.is_absolute() or not args.output.parent.is_dir():
-        parser.error("--output must be absolute with an existing parent directory")
+    if args.setup_profile:
+        if args.provider != "unifi" or any((args.origin, args.site_id, args.ca_file, args.output, args.discover_sites)):
+            parser.error("A UDM setup profile cannot be mixed with connection options or another provider")
+        from .udm_setup import load_setup
+        try:
+            setup = load_setup(args.setup_profile)
+        except (ValueError, TypeError, OSError, RecursionError):
+            parser.error("UDM setup profile is unavailable or invalid; no credentials were read")
+        args.origin, args.site_id, args.ca_file, args.output, args.discover_sites = setup.origin, setup.site_id, setup.ca_file, Path(setup.output), setup.mode == "sites"
+    if not args.origin or not args.output or not args.output.is_absolute() or not args.output.parent.is_dir():
+        parser.error("Supply an HTTPS origin and an absolute output path with an existing parent directory")
+    protected = [p for p in (args.setup_profile, args.ca_file) if p is not None]
+    if args.output.resolve() in {Path(p).resolve() for p in protected}:
+        parser.error("Output must be separate from setup and certificate files")
+    if args.discover_sites and (args.provider != "unifi" or args.site_id):
+        parser.error("Site discovery requires UniFi without --site-id")
     provider = {"unifi": "UniFi UDM", "ninjaone": "NinjaOne", "crowdstrike": "CrowdStrike"}[args.provider]
     prefix = {"unifi": "PULPO_UNIFI", "ninjaone": "PULPO_NINJAONE", "crowdstrike": "PULPO_CROWDSTRIKE"}[args.provider]
-    result = collect(provider, args.origin, site_id=args.site_id, ca_file=args.ca_file,
-        api_key=os.environ.get(prefix + "_API_KEY"), client_id=os.environ.get(prefix + "_CLIENT_ID"), client_secret=os.environ.get(prefix + "_CLIENT_SECRET"))
+    if args.discover_sites:
+        result = discover_sites(args.origin, os.environ.get(prefix + "_API_KEY"), args.ca_file)
+    else:
+        result = collect(provider, args.origin, site_id=args.site_id, ca_file=args.ca_file,
+            api_key=os.environ.get(prefix + "_API_KEY"), client_id=os.environ.get(prefix + "_CLIENT_ID"), client_secret=os.environ.get(prefix + "_CLIENT_SECRET"))
     try:
         _publish_snapshot(result, args.output)
     except (OSError, ValueError, RuntimeError):
         print("Observation publication failed; inspect destination access. No contents logged.")
         return 2
-    print(f"{provider}: {result.reason}; source-reported read observation only; enforcement Unknown.")
-    return 0 if result.reason == "ok" else 1
+    reason = getattr(result, "reason", "site_identifiers_exported")
+    print(f"{provider}: {reason}; source-reported read observation only; enforcement Unknown.")
+    return 0 if reason in ("ok", "site_identifiers_exported") else 1
 
 
 if __name__ == "__main__":
