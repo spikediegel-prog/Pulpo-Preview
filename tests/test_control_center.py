@@ -91,6 +91,55 @@ class ControlCenterTests(unittest.TestCase):
         self.assertEqual("disabled", self.center.output.cget("state"))
         self.assertFalse(self.profile.exists())
 
+    def test_udm_guide_requires_review_and_explicit_site_choice(self):
+        from pulpo.udm_setup import UdmSites, discovery_source, load_setup
+        from pulpo.mcp_boundary import _publish_snapshot
+        from tests.test_connections import SITE
+        page = self.center.connections_view
+        page.open_setup()
+        guide = page.setup_guide
+        guide.window.geometry("600x580")
+        self.root.update()
+        self.assertIsNone(guide.save("sites"))
+        directory = Path(self.temporary.name)
+        guide.fields["sites_output"].set(str(directory / "sites.json"))
+        guide.fields["inventory_output"].set(str(directory / "inventory.json"))
+        preview = guide.save("sites")
+        self.assertEqual({}, guide.saved)
+        def buttons(widget):
+            for child in widget.winfo_children():
+                if child.winfo_class() == "TButton": yield child
+                yield from buttons(child)
+        saved = directory / "setup.json"
+        with patch("tkinter.filedialog.asksaveasfilename", return_value=str(saved)):
+            next(button for button in buttons(preview) if button.cget("text") == "Save setup…").invoke()
+        self.assertEqual("sites", load_setup(saved).mode)
+        guide.copy_command("sites")
+        copied = self.root.clipboard_get()
+        self.assertIn("--setup-profile", copied)
+        guide.fields["origin"].set("https://192.168.1.2")
+        guide.copy_command("sites")
+        self.assertEqual(copied, self.root.clipboard_get())
+        self.assertIn("save this setup first", guide.status.cget("text"))
+        guide.fields["origin"].set("https://192.168.1.1")
+        report = directory / "sites.json"
+        _publish_snapshot(UdmSites(time.time_ns(), discovery_source("https://192.168.1.1"), (SITE,), False), report)
+        with patch("tkinter.filedialog.askopenfilename", return_value=str(report)):
+            guide.import_sites()
+        self.assertEqual("", guide.fields["site"].get())
+        self.assertEqual((SITE,), guide.site_choices.cget("values"))
+        guide.fields["site"].set(SITE)
+        self.assertEqual(SITE, guide.config("collect").site_id)
+        guide.fields["origin"].set("https://192.168.1.2")
+        with self.assertRaises(ValueError): guide.config("collect")
+        with patch("tkinter.filedialog.askopenfilename", return_value=str(report)):
+            guide.import_sites()
+        self.assertEqual("", guide.fields["site"].get())
+        self.assertFalse(guide.site_choices.cget("values"))
+        self.assertEqual("Unknown", self.center.status_rows["Governance"].state)
+        guide.window.destroy()
+        self.assertEqual({}, guide.fields)
+
     def test_connection_reports_separate_auth_freshness_failures_and_governance(self):
         from dataclasses import asdict, replace
         import json

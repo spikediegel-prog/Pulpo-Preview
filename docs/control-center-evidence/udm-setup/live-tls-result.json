@@ -1,0 +1,8 @@
+{
+  "target": "operator-supplied private UDM address (omitted)",
+  "checked_at_ns": 1792448041327223200,
+  "credential_sent": false,
+  "tls_verification": true,
+  "enforcement": "Unknown",
+  "result": "certificate_validation_failed"
+}

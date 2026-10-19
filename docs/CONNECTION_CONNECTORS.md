@@ -63,6 +63,10 @@ host containment is claimed. The operator can terminate the standalone process.
 
 ## Owner configuration and activation
 
+For the incremental UDM first-run guide, non-secret setup profiles and bounded
+site UUID discovery, see [Guided UDM setup](UDM_GUIDED_SETUP.md). The guide never
+receives a key or runs a collector; existing direct invocations remain supported.
+
 Use existing dedicated least-privilege provider credentials. Provider-side grant
 configuration must be checked by the trusted operator: a fixed-read implementation
 does not strip excess privileges from an over-scoped secret. No real credentials

@@ -1,0 +1,2 @@
+# Preserve the exact test-log bytes bound by the evidence hashes.
+*.log -text

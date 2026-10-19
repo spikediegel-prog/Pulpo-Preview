@@ -18,6 +18,8 @@ class ConnectionsPage:
                     "Connected never means enforcement verified. No account or network scan runs on startup.", "Muted.TLabel")
         self.summary = center.text(page, "", "Heading.TLabel")
         self.scope = center.text(page, "Only explicitly selected owner exports are shown. No source selected means Unknown, not offline.", "Muted.TLabel")
+        self.setup_guide = None
+        ttk.Button(page, text="Guided UDM setup…", command=self.open_setup).pack(anchor="w", pady=(0, 12))
         for provider in PROVIDERS:
             row = StatusRow(page, provider, "", None)
             self.rows[provider] = row
@@ -63,6 +65,14 @@ class ConnectionsPage:
             self.paths[provider] = Path(selected)
             self.refresh_buttons[provider].configure(state="normal")
             self.refresh(provider)
+
+    def open_setup(self):
+        if self.setup_guide is not None and self.setup_guide.window is not None:
+            self.setup_guide.window.lift()
+            return self.setup_guide
+        from .udm_setup_guide import UdmSetupGuide
+        self.setup_guide = UdmSetupGuide(self)
+        return self.setup_guide
 
     def refresh(self, provider):
         if provider not in self.paths: return
