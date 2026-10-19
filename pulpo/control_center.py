@@ -213,6 +213,8 @@ class ControlCenter:
             self.evidence_view.set_active(name == "Evidence")
         if hasattr(self, "system_view"):
             self.system_view.set_active(name == "System")
+        if hasattr(self, "activity_view"):
+            self.activity_view.set_active(name == "Activity")
         if focus:
             self.navigation[name].focus_set()
 
@@ -355,29 +357,16 @@ class ControlCenter:
                                                "Enforcement remains unassessed. " + observation.source)
 
     def _activity(self):
-        page = self.pages["Activity"]
-        self.text(page, "Session activity", "Heading.TLabel")
-        self.text(page, "Messages from this window only. Not the canonical audit journal; cleared on exit.", "Muted.TLabel")
-        area = ttk.Frame(page)
-        area.pack(fill="both", expand=True)
-        self.output = tk.Text(area, height=8, wrap="word", state="disabled", padx=12, pady=12,
-                              font=("TkDefaultFont", 11), background=PALETTE["surface"],
-                              foreground=PALETTE["text"], takefocus=True)
-        scroll = ttk.Scrollbar(area, command=self.output.yview)
-        self.output.configure(yscrollcommand=scroll.set)
-        scroll.pack(side="right", fill="y")
-        self.output.pack(fill="both", expand=True)
-        self.append("Recorded: Control Center opened. No fixture checks run and no settings saved. Resource observations stay in this session.")
+        from .activity_page import ActivityPage
+        self.activity_view = ActivityPage(self)
+        self.output = self.activity_view.output
 
     def append(self, message):
-        self.output.configure(state="normal")
-        self.output.insert("end", message + "\n\n")
-        # Keep the UI bounded; the canonical evidence source is never this buffer.
-        lines = int(self.output.index("end-1c").split(".")[0])
-        if lines > 500:
-            self.output.delete("1.0", f"{lines - 500}.0")
-        self.output.see("end")
-        self.output.configure(state="disabled")
+        """Preserve the legacy local-message entry point."""
+        self.record_activity(message)
+
+    def record_activity(self, message, **metadata):
+        return self.activity_view.add(message, **metadata)
 
     def _system(self):
         from .system_page import SystemPage

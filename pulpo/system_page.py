@@ -218,6 +218,8 @@ class SystemPage:
             self.status.configure(text="Another performance operation is running. Wait for its cleanup before starting a new one.")
             return
         self.busy, self.operation = True, operation
+        self.center.record_activity("System operation requested; awaiting result.", category="System",
+            action={"compare": "benchmark", "save": "profile_save", "undo": "profile_restore"}[operation], outcome="Started")
         self.stop.clear()
         self.report = None
         if operation == "compare":
@@ -244,6 +246,10 @@ class SystemPage:
             if kind == "progress" and not self.stop.is_set(): self.status.configure(text=result)
             elif kind == "result":
                 operation, value = result
+                self.center.record_activity("System operation completed through the existing checked path. " +
+                    (f"Capture-only comparison: {value['classification']} · correctness PASS; settings unchanged." if operation == "compare" else "Effective on the next configured collection."),
+                    category="System", action={"compare": "benchmark", "save": "profile_save", "undo": "profile_restore"}[operation],
+                    outcome={"compare": "Completed", "save": "Saved", "undo": "Restored"}[operation])
                 if operation == "compare":
                     self.report = value
                     self.render_report()
@@ -251,6 +257,9 @@ class SystemPage:
                     self.status.configure(text="Setting saved after fresh correctness checks. Effective on the next configured collection.")
                     self.refresh_diagnostics()
             elif kind in ("cancelled", "error", "blocked"):
+                self.center.record_activity(result, category="System",
+                    action={"compare": "benchmark", "save": "profile_save", "undo": "profile_restore"}[self.operation],
+                    outcome="Cancelled" if kind == "cancelled" else "Failed", severity="Info" if kind == "cancelled" else "Error")
                 self.cleanup_blocked = kind == "blocked"
                 self.result_title.configure(text="Cancelled" if kind == "cancelled" else "Comparison/operation failed")
                 self.status.configure(text=result)

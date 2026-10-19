@@ -162,6 +162,7 @@ class EvidencePage:
     def refresh(self):
         if self.path is None or self.closed:
             return
+        previous = (self.snapshot.source_id if self.snapshot else None, bool(self.error))
         try:
             import stat
             if not self.path.is_absolute() or not stat.S_ISREG(self.path.lstat().st_mode):
@@ -175,6 +176,12 @@ class EvidencePage:
             self.snapshot = None
             self.history.clear()
             self.error = "Observation unavailable or invalid. Previous values cleared. Check the path, private-file permissions, format and owner clock."
+        current = (self.snapshot.source_id if self.snapshot else None, bool(self.error))
+        if current != previous and hasattr(self.center, "activity_view"):
+            self.center.record_activity("Evidence observation unavailable/invalid; inspect Evidence." if self.error else
+                "Evidence observation loaded. Source-reported references are bounded; enforcement remains Unknown.",
+                category="Evidence", action="source", outcome="Failed" if self.error else "Completed",
+                severity="Warning" if self.error else "Info")
         self.render()
         self.schedule()
 
