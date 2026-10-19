@@ -1,0 +1,12 @@
+{
+  "encoding": "UTF-8, LF normalized",
+  "sha256": {
+    "pulpo/connection_observation.py": "5dd892fd6eeb994743677607f11943b09f69baf2ef75a01d9cc80754336f75dc",
+    "pulpo/connection_collector.py": "e53a2be788de9fac4923e3e0d44c59f0084db31e46e59df17c060d44ed2298e0",
+    "pulpo/connections_page.py": "09a7116c51abe439dd76936174ca7caf2c204304fa57b977888145996c6249be",
+    "pulpo/control_center.py": "9e6d4b86d3509dadc72aa1d75f6e52923f5aa6a470a3f729cdcf06f74f7b1e17",
+    "pulpo/activity_model.py": "68a94013d7b212fc71a5cb2b60ff3003aea4d9460c1c3192790959fbbecffcc3",
+    "tests/test_connections.py": "7f5b2142268e082ac0968000ee5626f26b36b4a05d4ae6fe81b1180577c6f7fc",
+    "tests/test_control_center.py": "2da3425dd132c3a7ae97539bbd13d266048ca65a7747405ab202f0943e08852a"
+  }
+}

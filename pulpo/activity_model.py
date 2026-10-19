@@ -8,7 +8,7 @@ ACTIONS = {
     "opened": "Control Center opened", "message": "Local diagnostic message",
     "benchmark": "Benchmark comparison", "profile_save": "Performance setting save",
     "profile_restore": "Previous setting restore", "check": "Evidence fixture operation",
-    "export": "Local report export", "source": "Evidence observation read",
+    "export": "Local report export", "source": "Observation read",
 }
 CATEGORIES = ("System", "Evidence", "Governance", "Connections", "AI")
 OUTCOMES = ("Recorded", "Started", "Completed", "Failed", "Cancelled", "Saved", "Restored")

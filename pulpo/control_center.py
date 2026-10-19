@@ -213,6 +213,8 @@ class ControlCenter:
             self.evidence_view.set_active(name == "Evidence")
         if hasattr(self, "system_view"):
             self.system_view.set_active(name == "System")
+        if hasattr(self, "connections_view"):
+            self.connections_view.set_active(name == "Connections")
         if hasattr(self, "activity_view"):
             self.activity_view.set_active(name == "Activity")
         if focus:
@@ -273,18 +275,8 @@ class ControlCenter:
                                       "No resource alerts · enforcement unknown"))
 
     def _connections(self):
-        page = self.pages["Connections"]
-        self.section(page, "Unknown • No live observer",
-                     "This release provides local tuning, not provider discovery or connection management. "
-                     "No endpoint, account or credential is read by this page.")
-        self.section(page, "When a connection fails",
-                     "Check the intended deployment's service status and endpoint, then its network and "
-                     "authentication configuration using that deployment's tools. Keep private keys and "
-                     "tokens out of screenshots and shared logs.")
-        self.section(page, "A successful connection is only reachability",
-                     "Verify the action's policy, permit binding, expiry, replay rejection and evidence "
-                     "through the canonical deployment before claiming governed execution.")
-        ttk.Button(page, text="Review governance boundary", command=lambda: self.show("Governance")).pack(anchor="w")
+        from .connections_page import ConnectionsPage
+        self.connections_view = ConnectionsPage(self)
 
     def _governance(self):
         page = self.pages["Governance"]
