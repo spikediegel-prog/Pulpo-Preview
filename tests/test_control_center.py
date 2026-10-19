@@ -39,7 +39,15 @@ class ControlCenterTests(unittest.TestCase):
     def setUp(self):
         tuning_app._prepare_tk_libraries()
         self.root = tk.Tk()
-        self.addCleanup(self.root.destroy)
+        def release_window():
+            import gc
+            self.root.destroy()
+            self.center = None
+            self.root = None
+            # Test suites create many interpreters, unlike the one-window app.
+            # Finalize closed Tcl cycles here, before unrelated worker GC.
+            gc.collect()
+        self.addCleanup(release_window)
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.profile = Path(self.temporary.name) / "missing.json"
@@ -257,7 +265,9 @@ class ControlCenterTests(unittest.TestCase):
             self.assertEqual(0, tuning.load_settings(self.profile).workers)
             self.assertTrue(self.profile.exists())
         try:
-            with patch.object(tk.Tk, "mainloop", inspect), patch.object(tk, "StringVar", side_effect=owned_variable):
+            # A MagicMock call history would retain Tk masters in mock cycles,
+            # allowing a later benchmark worker to collect Tcl on the wrong thread.
+            with patch.object(tk.Tk, "mainloop", inspect), patch.object(tk, "StringVar", owned_variable):
                 tuning_app.launch(self.profile)
         finally:
             for root in windows:
@@ -265,6 +275,48 @@ class ControlCenterTests(unittest.TestCase):
                 self.assertFalse(root.tk.call("after", "info"), "Window left a scheduled callback after destruction")
             self.assertTrue(variables)
             self.assertTrue(all(reference() is None for reference in variables), "Closed window retained a Tk variable")
+
+    def test_system_diagnostics_benchmark_failure_cancel_and_explicit_save(self):
+        from pulpo import system_benchmark as benchmark
+        from tests.test_system_benchmark import SystemBenchmarkTests
+        page = self.center.system_view
+        self.center.show("System")
+        self.assertTrue(page.monitor.active)
+        self.assertIn("Unknown", page.summary)
+        self.assertNotIn(str(self.profile), page.summary)
+        page.tabs["Tuning & benchmarks"].invoke()
+        self.assertFalse(page.monitor.active)
+        page.candidate.set("1")
+        def finish():
+            deadline = time.monotonic() + 15
+            while page.busy:
+                self.root.update()
+                if time.monotonic() > deadline: self.fail("System operation did not finish")
+                time.sleep(.01)
+        helper = SystemBenchmarkTests()
+        with patch.object(benchmark, "measure_case", side_effect=lambda workers, *_: helper.row(workers)):
+            page.compare_button.invoke()
+            finish()
+        self.assertIsNotNone(page.report)
+        self.assertFalse(self.profile.exists())
+        page.save_button.invoke()
+        finish()
+        self.assertEqual(1, tuning.load_settings(self.profile).workers)
+        page.undo_button.invoke()
+        finish()
+        self.assertEqual(0, tuning.load_settings(self.profile).workers)
+        page.candidate.set("1")
+        with patch.object(benchmark, "measure_case", side_effect=ValueError("Correctness failed")):
+            page.compare_button.invoke()
+            finish()
+        self.assertIsNone(page.report)
+        self.assertEqual("disabled", str(page.save_button.cget("state")))
+        before = self.profile.read_bytes()
+        with patch.object(benchmark, "measure_case", side_effect=benchmark.BenchmarkCancelled("Cancelled")):
+            page.compare_button.invoke()
+            finish()
+        self.assertIsNone(page.report)
+        self.assertEqual(before, self.profile.read_bytes())
 
     def test_destroy_releases_tk_variables_and_callback_cycles_on_owner_thread(self):
         import gc

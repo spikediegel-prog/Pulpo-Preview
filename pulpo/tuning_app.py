@@ -10,7 +10,7 @@ import subprocess
 import sys
 import tempfile
 import threading
-from time import perf_counter
+from time import perf_counter, process_time
 
 from .evidence_tuning import (EvidenceSettings, default_profile_path, load_settings,
     machine, recommended, save_settings, restore_previous, check_settings, thread_limit)
@@ -78,17 +78,22 @@ def benchmark_threads(workers: int, surfaces=8, files=8, file_bytes=65536, repea
         envelope = SimpleNamespace(surfaces=tuple(roots))
         collector = ParallelEvidenceCollector(workers=workers)
         values = []
+        cpu_seconds = 0.0
+        fixture_bytes = sum(path.stat().st_size for surface in roots for path in Path(surface.root).glob("*.bin"))
         try:
             for _ in range(repeats):
                 start = perf_counter()
+                cpu_start = process_time()
                 actual = collector.capture(envelope)
+                cpu_seconds += process_time() - cpu_start
                 values.append(perf_counter() - start)
                 if actual != tuple(capture_surface(surface) for surface in roots):
                     raise ValueError("Benchmark snapshot differs from serial evidence")
         finally:
             collector.close()
     return {"workers": workers, "median_ms": statistics.median(values) * 1000,
-            "samples_seconds": values, "files": surfaces * files, "correctness": "PASS"}
+            "samples_seconds": values, "files": surfaces * files, "correctness": "PASS",
+            "fixture_bytes": fixture_bytes, "process_cpu_seconds": cpu_seconds}
 
 
 def launch(profile=None):
@@ -137,6 +142,7 @@ def launch(profile=None):
     status_label.configure(textvariable=status)
     events = queue.Queue()
     active = False
+    center.performance_busy = lambda: active
     controls = []
     latest_report = None
 
@@ -148,7 +154,8 @@ def launch(profile=None):
 
     def job(operation):
         nonlocal active
-        if active:
+        if active or center.system_view.busy or center.system_view.cleanup_blocked:
+            status.set("Another performance operation is running. Review System or wait for cleanup.")
             return
         active = True
         for control in controls:
@@ -309,7 +316,7 @@ def launch(profile=None):
     root.bind("<Destroy>", cancel_poll, add="+")
 
     def close():
-        if active:
+        if active or center.system_view.busy or center.system_view.cleanup_blocked:
             messagebox.showinfo("Operation in progress", "Wait for the operation to finish before closing.")
             return
         root.destroy()

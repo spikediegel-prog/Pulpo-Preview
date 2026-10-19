@@ -211,6 +211,8 @@ class ControlCenter:
             self.monitor.set_active(name == "Overview")
         if hasattr(self, "evidence_view"):
             self.evidence_view.set_active(name == "Evidence")
+        if hasattr(self, "system_view"):
+            self.system_view.set_active(name == "System")
         if focus:
             self.navigation[name].focus_set()
 
@@ -378,23 +380,8 @@ class ControlCenter:
         self.output.configure(state="disabled")
 
     def _system(self):
-        page = self.pages["System"]
-        self.section(page, "Recorded • Local machine", "\n".join(
-            f"{label}: {tuning.machine()[key]}" for label, key in
-            (("Platform", "platform"), ("Python", "python"), ("Logical CPUs", "logical_cpus"))))
-        self.section(page, "Evidence performance profile", str(self.profile))
-        self.profile_label = self.text(page, "")
-        ttk.Button(page, text="Refresh local profile status", command=self.refresh_profile).pack(anchor="w", pady=(0, 16))
-        self.section(page, "Troubleshooting",
-                     "Invalid or stale profile: complete serial collection remains the fallback. "
-                     "Check the profile path and access permissions, then use Evidence to save a checked setting.\n\n"
-                     "A failed comparison: open Activity, retain the error and verify available disk space "
-                     "and temporary-directory access before retrying.\n\n"
-                     "Ubuntu window unavailable: install python3-tk for your Python interpreter and use a "
-                     "graphical desktop session. Source experiments also require psutil.")
-        self.text(page, "Keyboard: Tab / Shift+Tab between controls; Space to activate; Alt+1…6 to change pages; "
-                  "Page Up / Page Down to scroll.", "Muted.TLabel")
-        self.refresh_profile()
+        from .system_page import SystemPage
+        self.system_view = SystemPage(self)
 
     def refresh_profile(self):
         classification, explanation = profile_observation(self.profile)

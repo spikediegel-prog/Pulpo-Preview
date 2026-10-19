@@ -1,0 +1,12 @@
+{
+  "encoding": "UTF-8, LF normalized",
+  "sha256": {
+    "pulpo/system_page.py": "00d19ddbf9c01774ab5e868a9b47e8ff4e98c84d4866afbd94d1f246c3a4aa2a",
+    "pulpo/system_benchmark.py": "37a8ae67637413b6e4d86ce9eeef70e316cb07321977859affd3e7d0240932d1",
+    "pulpo/control_center.py": "ed3c2a1bd993f5346c78588f737b755ba61da944674813aa691600ad3270c55e",
+    "pulpo/evidence_tuning.py": "c8ce7ced5a8cd5b2ff2b0679560a2348ba2b411bd857fd6994c6b2ff60926c7a",
+    "pulpo/tuning_app.py": "ba69aa42ff85fcee1e53ef72d0045b0fd43e923cd9874b73fac7f2903c94d078",
+    "tests/test_system_benchmark.py": "bfd2226936306708d5b2a4909623557c8607213830a6c019ebfcf205a5ac583f",
+    "tests/test_control_center.py": "9e4e1e001b98eea845cf1504511441f6dab7c50aa419005f591ffdb52814bb43"
+  }
+}
