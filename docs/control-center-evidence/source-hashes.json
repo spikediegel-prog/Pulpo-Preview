@@ -1,0 +1,9 @@
+{
+  "base": "ff2a4821035b62a99b31d5a4647b0dd4309d9954",
+  "encoding": "normalized staged Git blobs",
+  "sha256": {
+    "pulpo/control_center.py": "2cbd76fccf44d386c75b3f40148c3a8f72a92c440f2cca435bf35af935fcf0b0",
+    "pulpo/tuning_app.py": "eacc06d73da1d0ae9d78ed6d561f70e21d3df4247cb6724160f450bf3bd23c06",
+    "tests/test_control_center.py": "415a76bc23d97b491b5e4e5e47046a1571367a407f90d22dc5d0d4159c359390"
+  }
+}
