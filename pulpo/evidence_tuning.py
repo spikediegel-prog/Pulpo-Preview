@@ -159,7 +159,8 @@ def check_settings(settings: EvidenceSettings) -> None:
             collector.close()
 
 
-def save_settings(settings: EvidenceSettings, path: Path | str | None = None) -> Path:
+def save_settings(settings: EvidenceSettings, path: Path | str | None = None, *,
+                  fallback_previous: EvidenceSettings | None = None) -> Path:
     """Save a local hint only after fresh validation; replace atomically."""
     check_settings(settings)
     destination = Path(path) if path is not None else default_profile_path()
@@ -167,6 +168,11 @@ def save_settings(settings: EvidenceSettings, path: Path | str | None = None) ->
         previous = _read_profile(destination)["settings"]
     except (OSError, ValueError, TypeError, KeyError, RecursionError):
         previous = None
+    if previous is None and fallback_previous is not None:
+        if type(fallback_previous) is not EvidenceSettings:
+            raise ValueError("Invalid fallback previous setting")
+        check_settings(fallback_previous)
+        previous = asdict(fallback_previous)
     return _write_settings(settings, destination, previous)
 
 
