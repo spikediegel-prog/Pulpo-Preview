@@ -91,6 +91,58 @@ class ControlCenterTests(unittest.TestCase):
         self.assertEqual("disabled", self.center.output.cget("state"))
         self.assertFalse(self.profile.exists())
 
+    def test_connection_reports_separate_auth_freshness_failures_and_governance(self):
+        from dataclasses import asdict, replace
+        import json
+        from pulpo.connection_observation import ConnectionObservation
+        page = self.center.connections_view
+        self.center.show("Connections")
+        self.assertIsNotNone(page.timer)
+        self.assertEqual(3, len(page.rows))
+        self.assertTrue(all(row.state == "Unknown" for row in page.rows.values()))
+        path = Path(self.temporary.name) / "connection.json"
+        sample = ConnectionObservation("UniFi UDM", time.time_ns(), "Responded", "Accepted", "ok",
+                                       source_id="a" * 32, devices_seen=2, online_seen=1, clients_seen=3)
+        def write(value):
+            path.write_text(json.dumps(asdict(value)))
+            path.chmod(0o600)
+        write(sample)
+        original = path.read_bytes()
+        with patch("tkinter.filedialog.askopenfilename", return_value=str(path)):
+            page.select("UniFi UDM")
+        self.assertEqual("Unknown", page.rows["UniFi UDM"].state)
+        self.assertIn("HTTP Responded", page.rows["UniFi UDM"].summary.cget("text"))
+        self.assertIn("enforcement unassessed", page.rows["UniFi UDM"].summary.cget("text"))
+        self.assertEqual("Unknown", self.center.status_rows["Governance"].state)
+        events = len(self.center.activity_view.model.events)
+        page.refresh("UniFi UDM")
+        self.assertEqual(events, len(self.center.activity_view.model.events))
+        self.root.after_cancel(page.timer)
+        page.timer = None
+        with patch("pulpo.connections_page.load_connection_observation", side_effect=AssertionError("Timer cannot read files")):
+            page.tick()
+        page.copy()
+        self.assertNotIn(str(path), self.root.clipboard_get())
+        self.assertEqual(original, path.read_bytes())
+        write(replace(sample, observed_at_ns=time.time_ns()-61_000_000_000))
+        page.observations.clear()  # Select a historical export without an in-session ordering conflict.
+        page.refresh("UniFi UDM")
+        self.assertEqual("Attention", page.rows["UniFi UDM"].state)
+        self.assertIn("Stale", page.rows["UniFi UDM"].summary.cget("text"))
+        path.write_text('{"api_key":"PRIVATE"}')
+        page.refresh("UniFi UDM")
+        self.assertNotIn("UniFi UDM", page.observations)
+        self.assertNotIn("PRIVATE", page.rows["UniFi UDM"].detail.cget("text"))
+        write(ConnectionObservation("NinjaOne", time.time_ns()))
+        page.refresh("UniFi UDM")
+        self.assertNotIn("UniFi UDM", page.observations)
+        page.clear("UniFi UDM")
+        self.assertEqual("Unknown", page.rows["UniFi UDM"].state)
+        page.open_activity()
+        self.assertEqual("Connections", self.center.activity_view.variables["Category"].get())
+        self.assertIsNone(page.timer)
+        self.assertFalse(self.profile.exists())
+
     def test_activity_filters_pause_review_export_and_lifecycle(self):
         import json
         page = self.center.activity_view

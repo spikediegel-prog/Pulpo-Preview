@@ -1,0 +1,17 @@
+[
+  {
+    "url": "https://developer.ui.com/network/v10.6.106/openapi.json",
+    "download_sha256": "c91054d31bcefa38d7408cb12a975dd660a7304017d781ffdbc884caaf84c75d",
+    "inspected_on": "2026-10-19"
+  },
+  {
+    "url": "https://app.ninjaone.com/apidocs/NinjaRMM-API-v2.json",
+    "download_sha256": "5ce571d1bb71f55fae52daf3fcb41fc0b3e1408f7693137520b02e6d45bded1f",
+    "inspected_on": "2026-10-19"
+  },
+  {
+    "url": "https://app.ninjaone.com/apidocs/authorization.json",
+    "download_sha256": "9e9ca25afa744e84f8d6c6eacf580059c6964e5e23b5df863f51c151d1a3d8bb",
+    "inspected_on": "2026-10-19"
+  }
+]
