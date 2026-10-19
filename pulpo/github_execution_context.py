@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 from typing import Any, Callable, Mapping
+from urllib.error import HTTPError
 from urllib.parse import quote
 from urllib.request import Request
 
@@ -94,7 +95,16 @@ class GitHubRESTMetadataReader:
                 response.close()
         except GitHubContextAttestationError:
             raise
-        except Exception:  # Do not expose token-bearing transport exceptions.
+        except Exception as exc:  # Do not expose token-bearing transport exceptions.
+            # urllib raises HTTPError before returning a response. It still owns
+            # a response body/socket, including when redirects are rejected.
+            if isinstance(exc, HTTPError):
+                try:
+                    exc.close()
+                except Exception:
+                    # The read already failed; preserve the sanitized failure
+                    # even if closing the rejected response also fails.
+                    pass
             raise GitHubContextAttestationError("GitHub context read failed") from None
         try:
             value = json.loads(payload.decode("utf-8"))
