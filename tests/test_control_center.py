@@ -12,6 +12,7 @@ from unittest.mock import patch
 from pulpo.control_center import ControlCenter, PAGES, profile_observation
 from pulpo import evidence_tuning as tuning
 from pulpo import tuning_app
+from pulpo.local_resources import Metric, ResourceHistory, ResourceSample
 
 
 class ProfileObservationTests(unittest.TestCase):
@@ -63,6 +64,10 @@ class ControlCenterTests(unittest.TestCase):
         self.root.geometry("640x600")
         self.root.update()
         self.assertLess(self.center.labels[0].cget("wraplength"), wide)
+        self.assertEqual(1, int(self.center.monitor.choices.grid_info()["row"]))
+        choices = self.center.monitor.choices
+        self.assertLessEqual(choices.winfo_x() + choices.winfo_width(), choices.master.winfo_width())
+        self.assertEqual(1, int(self.center.attention.grid_info()["row"]))
         self.center.show("System")
         self.root.update()
         self.assertGreater(self.center.canvas.bbox("all")[3], self.center.canvas.winfo_height())
@@ -76,6 +81,47 @@ class ControlCenterTests(unittest.TestCase):
             self.center.append(f"Recorded: local message {index}")
         self.assertLessEqual(int(self.center.output.index("end-1c").split(".")[0]), 501)
         self.assertEqual("disabled", self.center.output.cget("state"))
+        self.assertFalse(self.profile.exists())
+
+    def test_status_expansion_and_resource_alerts_never_attest_enforcement(self):
+        now = time.monotonic()
+        for value, expected in ((20, "Normal"), (78, "Elevated"), (95, "Attention"), (None, "Unknown")):
+            self.center._resource_update(ResourceSample(time.time(), now, "fixture", "/fixture",
+                                                       Metric(value), Metric(20), Metric(20)))
+            self.assertEqual(expected, self.center.status_rows["System"].state)
+            for name in ("Connections", "Governance", "Evidence"):
+                self.assertEqual("Unknown", self.center.status_rows[name].state)
+        row = self.center.status_rows["Governance"]
+        row.button.invoke()
+        self.root.update()
+        self.assertTrue(row.expanded)
+        self.assertTrue(row.body.winfo_ismapped())
+        row.button.invoke()
+        self.assertFalse(row.expanded)
+        self.assertFalse(self.profile.exists())
+
+    def test_graph_history_gaps_ranges_and_pause(self):
+        monitor = self.center.monitor
+        monitor.history = ResourceHistory()
+        now = time.monotonic()
+        for at, value in ((now - 40, 20), (now - 38, None), (now - 20, 30), (now - 18, 40)):
+            monitor.history.append(ResourceSample(time.time(), at, "fixture", "/fixture",
+                                                  Metric(value), Metric(20), Metric(20)))
+        with patch("pulpo.resource_monitor.time.monotonic", return_value=now):
+            monitor.draw("cpu")
+        chart = monitor.panels["cpu"]["chart"]
+        # Three grid lines and only one contiguous observed segment; never bridge missing time.
+        self.assertEqual(4, sum(chart.type(item) == "line" for item in chart.find_all()))
+        before = list(monitor.history.samples)
+        for seconds in (60, 900, 3600):
+            monitor.range_buttons[seconds].invoke()
+            self.assertEqual(seconds, monitor.seconds)
+        self.assertEqual(before, list(monitor.history.samples))
+        with patch.object(monitor.sampler, "sample", side_effect=AssertionError("Hidden page sampled")):
+            self.center.show("Connections")
+            self.root.update()
+        self.assertFalse(monitor.active)
+        self.assertIsNone(monitor.sampler.previous_cpu)
         self.assertFalse(self.profile.exists())
 
     def test_existing_launch_comparison_and_explicit_save(self):

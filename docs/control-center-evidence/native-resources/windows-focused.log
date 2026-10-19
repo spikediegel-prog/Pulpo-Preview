@@ -1,0 +1,59 @@
+test_history_never_fills_unknown_or_paused_intervals (tests.test_local_resources.ResourceHistoryTests.test_history_never_fills_unknown_or_paused_intervals) ... ok
+test_hour_history_is_bounded_and_scoped (tests.test_local_resources.ResourceHistoryTests.test_hour_history_is_bounded_and_scoped) ... ok
+test_attention_thresholds_do_not_treat_unknown_as_success (tests.test_local_resources.ResourceParsingTests.test_attention_thresholds_do_not_treat_unknown_as_success) ... ok
+test_capacity_invalid_values_and_zero_total_rejected (tests.test_local_resources.ResourceParsingTests.test_capacity_invalid_values_and_zero_total_rejected) ... ok
+test_cpu_excludes_guest_double_counting_and_includes_iowait (tests.test_local_resources.ResourceParsingTests.test_cpu_excludes_guest_double_counting_and_includes_iowait) ... ok
+test_cpu_rejects_invalid_aggregate (tests.test_local_resources.ResourceParsingTests.test_cpu_rejects_invalid_aggregate) ... ok
+test_memory_uses_available_not_free (tests.test_local_resources.ResourceParsingTests.test_memory_uses_available_not_free) ... ok
+test_missing_malformed_or_impossible_memory_is_not_zero_usage (tests.test_local_resources.ResourceParsingTests.test_missing_malformed_or_impossible_memory_is_not_zero_usage) ... ok
+test_counter_reset_and_zero_interval_do_not_fabricate_cpu (tests.test_local_resources.ResourceSamplerTests.test_counter_reset_and_zero_interval_do_not_fabricate_cpu) ... ok
+test_failed_cpu_read_resets_baseline_without_hiding_other_metrics (tests.test_local_resources.ResourceSamplerTests.test_failed_cpu_read_resets_baseline_without_hiding_other_metrics) ... ok
+test_first_cpu_sample_is_unknown_then_observed_delta (tests.test_local_resources.ResourceSamplerTests.test_first_cpu_sample_is_unknown_then_observed_delta) ... ok
+test_oversized_cpu_input_is_rejected (tests.test_local_resources.ResourceSamplerTests.test_oversized_cpu_input_is_rejected) ... ok
+test_unavailable_memory_and_storage_are_unknown (tests.test_local_resources.ResourceSamplerTests.test_unavailable_memory_and_storage_are_unknown) ... ok
+test_existing_launch_comparison_and_explicit_save (tests.test_control_center.ControlCenterTests.test_existing_launch_comparison_and_explicit_save) ... ok
+test_graph_history_gaps_ranges_and_pause (tests.test_control_center.ControlCenterTests.test_graph_history_gaps_ranges_and_pause) ... ok
+test_navigation_refresh_and_repeated_visits_do_not_create_state (tests.test_control_center.ControlCenterTests.test_navigation_refresh_and_repeated_visits_do_not_create_state) ... ok
+test_session_activity_is_bounded_and_not_persisted (tests.test_control_center.ControlCenterTests.test_session_activity_is_bounded_and_not_persisted) ... ok
+test_small_window_reflows_and_scrolls_and_keyboard_changes_page (tests.test_control_center.ControlCenterTests.test_small_window_reflows_and_scrolls_and_keyboard_changes_page) ... ok
+test_status_expansion_and_resource_alerts_never_attest_enforcement (tests.test_control_center.ControlCenterTests.test_status_expansion_and_resource_alerts_never_attest_enforcement) ... ok
+test_missing_malformed_and_stale_profiles_never_become_verified (tests.test_control_center.ProfileObservationTests.test_missing_malformed_and_stale_profiles_never_become_verified) ... ok
+test_absent_profile_recommends_complete_collection (tests.test_evidence_tuning.EvidenceTuningTests.test_absent_profile_recommends_complete_collection) ... ok
+test_absent_runtime_profile_preserves_serial_behavior (tests.test_evidence_tuning.EvidenceTuningTests.test_absent_runtime_profile_preserves_serial_behavior) ... ok
+test_atomic_save_failure_preserves_old_profile (tests.test_evidence_tuning.EvidenceTuningTests.test_atomic_save_failure_preserves_old_profile) ... ok
+test_changed_code_falls_back (tests.test_evidence_tuning.EvidenceTuningTests.test_changed_code_falls_back) ... ok
+test_cli_custom_count_requires_custom_mode (tests.test_evidence_tuning.EvidenceTuningTests.test_cli_custom_count_requires_custom_mode) ... ok
+test_cli_forbids_conflicting_actions (tests.test_evidence_tuning.EvidenceTuningTests.test_cli_forbids_conflicting_actions) ... usage: pulpo tune [-h] [--profile PROFILE]
+                  [--show | --recommended | --workers WORKERS | --refresh]
+pulpo tune: error: argument --workers: not allowed with argument --recommended
+ok
+test_corrupt_digest_falls_back (tests.test_evidence_tuning.EvidenceTuningTests.test_corrupt_digest_falls_back) ... ok
+test_corrupt_profile_cannot_authorize_rollback (tests.test_evidence_tuning.EvidenceTuningTests.test_corrupt_profile_cannot_authorize_rollback) ... ok
+test_failed_check_does_not_replace_saved_setting (tests.test_evidence_tuning.EvidenceTuningTests.test_failed_check_does_not_replace_saved_setting) ... ok
+test_fresh_fixture_checks_each_allowed_count (tests.test_evidence_tuning.EvidenceTuningTests.test_fresh_fixture_checks_each_allowed_count) ... ok
+test_hardware_limit_is_capped (tests.test_evidence_tuning.EvidenceTuningTests.test_hardware_limit_is_capped) ... ok
+test_helpers_require_explicit_valid_choice_and_can_return_to_serial (tests.test_evidence_tuning.EvidenceTuningTests.test_helpers_require_explicit_valid_choice_and_can_return_to_serial) ... ok
+test_invalid_types_and_ranges_rejected (tests.test_evidence_tuning.EvidenceTuningTests.test_invalid_types_and_ranges_rejected) ... ok
+test_malformed_json_falls_back (tests.test_evidence_tuning.EvidenceTuningTests.test_malformed_json_falls_back) ... ok
+test_oversized_profile_falls_back (tests.test_evidence_tuning.EvidenceTuningTests.test_oversized_profile_falls_back) ... ok
+test_process_mode_cannot_be_enabled_by_profile (tests.test_evidence_tuning.EvidenceTuningTests.test_process_mode_cannot_be_enabled_by_profile) ... ok
+test_rollback_rechecks_and_restores_previous_setting (tests.test_evidence_tuning.EvidenceTuningTests.test_rollback_rechecks_and_restores_previous_setting) ... ok
+test_runtime_auto_profile_preserves_complete_serial_snapshot (tests.test_evidence_tuning.EvidenceTuningTests.test_runtime_auto_profile_preserves_complete_serial_snapshot) ... ok
+test_runtime_profile_cannot_suppress_capture_errors (tests.test_evidence_tuning.EvidenceTuningTests.test_runtime_profile_cannot_suppress_capture_errors) ... ok
+test_save_and_load_valid_setting (tests.test_evidence_tuning.EvidenceTuningTests.test_save_and_load_valid_setting) ... ok
+test_setup_does_not_save_evidence_profile_on_verification_failure (tests.test_evidence_tuning.EvidenceTuningTests.test_setup_does_not_save_evidence_profile_on_verification_failure) ... ok
+test_single_cpu_recommendation (tests.test_evidence_tuning.EvidenceTuningTests.test_single_cpu_recommendation) ... ok
+test_stale_machine_falls_back (tests.test_evidence_tuning.EvidenceTuningTests.test_stale_machine_falls_back) ... ok
+test_unknown_controls_rejected_even_with_recomputed_digest (tests.test_evidence_tuning.EvidenceTuningTests.test_unknown_controls_rejected_even_with_recomputed_digest) ... ok
+test_upgrade_failed_check_preserves_original_file (tests.test_evidence_tuning.EvidenceTuningTests.test_upgrade_failed_check_preserves_original_file) ... ok
+test_upgrade_rejects_corrupted_digest (tests.test_evidence_tuning.EvidenceTuningTests.test_upgrade_rejects_corrupted_digest) ... ok
+test_upgrade_rejects_out_of_bounds_hardware_change (tests.test_evidence_tuning.EvidenceTuningTests.test_upgrade_rejects_out_of_bounds_hardware_change) ... ok
+test_upgrade_revalidates_choice_and_preserves_undo (tests.test_evidence_tuning.EvidenceTuningTests.test_upgrade_revalidates_choice_and_preserves_undo) ... ok
+test_invalid_profile_falls_back_conservatively_without_authority_change (tests.test_setup.PulpoSetupTests.test_invalid_profile_falls_back_conservatively_without_authority_change) ... ok
+test_setup_builds_profile_from_matching_benchmark (tests.test_setup.PulpoSetupTests.test_setup_builds_profile_from_matching_benchmark) ... ok
+test_setup_reuses_matching_profile (tests.test_setup.PulpoSetupTests.test_setup_reuses_matching_profile) ... ok
+
+----------------------------------------------------------------------
+Ran 51 tests in 10.918s
+
+OK

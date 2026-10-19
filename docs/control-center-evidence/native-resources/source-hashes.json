@@ -1,0 +1,14 @@
+{
+  "base": "655b110b815c3a9c35f462671774df8fa9d7cb71",
+  "encoding": "normalized staged Git blobs",
+  "sha256": {
+    "pulpo/local_resources.py": "2eddde92a34b202751669c62f747e3617e4b5ec1329c0efd473d0134f3b228fb",
+    "pulpo/resource_monitor.py": "c43fa4b80ac3a36efe6a563f2e00cbe1541982bcb3451f40e70c39c3b83f143b",
+    "pulpo/control_center.py": "70f4d370dff4df61beb54118e398cbbd0e5db773189df45b9b1ecee481fddf56",
+    "tests/test_local_resources.py": "ec401d92cfa5da04eab533e6011db2d9bc959101aa48b84b1f8a8811d10213a2",
+    "tests/test_control_center.py": "3012436cbe2e46bb322dae513be3dfa64cbd4f275ebb86966a858c2741c8d04b",
+    "docs/control-center-evidence/native-resources/ubuntu-focused.log": "705f6e7836503a127fa6d452b17239e4938a4800a757eb4764d101366c3aa115",
+    "docs/control-center-evidence/native-resources/windows-focused.log": "259e4adee358b941da156fe0b1888f499508391bc5ecece6250ad116e7907b54",
+    "docs/control-center-evidence/native-resources/ubuntu-core.log": "c2b86339f8d5dd5683760e66920b4a14fa37dc91d5c780791fd56bc0ab2808a9"
+  }
+}

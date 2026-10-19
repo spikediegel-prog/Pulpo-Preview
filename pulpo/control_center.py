@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import time
 
 from . import evidence_tuning as tuning
 
@@ -27,6 +28,72 @@ def profile_observation(profile):
                            "Recheck the path and permissions, then explicitly save a validated setting.")
 
 
+class StatusRow:
+    """Expandable text-first state; gradient positions are discrete, not scores."""
+    def __init__(self, parent, name, detail, open_page):
+        self.name, self.state, self.expanded = name, "Unknown", False
+        self.frame = ttk.Frame(parent, style="Card.TFrame", padding=(12, 10))
+        self.frame.pack(fill="x", pady=(0, 2))
+        self.header = ttk.Frame(self.frame, style="Card.TFrame")
+        self.header.pack(fill="x")
+        self.header.columnconfigure(2, weight=1)
+        self.button = ttk.Button(self.header, text="▸ " + name, style="Row.TButton", width=13, command=self.toggle)
+        self.button.grid(row=0, column=0, sticky="w", padx=(0, 8))
+        self.bar = tk.Canvas(self.header, width=140, height=23, highlightthickness=0, background=PALETTE["surface"])
+        self.bar.grid(row=0, column=1, padx=(0, 14))
+        self.summary = ttk.Label(self.header, text="Unknown · No observations", style="Card.TLabel",
+                                 justify="left", wraplength=470)
+        self.summary.grid(row=0, column=2, sticky="ew")
+        self.body = ttk.Frame(self.frame, style="Card.TFrame", padding=(8, 10))
+        self.detail = ttk.Label(self.body, text=detail, style="Card.TLabel", justify="left", wraplength=720)
+        self.detail.pack(fill="x")
+        ttk.Button(self.body, text=f"Open {name.lower()}", command=open_page).pack(anchor="w", pady=(10, 0))
+        self.bar.bind("<Configure>", lambda event: self.draw())
+        self.frame.bind("<Configure>", self._resize)
+
+    def toggle(self):
+        self.expanded = not self.expanded
+        self.button.configure(text=("▾ " if self.expanded else "▸ ") + self.name)
+        if self.expanded:
+            self.body.pack(fill="x")
+        else:
+            self.body.pack_forget()
+
+    def update(self, state, summary, detail=None):
+        if state not in ("Unknown", "Normal", "Elevated", "Attention"):
+            raise ValueError("Unsupported status state")
+        self.state = state
+        self.summary.configure(text=summary)
+        if detail is not None:
+            self.detail.configure(text=detail)
+        self.draw()
+
+    def draw(self):
+        self.bar.delete("all")
+        width = max(1, self.bar.winfo_width())
+        if self.state == "Unknown":
+            self.bar.create_rectangle(0, 8, width, 15, fill="#DED9E5", outline="")
+            return
+        stops = ((195, 70, 86), (210, 149, 53), (37, 132, 93))
+        for x in range(width):
+            position = x / max(1, width - 1) * 2
+            left = min(1, int(position))
+            mix = position - left
+            color = "#" + "".join(f"{int(a + (b - a) * mix):02x}" for a, b in zip(stops[left], stops[left + 1]))
+            self.bar.create_line(x, 8, x, 15, fill=color)
+        marker = {"Attention": .05, "Elevated": .5, "Normal": .95}[self.state] * width
+        self.bar.create_rectangle(marker - 3, 3, marker + 3, 20, fill=PALETTE["text"], outline=PALETTE["surface"], width=2)
+
+    def _resize(self, event):
+        narrow = event.width < 650
+        if narrow:
+            self.summary.grid(row=1, column=0, columnspan=3, sticky="ew", pady=(7, 0))
+        else:
+            self.summary.grid(row=0, column=2, columnspan=1, sticky="ew", pady=0)
+        self.summary.configure(wraplength=max(220, event.width - (35 if narrow else 340)))
+        self.detail.configure(wraplength=max(220, event.width - 50))
+
+
 class ControlCenter:
     """A lightweight shell around the existing local tuning actions."""
 
@@ -39,7 +106,7 @@ class ControlCenter:
         self.labels = []
         self.current = None
         self.root.title("Pulpo Control Center — Preview")
-        self.root.geometry("1120x780")
+        self.root.geometry("1200x900")
         self.root.minsize(640, 600)
         self.root.configure(background=PALETTE["background"])
         style = ttk.Style(root)
@@ -66,6 +133,10 @@ class ControlCenter:
         style.configure("Card.TFrame", background=PALETTE["surface"])
         style.configure("Card.TLabel", background=PALETTE["surface"])
         style.configure("CardHeading.TLabel", background=PALETTE["surface"], font=("TkDefaultFont", 13, "bold"))
+        style.configure("Range.TButton", padding=(6, 4), font=("TkDefaultFont", 9))
+        style.configure("Active.Range.TButton", padding=(6, 4), font=("TkDefaultFont", 9), background=PALETTE["selected"])
+        style.configure("Row.TButton", background=PALETTE["surface"], foreground=PALETTE["text"],
+                        anchor="w", borderwidth=0, padding=(0, 4), font=("TkDefaultFont", 11, "bold"))
 
         self.sidebar = tk.Frame(root, background=PALETTE["sidebar"], padx=12, pady=20)
         self.sidebar.pack(side="left", fill="y")
@@ -89,7 +160,7 @@ class ControlCenter:
         self.main.pack(fill="both", expand=True)
         self.page_title = ttk.Label(self.main, style="Title.TLabel")
         self.page_title.pack(anchor="w")
-        self.text(self.main, "Local performance tools • Live enforcement is not observed", "Muted.TLabel")
+        self.text(self.main, "Local resource observations • Live enforcement is not observed", "Muted.TLabel")
         viewport = ttk.Frame(self.main)
         viewport.pack(fill="both", expand=True, pady=(16, 0))
         self.canvas = tk.Canvas(viewport, background=PALETTE["background"], highlightthickness=0)
@@ -133,34 +204,64 @@ class ControlCenter:
             button.configure(style="Selected.Nav.TButton" if key == name else "Nav.TButton")
         self.current = name
         self.canvas.yview_moveto(0)
+        if hasattr(self, "monitor"):
+            self.monitor.set_active(name == "Overview")
         if focus:
             self.navigation[name].focus_set()
 
     def _overview(self):
         page = self.pages["Overview"]
-        self.section(page, "Welcome to your local Control Center",
-                     "Start with evidence settings and a bounded local check. This window does not connect "
-                     "providers, enroll agents or establish deployment authority.")
-        self.cards_area = ttk.Frame(page)
-        self.cards_area.pack(fill="x", pady=(4, 16))
-        self.status_cards = []
-        for title, description in (
-            ("Connection / Unknown", "No live connection observer. No connection count is measured."),
-            ("Enforcement / Unknown", "No deployment enforcement evidence is available to this window."),
+        from .resource_monitor import ResourceMonitor
+        self.monitor = ResourceMonitor(page, self.root, self._resource_update)
+        heading = ttk.Frame(page)
+        heading.pack(fill="x", pady=(0, 10))
+        self.status_heading = heading
+        heading.columnconfigure(0, weight=1)
+        ttk.Label(heading, text="Operational status", style="Heading.TLabel").grid(row=0, column=0, sticky="w")
+        self.attention = ttk.Label(heading, text="No enforcement assessment", style="Muted.TLabel")
+        self.attention.grid(row=0, column=1, sticky="e")
+        self.status_rows = {}
+        for name, detail in (
+            ("Connections", "Unknown. No live connection observer is configured. No reachability or connection count is inferred from resource readings."),
+            ("Governance", "Unknown. This UI has no authoritative deployment enforcement evidence. A reachable service, normal CPU or a successful local comparison proves no enforcement."),
+            ("Evidence", "Unknown. No canonical audit or deployment-report observer is configured. Activity contains local session messages; comparison results cover disposable fixtures only."),
+            ("System", "Unknown. Waiting for local resource observations. Resource thresholds are attention hints, not deployment health or authority verification."),
         ):
-            card = ttk.Frame(self.cards_area, style="Card.TFrame", padding=16)
-            labels = [self.text(card, title, "CardHeading.TLabel"),
-                      self.text(card, description, "Card.TLabel")]
-            self.status_cards.append((card, labels))
-        self.text(page, "Connected means reachable. Governed means the exact action follows the canonical "
-                  "policy, permit and evidence path. Reachability alone proves no enforcement.")
-        self.text(page, "First run: three steps", "Heading.TLabel")
-        self.text(page, "1. Open System to inspect this machine and the local profile.\n"
-                  "2. Open Evidence to compare settings on disposable fixtures; saving is optional.\n"
-                  "3. Review Activity for this session's result and save measurements from Evidence.")
-        ttk.Button(page, text="Inspect system", command=lambda: self.show("System")).pack(anchor="w", pady=6)
-        ttk.Button(page, text="Open evidence settings", command=lambda: self.show("Evidence")).pack(anchor="w", pady=6)
-        self.text(page, "Preview checks do not establish production readiness.", "Status.TLabel")
+            row = StatusRow(page, name, detail, lambda target=name: self.show(target))
+            self.status_rows[name] = row
+        self.status_rows["Connections"].update("Unknown", "Unknown · No connection observer configured")
+        self.status_rows["Governance"].update("Unknown", "Unknown · Enforcement not assessed")
+        self.status_rows["Evidence"].update("Unknown", "Unknown · No canonical report observer")
+        self.text(page, "Red: action required · amber: review · green: scoped checks passed · gray: unknown.\n"
+                  "Discrete states, not a health score. Connected does not mean enforcement verified.", "Muted.TLabel")
+        self.onboarding = ttk.Frame(page)
+        self.onboarding.pack(fill="x", pady=(8, 0))
+        self.text(self.onboarding, "First run: inspect System, compare disposable fixtures in Evidence, then review Activity. "
+                  "Saving a performance setting is optional. Preview checks do not establish production readiness.", "Muted.TLabel")
+
+    def _resource_update(self, sample):
+        from .local_resources import level
+        metrics = [sample.cpu, sample.memory, sample.storage]
+        states = [level(metric.percent) for metric in metrics]
+        issues = [name for name, state in zip(("CPU", "Memory", "Storage"), states) if state in ("Elevated", "Attention")]
+        if "Attention" in states:
+            state, summary = "Attention", "! Resource attention required: " + ", ".join(issues)
+        elif "Elevated" in states:
+            state, summary = "Elevated", "! Elevated resource usage: " + ", ".join(issues)
+        elif "Unknown" in states:
+            state, summary = "Unknown", "Unknown · Some resource readings are unavailable"
+        else:
+            state, summary = "Normal", "Recorded · Resource readings within thresholds"
+        stamp = time.strftime("%H:%M:%S %Z", time.localtime(sample.observed_at))
+        self.status_rows["System"].update(state, summary,
+            f"Recorded from {sample.source} at {stamp}. Storage is volume {sample.volume}; capacity used is separate from disk I/O. "
+            "Elevated begins at 75%; attention begins at 90%. These are resource hints only. "
+            "No diagnostics, connection or deployment-enforcement pass is inferred.\n\n"
+            + "\n".join(f"{name}: {metric.reason or f'{metric.percent:.1f}%'}" for name, metric in
+                          zip(("CPU", "Memory", "Storage"), metrics)))
+        self.attention.configure(text=(f"{len(issues)} resource item(s) need attention" if issues else
+                                      "Resource readings incomplete · enforcement unknown" if "Unknown" in states else
+                                      "No resource alerts · enforcement unknown"))
 
     def _connections(self):
         page = self.pages["Connections"]
@@ -202,7 +303,7 @@ class ControlCenter:
         self.output.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y")
         self.output.pack(fill="both", expand=True)
-        self.append("Recorded: Control Center opened. No checks run and no settings saved.")
+        self.append("Recorded: Control Center opened. No fixture checks run and no settings saved. Resource observations stay in this session.")
 
     def append(self, message):
         self.output.configure(state="normal")
@@ -243,11 +344,7 @@ class ControlCenter:
         width = max(260, event.width - 72)
         for label in self.labels:
             label.configure(wraplength=width)
-        columns = 2 if width >= 650 else 1
-        for index, (card, labels) in enumerate(self.status_cards):
-            card.grid(row=index // columns, column=index % columns, sticky="nsew", padx=(0, 10), pady=4)
-            for label in labels:
-                label.configure(wraplength=max(210, width // columns - 42))
-        for column in (0, 1):
-            self.cards_area.columnconfigure(column, weight=1 if column < columns else 0,
-                                            uniform="cards" if column < columns else "")
+        if width < 650:
+            self.attention.grid(row=1, column=0, columnspan=2, sticky="w", pady=(4, 0))
+        else:
+            self.attention.grid(row=0, column=1, columnspan=1, sticky="e", pady=0)

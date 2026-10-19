@@ -2,6 +2,11 @@
 
 Status: Proposed implementation; authority unchanged.
 
+This records the initial UI increment. The later [native resource overview](NATIVE_RESOURCE_OVERVIEW.md)
+adds read-only local OS counters and bounded session graphs above expandable
+status rows. Its source/read scope and validation supersede the initial
+profile-only observation scope described below; authority boundaries stay intact.
+
 ## Inspection before implementation
 
 Canonical base: `ff2a4821035b62a99b31d5a4647b0dd4309d9954` on main.
