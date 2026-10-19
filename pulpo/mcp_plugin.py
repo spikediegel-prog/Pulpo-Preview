@@ -126,9 +126,9 @@ def _read_windows_snapshot(target: Path) -> str:
             close(handle)
 
 
-def load_mcp_snapshot(
+def read_snapshot_document(
     path: str | os.PathLike[str] = DEFAULT_SNAPSHOT_PATH,
-) -> MCPReadSnapshot:
+) -> dict:
     """Load one exact owner-private frozen snapshot without write capability."""
 
     if not isinstance(path, (str, os.PathLike)) or isinstance(path, bytes):
@@ -170,6 +170,8 @@ def load_mcp_snapshot(
             file_flags = os.O_RDONLY
             file_flags |= getattr(os, "O_CLOEXEC", 0)
             file_flags |= getattr(os, "O_NOFOLLOW", 0)
+            # A substituted FIFO/device must not block before fstat rejects it.
+            file_flags |= getattr(os, "O_NONBLOCK", 0)
             try:
                 file_descriptor = os.open(
                     target.name,
@@ -202,7 +204,15 @@ def load_mcp_snapshot(
         document = json.loads(raw, object_pairs_hook=_unique_json_object)
     except (json.JSONDecodeError, ValueError) as exc:
         raise MCPBoundaryError("mcp_plugin_snapshot_invalid") from exc
-    if type(document) is not dict or set(document) != _SNAPSHOT_FIELDS:
+    if type(document) is not dict:
+        raise MCPBoundaryError("mcp_plugin_snapshot_invalid")
+    return document
+
+
+def load_mcp_snapshot(path=DEFAULT_SNAPSHOT_PATH) -> MCPReadSnapshot:
+    """Load the unchanged exact MCP contract using the shared protected reader."""
+    document = read_snapshot_document(path)
+    if set(document) != _SNAPSHOT_FIELDS:
         raise MCPBoundaryError("mcp_plugin_snapshot_invalid")
 
     try:

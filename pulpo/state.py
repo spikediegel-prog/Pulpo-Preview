@@ -17,6 +17,7 @@ from threading import RLock
 from typing import Any, Callable, Protocol
 
 from .audit_parallel import audit_row_has_valid_types
+from .database_activity import ObservedConnection
 
 
 # Reuse the unchanged encoder configuration; per-call state stays in encode().
@@ -233,7 +234,7 @@ class InMemoryKernelState:
 
 class SQLiteKernelState:
     def __init__(self, path: str | PathLike[str], *, index_audit_events: bool = False) -> None:
-        self._connection = sqlite3.connect(path)
+        self._connection = sqlite3.connect(path, factory=ObservedConnection)
         self._closed = False
         try:
             self._initialize(index_audit_events=index_audit_events)

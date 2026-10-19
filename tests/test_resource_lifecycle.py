@@ -74,7 +74,9 @@ class ResourceLifecycleTests(unittest.TestCase):
             def execute(self, *args, **kwargs):
                 raise sqlite3.OperationalError("setup failed")
         def connect(*args, **kwargs):
-            connection = original(*args, **kwargs, factory=FailingConnection)
+            # Override either the default or the owner's telemetry factory.
+            kwargs["factory"] = FailingConnection
+            connection = original(*args, **kwargs)
             captured.append(connection)
             return connection
         with patch("sqlite3.connect", connect):

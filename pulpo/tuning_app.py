@@ -100,14 +100,19 @@ def launch(profile=None):
     from .control_center import ControlCenter
     center = ControlCenter(root, profile)
     panel = ttk.Frame(center.pages["Evidence"])
-    panel.pack(fill="both", expand=True)
+    def toggle_tuning():
+        if panel.winfo_manager():
+            panel.pack_forget()
+        else:
+            panel.pack(fill="both", expand=True)
+    ttk.Button(center.pages["Evidence"], text="Evidence collection settings", command=toggle_tuning).pack(anchor="w", pady=12)
     center.text(panel, "Tune evidence collection", "Heading.TLabel")
     center.text(panel, f"Recorded • {machine()['logical_cpus']} logical CPUs • worker limit {thread_limit()}")
     center.text(panel, "Compare settings on disposable fixtures before saving a local performance hint. "
                 "Approval, audit and evidence rules stay fixed. Settings take effect on the next collection.")
     resolved = load_settings(profile)
-    mode = tk.StringVar(value="Recommended" if resolved == recommended() else "Custom")
-    workers = tk.StringVar(value=str(resolved.workers))
+    mode = tk.StringVar(master=root, value="Recommended" if resolved == recommended() else "Custom")
+    workers = tk.StringVar(master=root, value=str(resolved.workers))
     choices = ttk.Frame(panel)
     choices.pack(fill="x", pady=14)
     ttk.Radiobutton(choices, text="Default (serial, no helpers)", variable=mode,
@@ -118,7 +123,7 @@ def launch(profile=None):
     ttk.Label(choices, text="Evidence worker count").grid(row=2, column=1, padx=12)
     def sync_mode(*_):
         spin.configure(state="normal" if mode.get() == "Custom" else "disabled")
-    mode.trace_add("write", sync_mode)
+    mode_trace = mode.trace_add("write", sync_mode)
     sync_mode()
     center.text(panel, "0 or 1 collects serially. More workers may increase memory use; no hard RAM cap is promised.")
     center.text(panel, f"Profile: {profile}")
@@ -127,7 +132,7 @@ def launch(profile=None):
     center.text(panel, "Results appear in Activity. Save results exports the latest measurements only.", "Muted.TLabel")
     buttons = ttk.Frame(panel)
     buttons.pack(fill="x", pady=10)
-    status = tk.StringVar(value="Ready. No check has run in this session.")
+    status = tk.StringVar(master=root, value="Ready. No check has run in this session.")
     status_label = center.text(panel, "")
     status_label.configure(textvariable=status)
     events = queue.Queue()
@@ -291,10 +296,15 @@ def launch(profile=None):
         poll_handle = root.after(100, poll)
 
     def cancel_poll(event):
-        nonlocal poll_handle
-        if event.widget is root and poll_handle is not None:
-            root.after_cancel(poll_handle)
-            poll_handle = None
+        nonlocal poll_handle, mode, workers, status
+        if event.widget is root:
+            if poll_handle is not None:
+                root.after_cancel(poll_handle)
+                poll_handle = None
+            if mode is not None:
+                mode.trace_remove("write", mode_trace)
+            # Tcl objects must be finalized on this owning UI thread.
+            mode = workers = status = None
 
     root.bind("<Destroy>", cancel_poll, add="+")
 
