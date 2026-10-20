@@ -54,6 +54,103 @@ class ControlCenterTests(unittest.TestCase):
         self.center = ControlCenter(self.root, self.profile)
         self.root.update()
 
+    def test_decision_explorer_uses_cached_records_without_linking_neighbors(self):
+        from pulpo.evidence_observation import EvidenceEvent, EvidenceObservation
+        center = self.center
+        view = center.decision_explorer
+        events = tuple(EvidenceEvent(index, name, outcome, str(index) * 64) for index, name, outcome in (
+            (1, "decision", "allowed"), (2, "approval_verified", "recorded"), (3, "permit_consumed", "recorded")))
+        center.evidence_view.snapshot = EvidenceObservation("a" * 32, time.time_ns(), True, 3, events=events)
+        with patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("No reads")), \
+             patch("pulpo.governance_observer.observe_snapshot", side_effect=AssertionError("No reads")):
+            for _ in range(3):
+                center.show("Governance")
+                view.render()
+                self.root.update()
+                self.assertEqual(3, len(view.table.get_children()))
+            view.table.selection_set("2")  # newest first: select the decision
+            view.select()
+            detail = view.details.get("1.0", "end")
+            self.assertIn("Source-reported outcome: allowed", detail)
+            self.assertIn("Approval\nUnknown", detail)
+            self.assertIn("Permit\nUnknown", detail)
+            self.assertIn("Execution and consequence\nUnknown", detail)
+            self.assertIn(".000000001 UTC", detail)
+            with patch.object(self.root, "clipboard_clear"), patch.object(self.root, "clipboard_append") as copied:
+                view.copy()
+                safe = copied.call_args.args[0]
+                self.assertIn("record=" + "1" * 64, safe)
+                self.assertIn("enforcement=Unknown", safe)
+                self.assertNotIn("permit=", safe)
+            self.assertIn("Enforcement not assessed", center.governance_status.cget("text"))
+        self.assertEqual([], list(Path(self.temporary.name).iterdir()))
+
+    def test_decision_explorer_invalidates_replaced_failed_and_returning_sources(self):
+        from pulpo.evidence_observation import EvidenceEvent, EvidenceObservation
+        from dataclasses import replace
+        view, source = self.center.decision_explorer, self.center.evidence_view
+        original = EvidenceObservation("a" * 32, 1, True, 1,
+            events=(EvidenceEvent(1, "decision", "denied", "f" * 64),))
+        source.snapshot = original
+        view.render()
+        view.table.selection_set("0")
+        view.select()
+        view.filter.set("Decisions")  # same single row still requires re-selection
+        view.render()
+        self.assertEqual((), view.table.selection())
+        self.assertTrue(view.copy_button.instate(("disabled",)))
+        view.table.selection_set("0")
+        view.select()
+        source.snapshot = replace(original, source_id="b" * 32, audit_valid=False)
+        with patch.object(self.root, "clipboard_clear") as cleared:
+            view.copy()  # source changed before an explicit UI refresh
+            cleared.assert_not_called()
+        self.assertEqual((), view.table.selection())
+        self.assertTrue(view.copy_button.instate(("disabled",)))
+        self.assertIn("FAILED", view.coverage.cget("text"))
+        source.error = "PRIVATE /path/token-secret"
+        view.render()
+        self.assertEqual(0, len(view.table.get_children()))
+        self.assertNotIn("PRIVATE", view.coverage.cget("text"))
+        source.error = None
+        source.snapshot = original
+        view.render()
+        self.assertEqual((), view.table.selection())
+        self.assertTrue(view.copy_button.instate(("disabled",)))
+        view.table.selection_set("0")
+        view.select()
+        source.clear()
+        self.assertIsNone(view.snapshot)
+        self.assertEqual(0, len(view.table.get_children()))
+        self.assertTrue(view.copy_button.instate(("disabled",)))
+
+    def test_decision_explorer_filters_and_narrow_keyboard_selection(self):
+        from pulpo.evidence_observation import EvidenceEvent, EvidenceObservation
+        view = self.center.decision_explorer
+        events = (EvidenceEvent(1, "decision", "allowed", "a" * 64),
+                  EvidenceEvent(2, "permit_consumed", "recorded", "b" * 64))
+        self.center.evidence_view.snapshot = EvidenceObservation("c" * 32, time.time_ns(), True, 100, events=events)
+        self.root.geometry("640x600")
+        self.center.show("Governance")
+        self.center.governance_tabs.select(self.center.decision_page)
+        view.filter.set("Decisions")
+        view.render()
+        self.root.update()
+        self.assertEqual(1, len(view.events))
+        self.assertIn("not full history", view.coverage.cget("text"))
+        self.assertLessEqual(sum(view.table.column(c, "width") for c in ("event", "outcome")), view.table.winfo_width())
+        view.table.focus_force()
+        self.root.update()
+        view.table.event_generate("<Down>")
+        self.root.update()
+        self.assertIsNotNone(view.selected_event())
+        self.assertFalse(view.copy_button.instate(("disabled",)))
+        view.filter.set("Approvals")
+        view.render()
+        self.root.update()
+        self.assertEqual(0, len(view.events))
+        self.assertTrue(view.copy_button.instate(("disabled",)))
+
     def test_navigation_refresh_and_repeated_visits_do_not_create_state(self):
         self.assertEqual("Overview", self.center.current)
         for _ in range(3):
@@ -484,7 +581,10 @@ class ControlCenterTests(unittest.TestCase):
             button("Evidence").invoke()
             button("Compare thread settings").invoke()
             finish()
-            output = next(widget for widget in descendants(root) if isinstance(widget, tk.Text))
+            # More than one read-only text pane now exists; find the Activity
+            # comparison output by its actual result, not widget creation order.
+            output = next(widget for widget in descendants(root) if isinstance(widget, tk.Text)
+                          and "canonical equality PASS" in widget.get("1.0", "end"))
             self.assertIn("canonical equality PASS", output.get("1.0", "end"))
             self.assertFalse(self.profile.exists())
             with patch.object(tuning_app, "benchmark_threads", side_effect=ValueError("fixture failure")):
@@ -576,6 +676,9 @@ class ControlCenterTests(unittest.TestCase):
             self.assertIsNone(center.monitor.on_update)
             self.assertTrue(center.needs_attention.closed)
             self.assertIsNone(center.needs_attention.center)
+            self.assertTrue(center.decision_explorer.closed)
+            self.assertIsNone(center.decision_explorer.center)
+            self.assertIsNone(center.decision_explorer.snapshot)
             self.assertIsNone(page.timer)
             # Later worker collection must have no Tk variable left to finalize.
             worker = threading.Thread(target=gc.collect)

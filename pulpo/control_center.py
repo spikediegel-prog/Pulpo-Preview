@@ -218,6 +218,8 @@ class ControlCenter:
             self.connections_view.set_active(name == "Connections")
         if hasattr(self, "activity_view"):
             self.activity_view.set_active(name == "Activity")
+        if name == "Governance":
+            self.decision_explorer.render()
         self.refresh_attention()
         if focus:
             self.navigation[name].focus_set()
@@ -302,6 +304,13 @@ class ControlCenter:
         self.governance_status = self.text(page, "", "Heading.TLabel")
         self.text(page, "Read-only observation • Connected does not mean governed. "
                   "This window cannot approve, grant, revoke or execute.", "Muted.TLabel")
+        self.governance_tabs = ttk.Notebook(page)
+        self.governance_tabs.pack(fill="both", expand=True)
+        summary = ttk.Frame(self.governance_tabs, padding=(0, 10))
+        self.decision_page = ttk.Frame(self.governance_tabs, padding=(0, 10))
+        self.governance_tabs.add(summary, text="Summary")
+        self.governance_tabs.add(self.decision_page, text="Decision Explorer")
+        page = summary
         controls = ttk.Frame(page)
         controls.pack(fill="x", pady=(0, 12))
         ttk.Button(controls, text="Select snapshot…", command=self.select_governance_snapshot).pack(side="left")
@@ -326,6 +335,8 @@ class ControlCenter:
                      "Deployment identity, current rules and grants, human authority, individual decisions, "
                      "permits, execution evidence and unresolved consequences remain Unknown. "
                      "Unknown consequences never authorize retry.")
+        from .decision_explorer import DecisionExplorer
+        self.decision_explorer = DecisionExplorer(self, self.decision_page)
         self._render_governance(GovernanceObservation())
 
     def select_governance_snapshot(self):
