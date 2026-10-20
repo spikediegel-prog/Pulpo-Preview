@@ -23,6 +23,7 @@ class SystemPage:
         self.cleanup_blocked = False
         self.operation, self.report = None, None
         self.configuration = None
+        self.troubleshooting = None
         self.messages, self.stop = queue.Queue(), threading.Event()
         self.active, self.mode = False, "Diagnostics"
         page = center.pages["System"]
@@ -32,7 +33,7 @@ class SystemPage:
         from .setup_readiness import is_wsl
         modes = ("Diagnostics", "Tuning & benchmarks", "Source health")
         if is_wsl():
-            modes += ("Setup readiness", "Configuration")
+            modes += ("Setup readiness", "Configuration", "Troubleshooting")
         for name in modes:
             button = ttk.Button(tabs, text=name, command=lambda selected=name: self.select_mode(selected))
             self.tabs[name] = button
@@ -124,6 +125,9 @@ class SystemPage:
         if "Configuration" in self.views:
             from .configuration_page import ConfigurationPage
             self.configuration = ConfigurationPage(self, self.views["Configuration"])
+        if "Troubleshooting" in self.views:
+            from .troubleshooting_page import TroubleshootingPage
+            self.troubleshooting = TroubleshootingPage(self, self.views["Troubleshooting"])
         self.root.bind("<Destroy>", self.destroy, add="+")
         self.refresh_diagnostics()
         self.select_mode("Diagnostics")
@@ -140,6 +144,8 @@ class SystemPage:
             self.readiness.set_active(self.active and mode == "Setup readiness")
         if self.configuration is not None:
             self.configuration.set_active(self.active and mode == "Configuration")
+        if self.troubleshooting is not None:
+            self.troubleshooting.set_active(self.active and mode == "Troubleshooting")
         self.center.canvas.yview_moveto(0)
 
     def set_active(self, active):
@@ -150,6 +156,8 @@ class SystemPage:
             self.readiness.set_active(active and self.mode == "Setup readiness")
         if self.configuration is not None:
             self.configuration.set_active(active and self.mode == "Configuration")
+        if self.troubleshooting is not None:
+            self.troubleshooting.set_active(active and self.mode == "Troubleshooting")
 
     def refresh_diagnostics(self):
         try:
@@ -211,8 +219,10 @@ class SystemPage:
         if selected:
             try:
                 Path(selected).write_text(text, encoding="utf-8")
+                return True
             except OSError:
                 self.diagnostic_status.configure(text="Export failed. Check destination access; no diagnostic contents were logged.")
+                return False
 
     def export_report(self):
         import json

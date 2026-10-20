@@ -279,6 +279,8 @@ class ControlCenterTests(unittest.TestCase):
                 center = ControlCenter(root, self.profile)
             self.assertIsNone(center.system_view.readiness)
             self.assertIsNone(center.system_view.configuration)
+            self.assertIsNone(center.system_view.troubleshooting)
+            self.assertNotIn("Troubleshooting", center.system_view.tabs)
             self.assertNotIn("Configuration", center.system_view.tabs)
             self.assertNotIn("Setup readiness", center.system_view.tabs)
             self.assertEqual(3, len(center.system_view.tabs))
@@ -395,6 +397,96 @@ class ControlCenterTests(unittest.TestCase):
         self.assertIn("Current profile changed", view.validity.cget("text"))
         self.assertEqual(before, self.profile.read_bytes())
         self.assertIsNone(view.last_change)  # external change time/reason not inferred
+
+    def test_wsl_troubleshooting_navigation_does_not_read_or_create_state(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only troubleshooting")
+        system = self.center.system_view
+        view = system.troubleshooting
+        self.root.geometry("640x600")
+        with patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("No implicit reads")), \
+             patch("pulpo.connections_page.load_connection_observation", side_effect=AssertionError("No implicit reads")), \
+             patch("pulpo.governance_observer.observe_snapshot", side_effect=AssertionError("No implicit reads")):
+            for _ in range(3):
+                self.center.show("System")
+                system.select_mode("Troubleshooting")
+                self.root.update()
+                view.render()
+                self.assertEqual(9, len(view.table.get_children()))
+                self.assertTrue(view.export_button.instate(("disabled",)))
+            self.assertEqual(2, int(system.tabs["Troubleshooting"].grid_info()["row"]))
+            self.assertLessEqual(sum(view.table.column(c, "width") for c in ("check", "state")), view.table.winfo_width())
+            view.table.focus_force()
+            self.root.update()
+            view.table.event_generate("<Down>")
+            self.root.update()
+            self.assertEqual("runtime", view.selected_row().key)
+            view.table.selection_set("services")
+            view.select()
+            self.assertTrue(view.check_button.instate(("disabled",)))
+            view.check()
+            self.assertIn("unavailable", view.notice.cget("text"))
+            self.center.show("Overview")
+            self.assertFalse(view.active)
+            self.assertIsNone(view.timer)
+        self.assertEqual([], list(Path(self.temporary.name).iterdir()))
+
+    def test_wsl_troubleshooting_explicit_reader_failure_and_frozen_export(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only troubleshooting")
+        import json
+        from dataclasses import asdict
+        from pulpo.evidence_observation import EvidenceObservation
+        view = self.center.system_view.troubleshooting
+        self.center.show("System")
+        self.center.system_view.select_mode("Troubleshooting")
+        path = Path(self.temporary.name) / "evidence.json"
+        source = EvidenceObservation("a" * 32, time.time_ns(), True, 0, volume_total=1000, volume_free=50)
+        path.write_text(json.dumps(asdict(source)))
+        path.chmod(0o600)
+        self.center.evidence_view.path = path
+        view.render()
+        view.table.selection_set("storage")
+        view.select()
+        self.assertFalse(view.check_button.instate(("disabled",)))
+        before = path.read_bytes()
+        view.check_button.invoke()
+        self.assertEqual(before, path.read_bytes())
+        self.assertEqual(source, self.center.evidence_view.snapshot)
+        self.assertIn("50 of 1000", view.details.get("1.0", "end"))
+        self.assertIn("Local check completed: 20", view.details.get("1.0", "end"))
+        view.preview_report()
+        preview = view.preview
+        self.assertEqual(preview, view.report_text.get("1.0", "end-1c"))
+        path.write_text("PRIVATE token /secret/file")
+        view.check_button.invoke()
+        self.assertIsNone(self.center.evidence_view.snapshot)
+        self.assertNotIn("50 of 1000", view.details.get("1.0", "end"))
+        self.assertEqual(preview, view.preview)
+        with patch.object(self.center.system_view, "write_file") as export:
+            view.export_button.invoke()
+            self.assertEqual(preview, export.call_args.args[0])
+        output = Path(self.temporary.name) / "report.json"
+        with patch("tkinter.filedialog.asksaveasfilename", return_value=str(output)):
+            view.export_button.invoke()
+        self.assertEqual(preview, output.read_text())
+        with patch("tkinter.filedialog.asksaveasfilename", return_value=""):
+            view.export_button.invoke()
+        self.assertIn("cancelled", view.notice.cget("text"))
+        with patch("tkinter.filedialog.asksaveasfilename", return_value=str(output / "unwritable.json")):
+            view.export_button.invoke()
+        self.assertIn("failed", view.notice.cget("text"))
+        self.assertEqual(preview, view.preview)
+        view.preview_report()
+        self.assertNotIn("50 of 1000", view.preview)
+        self.assertNotIn("PRIVATE", view.preview)
+        self.assertNotIn(str(path), view.preview)
+        view.table.selection_set("runtime")
+        view.check()
+        self.assertIsNotNone(view.local_checked_at_ns)
+        view.table.selection_set("cleanup")
+        view.open_button.invoke()
+        self.assertEqual("Tuning & benchmarks", self.center.system_view.mode)
 
     def test_navigation_refresh_and_repeated_visits_do_not_create_state(self):
         self.assertEqual("Overview", self.center.current)
@@ -946,6 +1038,11 @@ class ControlCenterTests(unittest.TestCase):
                 self.assertIsNone(center.system_view.configuration.system)
                 self.assertIsNone(center.system_view.configuration.timer)
                 self.assertIsNone(center.system_view.configuration.last_change)
+            if center.system_view.troubleshooting is not None:
+                self.assertTrue(center.system_view.troubleshooting.closed)
+                self.assertIsNone(center.system_view.troubleshooting.system)
+                self.assertIsNone(center.system_view.troubleshooting.timer)
+                self.assertIsNone(center.system_view.troubleshooting.preview)
             self.assertIsNone(page.timer)
             # Later worker collection must have no Tk variable left to finalize.
             worker = threading.Thread(target=gc.collect)
