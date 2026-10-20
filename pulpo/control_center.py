@@ -105,6 +105,11 @@ class ControlCenter:
         self.current = None
         self.resource_observation = None
         self.source_reads = {}
+        self.source_success_reads = {}
+        self.source_test_labels = {}
+        self.compact_source_context = False
+        from .setup_readiness import is_wsl
+        self.wsl_clarity = is_wsl()
         self.root.title("Pulpo Control Center — Preview")
         self.root.geometry("1200x900")
         self.root.minsize(640, 600)
@@ -154,6 +159,7 @@ class ControlCenter:
         self.page_caption = ttk.Label(header, text="Local resource observations • Live enforcement is not observed",
                                       style="HeaderMuted.TLabel", wraplength=700, justify="left")
         self.page_caption.pack(fill="x", pady=(4, 0))
+        self.observation_context = ttk.Label(header, text="", style="HeaderMuted.TLabel", justify="left", wraplength=700)
         viewport = ttk.Frame(self.main)
         viewport.pack(fill="both", expand=True, pady=(16, 0))
         self.canvas = tk.Canvas(viewport, background=PALETTE["background"], highlightthickness=0)
@@ -293,6 +299,7 @@ class ControlCenter:
         self.refresh_attention()
 
     def refresh_attention(self):
+        self.refresh_observation_context()
         if self.current != "Overview" or not all(hasattr(self, name) for name in
                 ("needs_attention", "connections_view", "evidence_view", "governance_observation")):
             return
@@ -354,6 +361,7 @@ class ControlCenter:
         selected = filedialog.askopenfilename(parent=self.root, title="Select frozen Pulpo read snapshot",
                                               filetypes=(("JSON snapshot", "*.json"),))
         if selected:
+            self.reset_source_read("Governance")
             self.governance_path = Path(selected)
             self.governance_refresh.configure(state="normal")
             self.refresh_governance()
@@ -368,7 +376,7 @@ class ControlCenter:
     def clear_governance(self):
         from .governance_observer import GovernanceObservation
         self.governance_path = None
-        self.source_reads.pop("Governance", None)
+        self.reset_source_read("Governance")
         self.governance_refresh.configure(state="disabled")
         self._render_governance(GovernanceObservation())
 
@@ -412,6 +420,34 @@ class ControlCenter:
         if key not in SOURCE_KEYS or type(succeeded) is not bool:
             raise ValueError("unsupported_source_read")
         self.source_reads[key] = SourceRead(time.time_ns(), succeeded)
+        if succeeded:
+            from .observation_clarity import source_paths
+            path = source_paths(self).get(key)
+            self.source_success_reads[key] = (str(path), self.source_reads[key].recorded_at_ns)
+
+    def reset_source_read(self, key):
+        self.source_reads.pop(key, None)
+        self.source_success_reads.pop(key, None)
+        self.source_test_labels.pop(key, None)
+
+    def refresh_observation_context(self):
+        if not self.wsl_clarity:
+            return
+        from .observation_clarity import context_text, source_paths
+        text = context_text(source_paths(self), self.source_test_labels, compact=self.compact_source_context)
+        self.observation_context.configure(text=text)
+        if text:
+            self.observation_context.pack(fill="x", pady=(6, 0))
+        else:
+            self.observation_context.pack_forget()
+
+    def source_last_success(self, key):
+        from .observation_clarity import source_paths
+        from .decision_explorer import record_time
+        value = self.source_success_reads.get(key)
+        if value and str(source_paths(self).get(key)) == value[0]:
+            return time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime(value[1] / 1e9)) + " · local read, not source freshness"
+        return "Unknown · no successful read recorded for this selection"
 
     def refresh_profile(self):
         classification, explanation = profile_observation(self.profile)
@@ -421,7 +457,10 @@ class ControlCenter:
         if event.widget is not self.main:
             return
         width = max(260, event.width - 72)
+        self.compact_source_context = width < 650
+        self.refresh_observation_context()
         self.page_caption.configure(wraplength=max(220, event.width - 96))
+        self.observation_context.configure(wraplength=max(220, event.width - 96))
         for label in self.labels:
             label.configure(wraplength=width)
         if width < 650:

@@ -12,6 +12,7 @@ class SourceHealthPage:
         self.active = self.closed = False
         self.timer = None
         self.rows = ()
+        self.presentation_signature = None
         center.text(page, "Source Health & Coverage", "Heading.TLabel")
         center.text(page, "Local file reads, source freshness and reported checks are separate. "
                     "This view uses existing caches; it does not read files or contact providers.", "Muted.TLabel")
@@ -46,6 +47,10 @@ class SourceHealthPage:
         self.details.configure(yscrollcommand=scroll.set)
         self.open_button = ttk.Button(page, text="Open source page", command=self.open_source, state="disabled")
         self.open_button.pack(anchor="w", pady=(0, 8))
+        self.replace_button = None
+        if center.wsl_clarity:
+            self.replace_button = ttk.Button(page, text="Select / replace source…", command=self.replace_source, state="disabled")
+            self.replace_button.pack(anchor="w", pady=(0, 8))
         center.text(page, "Red: failed read or reported failure. Amber: stale timestamp or clock mismatch. "
                     "Missing checks remain gaps. Evidence is stale after 15 seconds; connectors after 60 seconds.\n"
                     "A selected file is session configuration, not proof a collector is installed or running. "
@@ -67,6 +72,9 @@ class SourceHealthPage:
             return
         old = self.rows
         self.rows = self.project()
+        from .observation_clarity import source_paths
+        signature = (tuple((key, str(path)) for key, path in source_paths(self.center).items()),
+                     tuple(self.center.source_success_reads.items())) if self.center.wsl_clarity else None
         selected = self.table.selection()
         # Fixed stable keys, one row per existing source, no accumulating history.
         for row in self.rows:
@@ -79,11 +87,14 @@ class SourceHealthPage:
         self.summary.configure(text=f"{sum(row.selected for row in self.rows)} selected exports · "
             f"{sum(row.cached for row in self.rows)} cached observations · source identity and enforcement Unknown.\n"
             "Ages update while this view is visible. Evidence file polling pauses while hidden; connection and Governance re-reads are explicit.")
-        if selected and old != self.rows:
+        if selected and (old != self.rows or signature != self.presentation_signature):
             self.select(preserve=True)
         elif not selected:
             self.set_details("Unknown · Select a source for its last local read attempt, reported source timestamp, coverage and troubleshooting.")
             self.open_button.configure(state="disabled")
+            if self.replace_button is not None:
+                self.replace_button.configure(state="disabled")
+        self.presentation_signature = signature
 
     def selected_row(self):
         selection = self.table.selection()
@@ -106,12 +117,21 @@ class SourceHealthPage:
         if row.read:
             local = f"Recorded · {'succeeded' if row.read.succeeded else 'FAILED'} at {record_time(row.read.recorded_at_ns)}"
         stamp = record_time(row.observed_at_ns) if row.observed_at_ns is not None else "Unknown · Not exported or no usable observation."
+        location = ""
+        if self.center.wsl_clarity:
+            from .observation_clarity import source_paths
+            path = source_paths(self.center).get(row.key)
+            location = (f"Selected file (local only)\n{path or 'None selected'}\n\n"
+                f"Last successful local read\n{self.center.source_last_success(row.key)}\n"
+                "A previous success does not clear a later failure or establish source freshness.\n\n")
         self.set_details(f"{row.key} · {'Selected in this session' if row.selected else 'Not selected'}\n\n"
-            f"Last local read result\n{local}\nThis is UI wall-clock time recorded after the read, not source freshness or continuous file readability.\n\n"
+            + location + f"Last local read result\n{local}\nThis is UI wall-clock time recorded after the read, not source freshness or continuous file readability.\n\n"
             f"Reported source timestamp\n{stamp}\n{row.freshness} · Source age updates in the table above.\nSource fingerprint: {row.source_id}\n\n"
             f"Reported checks / read issues\n{chr(10).join(row.issues) if row.issues else 'No problem indication in this cached projection; this is not an all-clear.'}\n\n"
             f"Coverage\n{row.coverage}\n\nRemaining Unknown\n{row.unknowns}\n\nNext step\n{row.next_step}")
         self.open_button.configure(state="normal")
+        if self.replace_button is not None:
+            self.replace_button.configure(state="normal")
         self.details.yview(position)
 
     def open_source(self):
@@ -119,6 +139,18 @@ class SourceHealthPage:
             row = self.selected_row()
             if row:
                 self.center.show(row.page)
+
+    def replace_source(self):
+        row = self.selected_row()
+        if self.closed or row is None:
+            return
+        self.center.show(row.page)
+        if row.key == "Governance":
+            self.center.select_governance_snapshot()
+        elif row.key == "Evidence":
+            self.center.evidence_view.select()
+        else:
+            self.center.connections_view.select(row.key)
 
     def keyboard_start(self, event):
         if not self.table.selection():

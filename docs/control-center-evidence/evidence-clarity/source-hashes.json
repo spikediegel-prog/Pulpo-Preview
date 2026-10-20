@@ -1,0 +1,15 @@
+{
+  "base": "3dd37f2fe43c86e3d24c0bdcf836ed583c6fd955",
+  "source_normalization": "CRLF to LF",
+  "source_sha256": {
+    "pulpo/control_center.py": "685a9f92a51b41f4935dbe156b02211b6ca3f73dbde9103da7a4f9bb2e6ed1b8",
+    "pulpo/evidence_page.py": "979061e3919c3a1a222b5b9f315bcf4b9b415b418c30d24503b895bd18e94698",
+    "pulpo/observation_clarity.py": "75b0d8fd0ca6e51c2272649abba288f1afe9ebfaf111b3996ce646d199468229",
+    "pulpo/evidence_events.py": "4fc5e4dc0dc2ec9e6fc74070900ef65807d2bc07590ba89a684eab073896fba7",
+    "pulpo/source_health_page.py": "81d5e0d76df0deae35577162aee68102615e3e1a5e53d25923ff32a64f8519f2",
+    "pulpo/connections_page.py": "0ff0f5bcd4c2f48f54e0ea6095d34b53708a45856a08ae2867bf79f27a8cd552",
+    "tests/test_control_center.py": "ca383d9176defcc284e96db6e0408981b8b43ef82bc0fffdfe5a6a5f48f7904f",
+    "tests/test_observation_clarity.py": "d890deac00ed47f9abff758869990310647d2df311d091bf9da59981075caf74"
+  },
+  "exact_core_log_sha256": "2b3915f6b7b6333916d38f3fb0bee069cf0fc7a7988d0e9cdb8f19982ef08a8b"
+}
