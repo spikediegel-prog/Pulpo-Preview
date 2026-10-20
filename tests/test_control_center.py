@@ -248,7 +248,7 @@ class ControlCenterTests(unittest.TestCase):
         center.system_view.select_mode("Source health")
         view = center.system_view.source_health
         self.root.update()
-        self.assertEqual(1, int(center.system_view.tabs["Source health"].grid_info()["row"]))
+        self.assertTrue(center.system_view.tabs["Source health"].winfo_ismapped())
         self.assertLessEqual(sum(view.table.column(c, "width") for c in ("source", "read", "age")), view.table.winfo_width())
         view.table.focus_force()
         self.root.update()
@@ -282,6 +282,8 @@ class ControlCenterTests(unittest.TestCase):
             self.assertIsNone(center.system_view.troubleshooting)
             self.assertIsNone(center.system_view.session)
             self.assertIsNone(center.setup_guide_button)
+            self.assertFalse(center.system_view.navigation.grouped)
+            self.assertIsNone(center.monitor.strip)
             self.assertNotIn("Session setup", center.system_view.tabs)
             self.assertNotIn("Troubleshooting", center.system_view.tabs)
             self.assertNotIn("Configuration", center.system_view.tabs)
@@ -326,7 +328,7 @@ class ControlCenterTests(unittest.TestCase):
         center.show("System")
         center.system_view.select_mode("Setup readiness")
         self.root.update()
-        self.assertEqual(1, int(center.system_view.tabs["Setup readiness"].grid_info()["row"]))
+        self.assertTrue(center.system_view.tabs["Setup readiness"].winfo_ismapped())
         self.assertLessEqual(sum(view.table.column(c, "width") for c in ("step", "state")), view.table.winfo_width())
         view.table.focus_force()
         self.root.update()
@@ -388,7 +390,7 @@ class ControlCenterTests(unittest.TestCase):
         self.assertIn("Applicable", view.validity.cget("text"))
         self.assertIn("Exact benchmark pair: 0 → 1", view.measurements.cget("text"))
         self.assertLessEqual(sum(view.table.column(c, "width") for c in ("setting", "current", "proposed")), view.table.winfo_width())
-        self.assertEqual(2, int(system.tabs["Configuration"].grid_info()["row"]))
+        self.assertTrue(system.tabs["Configuration"].winfo_ismapped())
         completed = system.report["completed_at"]
         with patch("pulpo.configuration_comparison.time.time", return_value=completed + 901):
             view.render()
@@ -417,7 +419,7 @@ class ControlCenterTests(unittest.TestCase):
                 view.render()
                 self.assertEqual(9, len(view.table.get_children()))
                 self.assertTrue(view.export_button.instate(("disabled",)))
-            self.assertEqual(2, int(system.tabs["Troubleshooting"].grid_info()["row"]))
+            self.assertTrue(system.tabs["Troubleshooting"].winfo_ismapped())
             self.assertLessEqual(sum(view.table.column(c, "width") for c in ("check", "state")), view.table.winfo_width())
             view.table.focus_force()
             self.root.update()
@@ -579,7 +581,7 @@ class ControlCenterTests(unittest.TestCase):
             self.assertNotIn("PRIVATE", session.status.cget("text"))
             self.assertEqual({}, center.source_reads)
             self.assertIsNone(center.evidence_view.path)
-            self.assertEqual(3, int(center.system_view.tabs["Session setup"].grid_info()["row"]))
+            self.assertTrue(center.system_view.tabs["Session setup"].winfo_ismapped())
             self.assertLess(session.summary.winfo_width(), root.winfo_width())
             session.remember()
             self.assertIn("Could not save", session.status.cget("text"))
@@ -703,6 +705,121 @@ class ControlCenterTests(unittest.TestCase):
         guide.close()
         self.assertFalse(guide.active)
         self.assertFalse(readiness.guide_visible)
+
+    def test_wsl_system_groups_preserve_deep_links_and_last_view_without_reads(self):
+        from pulpo.setup_readiness import is_wsl
+        from pulpo.system_navigation import GROUPS
+        if not is_wsl(): self.skipTest("WSL-only grouped navigation")
+        system = self.center.system_view
+        navigation = system.navigation
+        self.root.geometry("640x600")
+        self.center.show("System")
+        with patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("No navigation reads")), \
+             patch("pulpo.connections_page.load_connection_observation", side_effect=AssertionError("No navigation reads")), \
+             patch("pulpo.governance_observer.observe_snapshot", side_effect=AssertionError("No navigation reads")), \
+             patch("pulpo.session_preferences.save", side_effect=AssertionError("No navigation saves")):
+            for mode, group in (("Troubleshooting", "Monitor"), ("Session setup", "Set up"), ("Configuration", "Tune"),
+                    ("Source health", "Monitor"), ("Setup readiness", "Set up"), ("Tuning & benchmarks", "Tune")):
+                system.select_mode(mode)
+                self.root.update()
+                self.assertEqual(group, navigation.group)
+                self.assertIn(mode, navigation.location.cget("text"))
+                self.assertTrue(system.tabs[mode].winfo_ismapped())
+                self.assertTrue(all(not button.winfo_ismapped() for name, button in system.tabs.items()
+                    if name not in GROUPS[group]))
+            navigation.group_buttons["Monitor"].invoke()
+            self.assertEqual("Source health", system.mode)
+            navigation.group_buttons["Set up"].invoke()
+            self.assertEqual("Setup readiness", system.mode)
+            navigation.group_buttons["Tune"].invoke()
+            self.assertEqual("Tuning & benchmarks", system.mode)
+            with self.assertRaises(ValueError): system.select_mode("unsupported")
+        self.assertEqual([], list(Path(self.temporary.name).iterdir()))
+
+    def test_wsl_resource_strip_details_age_are_cache_only_and_pause_stops_timer(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only resource strip")
+        monitor = self.center.monitor
+        strip = monitor.strip
+        sample = ResourceSample(1_000_000, 250, "Linux / WSL", "/", Metric(), Metric(20), Metric(30))
+        self.root.geometry("640x600")
+        self.root.update()
+        strip.update(sample, 58)
+        strip.set_active(True)
+        with patch.object(monitor.sampler, "sample", side_effect=AssertionError("Details must not sample")), \
+             patch("pulpo.resource_status.time.monotonic", return_value=252):
+            strip.render()
+            self.assertIn("Updated 2s ago · 3m 12s history", strip.summary.cget("text"))
+            strip.button.invoke()
+            self.root.update_idletasks()
+            self.assertTrue(strip.expanded)
+            self.assertTrue(strip.details.winfo_ismapped())
+            detail = strip.details.cget("text")
+            self.assertIn("75%", detail)
+            self.assertIn("90%", detail)
+            self.assertIn("Windows host", detail)
+            self.assertIn("gaps", detail)
+            self.assertIn("Recorded locally at", detail)
+            strip.button.focus_force()
+            self.assertIs(strip.button, self.root.focus_get())
+            strip.button.invoke()
+            self.assertFalse(strip.details.winfo_manager())
+            self.center.show("Connections")
+            self.assertFalse(strip.active)
+            self.assertIsNone(strip.timer)
+            self.assertIn("Paused", strip.summary.cget("text"))
+        self.assertFalse(self.profile.exists())
+
+    def test_wsl_navigation_and_strip_reflow_with_larger_fonts(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only responsive controls")
+        from tkinter import ttk
+        style = ttk.Style(self.root)
+        style.configure("TButton", font=("TkDefaultFont", 14))
+        style.configure("Range.TButton", font=("TkDefaultFont", 13))
+        self.root.geometry("640x600")
+        self.center.show("System")
+        system = self.center.system_view
+        system.select_mode("Source health")
+        self.root.update()
+        navigation = system.navigation
+        self.assertLessEqual(navigation.primary.winfo_reqwidth(), self.center.canvas.winfo_width())
+        for button in (*navigation.group_buttons.values(), *(b for b in system.tabs.values() if b.winfo_ismapped())):
+            self.assertLessEqual(button.winfo_x() + button.winfo_width(), self.center.canvas.winfo_width())
+        self.center.show("Overview")
+        strip = self.center.monitor.strip
+        strip.button.invoke()
+        self.root.update()
+        self.assertLessEqual(strip.button.winfo_x() + strip.button.winfo_width(), strip.frame.winfo_width())
+        self.assertLessEqual(strip.details.winfo_width(), strip.frame.winfo_width())
+
+    def test_wsl_full_text_scale_keeps_ranges_groups_and_strip_controls_inside(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only scaled layout")
+        previous_scale = self.root.tk.call("tk", "scaling")
+        root = tk.Tk()
+        try:
+            root.tk.call("tk", "scaling", 2.0)
+            center = ControlCenter(root, self.profile)
+            root.geometry("640x600")
+            center.show("System")
+            root.update()
+            monitor = center.system_view.monitor
+            for button in monitor.range_buttons.values():
+                self.assertLessEqual(button.winfo_x() + button.winfo_width(), monitor.frame.winfo_width())
+            strip = monitor.strip
+            strip.button.invoke()
+            root.update()
+            self.assertLessEqual(strip.button.winfo_x() + strip.button.winfo_width(), strip.frame.winfo_width())
+            for label in strip.labels:
+                self.assertLessEqual(label.winfo_x() + label.winfo_width(), strip.legend.winfo_width())
+            if strip.button.grid_info()["row"] == strip.legend.grid_info()["row"]:
+                self.assertLessEqual(strip.legend.winfo_width() + strip.button.winfo_width() + 8, strip.frame.winfo_width())
+            self.assertLessEqual(strip.details.winfo_width(), strip.frame.winfo_width())
+            self.assertTrue(all(int(panel["scale"].cget("wraplength")) > 0 for panel in monitor.panels.values()))
+        finally:
+            root.destroy()
+            self.root.tk.call("tk", "scaling", previous_scale)
 
     def test_navigation_refresh_and_repeated_visits_do_not_create_state(self):
         self.assertEqual("Overview", self.center.current)
@@ -1237,6 +1354,10 @@ class ControlCenterTests(unittest.TestCase):
             self.assertFalse(center.sidebar_logo_images)
             self.assertIsNone(logo())
             self.assertIsNone(center.monitor.on_update)
+            if center.monitor.strip is not None:
+                self.assertTrue(center.monitor.strip.closed)
+                self.assertIsNone(center.monitor.strip.timer)
+                self.assertIsNone(center.monitor.strip.sample)
             self.assertTrue(center.needs_attention.closed)
             self.assertIsNone(center.needs_attention.center)
             self.assertTrue(center.decision_explorer.closed)

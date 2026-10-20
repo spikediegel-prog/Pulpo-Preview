@@ -68,9 +68,16 @@ class ResourceMonitor:
             self.panels[key] = {"frame": shadow, "status": status, "value": value, "note": note,
                                 "chart": chart, "scale": scale}
             chart.bind("<Configure>", lambda event, name=key: self.draw(name))
-        self.caption = ttk.Label(self.frame, text=f"Source: {self.sampler.source} · volume {self.sampler.volume} · collecting observations",
-                                 style="Muted.TLabel", wraplength=740, justify="left")
-        self.caption.pack(fill="x", pady=(9, 0))
+        self.strip = None
+        from .setup_readiness import is_wsl
+        if is_wsl():
+            from .resource_status import ResourceStatus
+            self.strip = ResourceStatus(self.frame, root)
+            self.caption = self.strip.summary
+        else:
+            self.caption = ttk.Label(self.frame, text=f"Source: {self.sampler.source} · volume {self.sampler.volume} · collecting observations",
+                                     style="Muted.TLabel", wraplength=740, justify="left")
+            self.caption.pack(fill="x", pady=(9, 0))
         self.area.bind("<Configure>", self._resize)
         root.bind("<Destroy>", self._destroy, add="+")
         root.bind("<Map>", self._mapped, add="+")
@@ -86,6 +93,7 @@ class ResourceMonitor:
 
     def _mapped(self, event):
         if event.widget is self.root and self.active:
+            if self.strip is not None: self.strip.set_active(True)
             self._schedule(0)
 
     def _destroy(self, event):
@@ -102,6 +110,7 @@ class ResourceMonitor:
         if self.active != active:
             self.sampler.previous_cpu = None
         self.active = active
+        if self.strip is not None: self.strip.set_active(active)
         self._schedule(0 if active else 10000)
 
     def _tick(self):
@@ -110,7 +119,8 @@ class ResourceMonitor:
             return
         if not self.active or not self.root.winfo_viewable() or self.root.state() == "iconic":
             self.sampler.previous_cpu = None
-            self.caption.configure(text=f"Source: {self.sampler.source} · monitoring paused while Overview is hidden")
+            if self.strip is not None: self.strip.set_active(False)
+            else: self.caption.configure(text=f"Source: {self.sampler.source} · monitoring paused while Overview is hidden")
             self._schedule(10000)
             return
         self.latest = self.sampler.sample()
@@ -127,8 +137,11 @@ class ResourceMonitor:
         stamp = time.strftime("%H:%M:%S %Z", time.localtime(self.latest.observed_at))
         collected = int(self.latest.monotonic_time - self.history.samples[0].monotonic_time)
         scope = " · Linux VM view, not the full Windows host" if "WSL" in self.latest.source else ""
-        self.caption.configure(text=f"Recorded locally · {self.latest.source} · volume {self.latest.volume} · updated {stamp}{scope}\n"
-                               f"{collected}s of session history. Purple: normal · amber: ≥75% · red: ≥90%. Missing readings remain gaps.")
+        if self.strip is not None:
+            self.strip.update(self.latest, self.history.samples[0].monotonic_time)
+        else:
+            self.caption.configure(text=f"Recorded locally · {self.latest.source} · volume {self.latest.volume} · updated {stamp}{scope}\n"
+                                   f"{collected}s of session history. Purple: normal · amber: ≥75% · red: ≥90%. Missing readings remain gaps.")
         self.on_update(self.latest)
         self.draw_all()
         self._schedule(2000)
@@ -143,6 +156,11 @@ class ResourceMonitor:
 
     def _resize(self, event):
         columns = 3 if event.width >= 720 else 1
+        if self.strip is not None:
+            from .system_navigation import reflow
+            for button in self.range_buttons.values():
+                if button.winfo_manager() == "pack": button.pack_forget()
+            reflow(self.choices, list(self.range_buttons.values()), event.width)
         if columns == 1:
             self.choices.grid(row=1, column=0, columnspan=2, sticky="w", pady=(8, 0))
         else:
@@ -151,10 +169,12 @@ class ResourceMonitor:
             panel["frame"].grid(row=index // columns, column=index % columns, sticky="nsew",
                                 padx=(0, 10 if index % columns < columns - 1 else 0), pady=(0, 8))
             panel["note"].configure(wraplength=max(200, event.width // columns - 40))
+            if self.strip is not None:
+                panel["scale"].configure(wraplength=max(200, event.width // columns - 40), justify="left")
         for column in range(3):
             self.area.columnconfigure(column, weight=1 if column < columns else 0,
                                       uniform="resource" if column < columns else "")
-        self.caption.configure(wraplength=max(240, event.width))
+        if self.strip is None: self.caption.configure(wraplength=max(240, event.width))
 
     def draw_all(self):
         for name in self.panels:

@@ -1,0 +1,22 @@
+{
+  "Normal": {
+    "foreground": "#674396",
+    "background": "#EEEBF3",
+    "ratio": 6.317
+  },
+  "Elevated": {
+    "foreground": "#865200",
+    "background": "#EEEBF3",
+    "ratio": 5.531
+  },
+  "High": {
+    "foreground": "#A32935",
+    "background": "#EEEBF3",
+    "ratio": 6.088
+  },
+  "Unknown": {
+    "foreground": "#62586D",
+    "background": "#EEEBF3",
+    "ratio": 5.68
+  }
+}
