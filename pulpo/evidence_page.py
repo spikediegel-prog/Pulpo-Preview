@@ -181,6 +181,7 @@ class EvidencePage:
             self.snapshot = None
             self.history.clear()
             self.error = "Observation unavailable or invalid. Previous values cleared. Check the path, private-file permissions, format and owner clock."
+        self.center.record_source_read("Evidence", self.error is None)
         current = (self.snapshot.source_id if self.snapshot else None, bool(self.error))
         if current != previous and hasattr(self.center, "activity_view"):
             self.center.record_activity("Evidence observation unavailable/invalid; inspect Evidence." if self.error else
@@ -191,6 +192,7 @@ class EvidencePage:
         self.schedule()
 
     def clear(self):
+        self.center.source_reads.pop("Evidence", None)
         self.path, self.snapshot, self.error = None, None, None
         self.reviewing = False
         self.review_button.configure(text="Pause for review")

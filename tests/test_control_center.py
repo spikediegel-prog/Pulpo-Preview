@@ -151,6 +151,127 @@ class ControlCenterTests(unittest.TestCase):
         self.assertEqual(0, len(view.events))
         self.assertTrue(view.copy_button.instate(("disabled",)))
 
+    def test_source_health_navigation_reads_only_cache_and_stops_age_timer(self):
+        center = self.center
+        view = center.system_view.source_health
+        with patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("No file reads")), \
+             patch("pulpo.connections_page.load_connection_observation", side_effect=AssertionError("No file reads")), \
+             patch("pulpo.governance_observer.observe_snapshot", side_effect=AssertionError("No file reads")):
+            for _ in range(3):
+                center.show("System")
+                center.system_view.select_mode("Source health")
+                view.render()
+                self.root.update()
+                self.assertEqual(5, len(view.table.get_children()))
+                self.assertTrue(view.active)
+                self.assertIsNotNone(view.timer)
+                view.table.selection_set("Evidence")
+                view.select()
+                self.assertIn("No local read attempt", view.details.get("1.0", "end"))
+                view.open_button.invoke()
+                self.assertEqual("Evidence", center.current)
+                self.assertFalse(view.active)
+                self.assertIsNone(view.timer)
+        self.assertFalse(center.source_reads)
+        self.assertEqual([], list(Path(self.temporary.name).iterdir()))
+
+    def test_source_health_records_real_reads_rereads_failures_and_clear(self):
+        from dataclasses import asdict
+        import json
+        from pulpo.evidence_observation import EvidenceObservation
+        from pulpo.connection_observation import ConnectionObservation
+        from pulpo.mcp_boundary import MCPReadSnapshot
+        center = self.center
+        folder = Path(self.temporary.name)
+        def write(name, value):
+            path = folder / name
+            path.write_text(json.dumps(asdict(value)), encoding="utf-8")
+            path.chmod(0o600)
+            return path
+        source_time = time.time_ns() - 20_000_000_000
+        evidence = EvidenceObservation("a" * 32, source_time, True, 0)
+        path = write("evidence.json", evidence)
+        center.evidence_view.path = path
+        center.evidence_view.refresh()
+        first = center.source_reads["Evidence"]
+        center.evidence_view.refresh()
+        self.assertTrue(center.source_reads["Evidence"].succeeded)
+        self.assertGreaterEqual(center.source_reads["Evidence"].recorded_at_ns, first.recorded_at_ns)
+        view = center.system_view.source_health
+        view.render()
+        row = next(row for row in view.rows if row.key == "Evidence")
+        self.assertEqual(source_time, row.observed_at_ns)
+        self.assertEqual("Stale", row.freshness)
+        self.assertEqual("Read OK", row.read_status)
+        self.assertEqual(evidence, center.evidence_view.snapshot)
+        self.assertEqual(json.dumps(asdict(evidence)), path.read_text())
+        path.write_text('{"PRIVATE":"secret"}', encoding="utf-8")
+        center.evidence_view.refresh()
+        view.render()
+        row = next(row for row in view.rows if row.key == "Evidence")
+        self.assertEqual("Read failed", row.read_status)
+        self.assertIsNone(row.observed_at_ns)
+        view.table.selection_set("Evidence")
+        view.select()
+        self.assertNotIn("PRIVATE", view.details.get("1.0", "end"))
+        center.evidence_view.clear()
+        self.assertNotIn("Evidence", center.source_reads)
+        center.governance_path = write("governance.json", MCPReadSnapshot("b" * 64, False, 1, "c" * 64))
+        center.refresh_governance()
+        self.assertTrue(center.source_reads["Governance"].succeeded)  # reported audit failure is a readable file
+        view.render()
+        row = next(row for row in view.rows if row.key == "Governance")
+        self.assertIsNone(row.observed_at_ns)
+        self.assertTrue(row.issues)
+        center.clear_governance()
+        self.assertNotIn("Governance", center.source_reads)
+        connection = ConnectionObservation("UniFi UDM", time.time_ns(), reason="tls")
+        center.connections_view.paths["UniFi UDM"] = write("udm.json", connection)
+        center.connections_view.refresh("UniFi UDM")
+        self.assertTrue(center.source_reads["UniFi UDM"].succeeded)
+        view.render()
+        row = next(row for row in view.rows if row.key == "UniFi UDM")
+        self.assertEqual("Read OK", row.read_status)
+        self.assertIn("TLS", row.issues[0])
+        center.connections_view.clear("UniFi UDM")
+        self.assertNotIn("UniFi UDM", center.source_reads)
+        with self.assertRaises(ValueError):
+            center.record_source_read("PRIVATE arbitrary key", True)
+        self.assertEqual({}, center.source_reads)
+
+    def test_source_health_narrow_tabs_table_keyboard_and_age_selection(self):
+        from dataclasses import replace
+        from pulpo.evidence_observation import EvidenceObservation
+        center = self.center
+        self.root.geometry("640x600")
+        center.show("System")
+        center.system_view.select_mode("Source health")
+        view = center.system_view.source_health
+        self.root.update()
+        self.assertEqual(1, int(center.system_view.tabs["Source health"].grid_info()["row"]))
+        self.assertLessEqual(sum(view.table.column(c, "width") for c in ("source", "read", "age")), view.table.winfo_width())
+        view.table.focus_force()
+        self.root.update()
+        view.table.event_generate("<Down>")
+        self.root.update()
+        self.assertEqual("Governance", view.selected_row().key)
+        self.assertFalse(view.open_button.instate(("disabled",)))
+        center.evidence_view.path = Path(self.temporary.name) / "not-read.json"
+        center.evidence_view.snapshot = EvidenceObservation("d" * 32, time.time_ns(), True, 0)
+        view.render()
+        view.table.selection_set("Evidence")
+        view.select()
+        self.root.update()
+        view.details.yview_moveto(1)
+        position = view.details.index("@0,0").split(".")[0]
+        center.evidence_view.snapshot = replace(center.evidence_view.snapshot, observed_at_ns=time.time_ns() - 30_000_000_000)
+        view.render()
+        self.root.update()
+        self.assertEqual("Evidence", view.selected_row().key)
+        self.assertEqual(position, view.details.index("@0,0").split(".")[0])
+        self.assertIn("Stale", view.details.get("1.0", "end"))
+        self.assertEqual(5, len(view.table.get_children()))
+
     def test_navigation_refresh_and_repeated_visits_do_not_create_state(self):
         self.assertEqual("Overview", self.center.current)
         for _ in range(3):
@@ -679,6 +800,9 @@ class ControlCenterTests(unittest.TestCase):
             self.assertTrue(center.decision_explorer.closed)
             self.assertIsNone(center.decision_explorer.center)
             self.assertIsNone(center.decision_explorer.snapshot)
+            self.assertTrue(center.system_view.source_health.closed)
+            self.assertIsNone(center.system_view.source_health.center)
+            self.assertIsNone(center.system_view.source_health.timer)
             self.assertIsNone(page.timer)
             # Later worker collection must have no Tk variable left to finalize.
             worker = threading.Thread(target=gc.collect)

@@ -88,6 +88,7 @@ class ConnectionsPage:
         except (OSError, ValueError, TypeError, RecursionError):
             self.observations.pop(provider, None)
             self.errors[provider] = "Observation unavailable, invalid, wrong provider or replayed. Previous values cleared; inspect owner export and permissions."
+        self.center.record_source_read(provider, provider not in self.errors)
         if old != (self.observations.get(provider), self.errors.get(provider)):
             self.record(provider, "Connection observation rejected; inspect the selected owner export." if provider in self.errors else "Connection observation loaded; source-reported values, enforcement Unknown.", provider in self.errors)
         self.render()
@@ -98,6 +99,7 @@ class ConnectionsPage:
                                         outcome="Failed" if error else "Recorded", severity="Warning" if error else "Info")
 
     def clear(self, provider):
+        self.center.source_reads.pop(provider, None)
         self.paths.pop(provider, None)
         self.observations.pop(provider, None)
         self.errors.pop(provider, None)
