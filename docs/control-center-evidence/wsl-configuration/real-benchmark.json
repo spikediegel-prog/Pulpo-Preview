@@ -1,0 +1,53 @@
+{
+  "schema": "pulpo.system-comparison.v1",
+  "claim": "Recorded disposable capture-only comparison",
+  "machine": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "logical_cpus": 32
+  },
+  "environment": "WSL Linux VM",
+  "source_sha256": "3e5a69c63f6e2c998804ac49cee372d5fa7b0c9492556b9df2333596bf5cab7f",
+  "baseline": {
+    "workers": 0,
+    "median_ms": 4.349851999997156,
+    "min_ms": 4.074973999998122,
+    "max_ms": 4.763011000001427,
+    "variation_percent": 15.817480686785554,
+    "files_per_second": 14713.144263308692,
+    "cpu_core_percent": 99.74286149440063,
+    "peak_process_rss_bytes": 52756480,
+    "fixture_payload_bytes": 4194304,
+    "samples_seconds": [
+      0.004074973999998122,
+      0.004349851999997156,
+      0.004485792000004096,
+      0.004269408999995505,
+      0.004763011000001427
+    ]
+  },
+  "candidate": {
+    "workers": 2,
+    "median_ms": 8.340935000006766,
+    "min_ms": 7.53643200000198,
+    "max_ms": 8.502958999997645,
+    "variation_percent": 11.587753651058076,
+    "files_per_second": 7673.000688765478,
+    "cpu_core_percent": 135.91124883106446,
+    "peak_process_rss_bytes": 52756480,
+    "fixture_payload_bytes": 4194304,
+    "samples_seconds": [
+      0.00801660799999837,
+      0.008502958999997645,
+      0.00753643200000198,
+      0.008466663000000096,
+      0.008340935000006766
+    ]
+  },
+  "classification": "Slower",
+  "correctness": "PASS",
+  "repetitions": 5,
+  "authority_effect": "none",
+  "completed_at": 1792482756.3231924,
+  "workload": "64 files, 4 MiB payload; capture-only"
+}
