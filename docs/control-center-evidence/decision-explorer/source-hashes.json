@@ -1,0 +1,15 @@
+{
+  "base_commit": "efe9239a95b09b87ac1319029193791b25abf961",
+  "lf_normalized_source_sha256": {
+    "pulpo/control_center.py": "a2070c44497f69de1a949a7d28cea7c75f3bdaef33b91b073da5c2d0d04bd52b",
+    "pulpo/evidence_page.py": "d3ad06957b0be2514316e8fca6784cacca62b326a5c643abf2e93100fc2b8845",
+    "pulpo/decision_explorer.py": "e9f1d9ec9ac2ed3568ac774370546737c28a442a4f88bae269a250027f1430ec",
+    "tests/test_control_center.py": "f7e10b2b7d909761f12adf8e543c65c15bef2b4c52da430914f64ffd67e33b47",
+    "tests/test_decision_explorer.py": "527981081e929cf414c74e5d14323f14b3b95a181bf5a5ab060edc142a972a2c"
+  },
+  "exact_log_sha256": {
+    "windows-focused.log": "5f1b50f9ee8936d2bf896b06bf6c254aa6e12781097dbfae434fd99090999cb8",
+    "ubuntu-focused.log": "241096a7a91593bb1fa25b9d656a586680e6848af97fdc21560f5f4dfbee341c",
+    "ubuntu-core.log": "9a471d633d987d5f0634d18955516629307d43553dee8a476cba08620ea8f4ef"
+  }
+}

@@ -263,6 +263,8 @@ class EvidencePage:
                 "Frozen owner observation loaded. Metrics and audit results are source-reported, not independently authenticated. "
                 "Open Evidence to inspect timestamps, database health, warnings and redacted record references. No enforcement attestation is made.")
         self.render_logs()
+        if hasattr(self.center, "decision_explorer"):
+            self.center.decision_explorer.render()
         self.center.refresh_attention()
         self.draw()
 
