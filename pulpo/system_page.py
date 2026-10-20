@@ -28,22 +28,13 @@ class SystemPage:
         self.messages, self.stop = queue.Queue(), threading.Event()
         self.active, self.mode = False, "Diagnostics"
         page = center.pages["System"]
-        tabs = ttk.Frame(page)
-        tabs.pack(fill="x", pady=(0, 12))
-        self.tabs = {}
         from .setup_readiness import is_wsl
         modes = ("Diagnostics", "Tuning & benchmarks", "Source health")
         if is_wsl():
             modes += ("Setup readiness", "Configuration", "Troubleshooting", "Session setup")
-        for name in modes:
-            button = ttk.Button(tabs, text=name, command=lambda selected=name: self.select_mode(selected))
-            self.tabs[name] = button
-        def reflow_tabs(event):
-            cols = (2 if event.width < 800 else 3) if len(self.tabs) > 3 else (2 if event.width < 600 else 3)
-            for i, button in enumerate(self.tabs.values()):
-                button.grid(row=i // cols, column=i % cols, sticky="ew", padx=(0, 6), pady=3)
-            for col in range(len(self.tabs)): tabs.columnconfigure(col, weight=1 if col < cols else 0)
-        tabs.bind("<Configure>", reflow_tabs)
+        from .system_navigation import SystemNavigation
+        self.navigation = SystemNavigation(page, self.select_mode, modes, grouped=is_wsl())
+        self.tabs = self.navigation.tabs
         self.views = {name: ttk.Frame(page) for name in self.tabs}
         from .source_health_page import SourceHealthPage
         self.source_health = SourceHealthPage(center, self.views["Source health"])
@@ -137,9 +128,10 @@ class SystemPage:
         self.select_mode("Diagnostics")
 
     def select_mode(self, mode):
+        if mode not in self.views: raise ValueError("Unknown System view")
+        self.navigation.show_mode(mode)
         for name, view in self.views.items():
             view.pack_forget()
-            self.tabs[name].configure(style="Active.Range.TButton" if name == mode else "TButton")
         self.views[mode].pack(fill="x")
         self.mode = mode
         self.monitor.set_active(self.active and mode == "Diagnostics")

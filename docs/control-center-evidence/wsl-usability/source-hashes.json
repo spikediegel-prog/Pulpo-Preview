@@ -1,0 +1,15 @@
+{
+  "base_commit": "110a0c7d9ba1598a572176f04864664098781d16",
+  "lf_normalized_source_sha256": {
+    "pulpo/resource_monitor.py": "cb3f9888b2953a0db3e631e9d6cc97157c1f77cd63ac64bf9f6cabd26cecc2be",
+    "pulpo/resource_status.py": "0f6628301f127d0a8cc51c66191089af62009965d510c507d55687cfa9b1afcc",
+    "pulpo/system_navigation.py": "5dc3c42b2dad47eef4446513ab0ef57c1f64d542530f393bbe7511c636788d32",
+    "pulpo/system_page.py": "23a884d658c26107c31e774c9a799aca39eb92c7c8a68334d5f1ca956784a28f",
+    "tests/test_control_center.py": "f5d006b37fb0080284095c2ab50c4b2041ecd30a077b2d4940d49b5a48b4909c",
+    "tests/test_resource_status.py": "46fe89f24908fbbbca24ce49b0cd950f14743ff8c07ef65eb87fcfad858310da"
+  },
+  "exact_log_sha256": {
+    "ubuntu-focused.log": "7187057cd2d1dab86c0500dfd9ad0089c29ef95d8c9b8870dea1287e9d7d882b",
+    "ubuntu-core.log": "8aed0cc0d6e6ffd076885d837dda3f1962413769be8973cab9733037c2dfcbde"
+  }
+}
