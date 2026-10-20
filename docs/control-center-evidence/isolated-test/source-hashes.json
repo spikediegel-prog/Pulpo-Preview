@@ -1,0 +1,8 @@
+{
+  "normalization": "CRLF to LF, then SHA-256",
+  "files": {
+    "pulpo/observation_test.py": "94bef4feb70746b2c178a65af71bf41a7ebbe46dd9da2b02745bde55e1b845a4",
+    "tests/test_observation_test.py": "0601b4e4eb83b604c6df29e8f38eb4b24c694120bf54cc76cf5502be374c9353",
+    "docs/control-center-evidence/isolated-test/ubuntu-tests.log": "6076a373fdf401ea6a14db20475427da743b04acd89d4404de54cb33da50bacc"
+  }
+}
