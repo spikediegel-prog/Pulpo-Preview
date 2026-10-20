@@ -224,11 +224,18 @@ class ControlCenter:
         if name == "Governance":
             self.decision_explorer.render()
         self.refresh_attention()
+        if hasattr(self, "system_view") and self.system_view.readiness is not None:
+            self.system_view.readiness.guide.update_banner()
         if focus:
             self.navigation[name].focus_set()
 
     def _overview(self):
         page = self.pages["Overview"]
+        self.setup_guide_button = None
+        from .setup_readiness import is_wsl
+        if is_wsl():
+            self.setup_guide_button = ttk.Button(page, text="Start guided setup", command=lambda: self.system_view.readiness.show_guide())
+            self.setup_guide_button.pack(anchor="w", pady=(0, 10))
         from .resource_monitor import ResourceMonitor
         self.monitor = ResourceMonitor(page, self.root, self._resource_update)
         from .attention_panel import AttentionPanel

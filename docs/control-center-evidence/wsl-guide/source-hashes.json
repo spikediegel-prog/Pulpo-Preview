@@ -1,0 +1,14 @@
+{
+  "base_commit": "a06156ff1aedb4ce132fdb24afae6f07d6b3bced",
+  "lf_normalized_source_sha256": {
+    "pulpo/setup_walkthrough.py": "c9b0b24310f558e0b95d793ee81c372e84fb4a0ed1ed4fbbe53611888ca74aff",
+    "pulpo/readiness_page.py": "3d53678b3ec4cb2dad648813a8483465e911a4128998975752fffe3ebc8b5172",
+    "pulpo/system_page.py": "65f7805a30872a4f449213e2b9832625795ef67b5f6787d5f89f1cd10d0edf04",
+    "pulpo/control_center.py": "85f4f5e1864af0b1b5a87006822691fb072e1816be5f54a217b5f6f67d20df33",
+    "tests/test_control_center.py": "eeca06daacd31fcbf93fa370a3ff6be21829b6a2ff2aa8401e9fec5f5baa5b0b"
+  },
+  "exact_log_sha256": {
+    "ubuntu-focused.log": "ac84aae9e6f3983a1038ec58d7728a4d1d3732e073c281c2ff45181a29d376e5",
+    "ubuntu-core.log": "68a209e58e55b00cd92f588abc89046083e38ee3585c6fe8c67bb451ee9d0965"
+  }
+}

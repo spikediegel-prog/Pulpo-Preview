@@ -152,6 +152,8 @@ class SystemPage:
             self.troubleshooting.set_active(self.active and mode == "Troubleshooting")
         if self.session is not None:
             self.session.set_active(self.active and mode == "Session setup")
+        if self.readiness is not None:
+            self.readiness.guide.update_banner()
         self.center.canvas.yview_moveto(0)
 
     def set_active(self, active):

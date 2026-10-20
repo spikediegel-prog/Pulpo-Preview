@@ -14,6 +14,17 @@ class ReadinessPage(SourceHealthPage):
         self.active = self.closed = False
         self.timer = None
         self.rows = ()
+        self.guide_visible = False
+        modes = ttk.Frame(page)
+        modes.pack(fill="x", pady=(0, 10))
+        ttk.Button(modes, text="Guided walkthrough", command=self.show_guide).pack(side="left", padx=(0, 6))
+        ttk.Button(modes, text="Checklist", command=self.show_checklist).pack(side="left")
+        self.checklist = ttk.Frame(page)
+        self.checklist.pack(fill="x")
+        self.guide_frame = ttk.Frame(page)
+        from .setup_walkthrough import SetupWalkthrough
+        self.guide = SetupWalkthrough(self, self.guide_frame)
+        page = self.checklist
         center.text(page, "Setup Readiness · WSL", "Heading.TLabel")
         center.text(page, "Follow the next step for each observation gap. Recorded means this local setup fact was observed; "
                     "it does not mean enforcement verified. Connector setup is optional.", "Muted.TLabel")
@@ -61,6 +72,8 @@ class ReadinessPage(SourceHealthPage):
     def render(self):
         if self.closed:
             return
+        if self.guide_visible:
+            self.guide.render()
         old = self.rows
         self.rows = self.project()
         for row in self.rows:
@@ -86,6 +99,24 @@ class ReadinessPage(SourceHealthPage):
             self.set_details(f"{row.title}\n{row.state}\n\n{row.detail}")
             self.details.yview(position)
             self.open_button.configure(state="normal")
+
+    def show_guide(self):
+        if self.closed: return
+        self.guide.start()
+        self.guide_visible = True
+        self.checklist.pack_forget()
+        self.guide_frame.pack(fill="x")
+        self.center.show("System")
+        self.center.system_view.select_mode("Setup readiness")
+        self.guide.render()
+
+    def show_checklist(self):
+        if self.closed: return
+        self.guide_visible = False
+        self.guide_frame.pack_forget()
+        self.checklist.pack(fill="x")
+        self.render()
+        self.guide.update_banner()
 
     def open_source(self):
         if self.closed:

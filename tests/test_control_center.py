@@ -281,6 +281,7 @@ class ControlCenterTests(unittest.TestCase):
             self.assertIsNone(center.system_view.configuration)
             self.assertIsNone(center.system_view.troubleshooting)
             self.assertIsNone(center.system_view.session)
+            self.assertIsNone(center.setup_guide_button)
             self.assertNotIn("Session setup", center.system_view.tabs)
             self.assertNotIn("Troubleshooting", center.system_view.tabs)
             self.assertNotIn("Configuration", center.system_view.tabs)
@@ -587,6 +588,121 @@ class ControlCenterTests(unittest.TestCase):
             self.assertEqual(original, view.path.read_bytes())
         finally:
             root.destroy()
+
+    def test_wsl_guide_navigation_keeps_position_and_never_runs_reads_or_saves(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only walkthrough")
+        center = self.center
+        readiness = center.system_view.readiness
+        guide = readiness.guide
+        self.assertFalse(guide.active)
+        self.assertEqual("Overview", center.current)  # no unsolicited first-run modal/navigation
+        self.assertFalse(guide.banner.winfo_manager())
+        with patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("No guide reader")), \
+             patch("pulpo.connections_page.load_connection_observation", side_effect=AssertionError("No guide reader")), \
+             patch("pulpo.governance_observer.observe_snapshot", side_effect=AssertionError("No guide reader")), \
+             patch("pulpo.session_preferences.save", side_effect=AssertionError("No guide save")):
+            center.setup_guide_button.invoke()
+            self.assertEqual("Setup readiness", center.system_view.mode)
+            self.assertTrue(readiness.guide_visible)
+            self.assertTrue(guide.active)
+            self.assertTrue(guide.previous_button.instate(("disabled",)))
+            guide.next_button.invoke()
+            guide.action_buttons[0].invoke()
+            self.assertEqual("Governance", center.current)
+            self.assertTrue(guide.banner.winfo_manager())
+            self.assertEqual(1, guide.index)
+            guide.return_button.invoke()
+            self.assertEqual(1, guide.index)
+            self.assertFalse(guide.banner.winfo_manager())
+            guide.action_buttons[1].invoke()
+            self.assertEqual("Evidence", center.current)
+            self.assertIsNone(center.evidence_view.path)
+            guide.return_button.invoke()
+            guide.next_button.invoke()
+            self.assertEqual(2, guide.index)
+            guide.skip_button.invoke()
+            self.assertEqual(3, guide.index)
+            self.assertTrue(guide.skipped_connectors)
+            self.assertEqual({}, center.connections_view.paths)
+            guide.action_buttons[0].invoke()
+            self.assertEqual("Troubleshooting", center.system_view.mode)
+            guide.return_button.invoke()
+            guide.next_button.invoke()
+            guide.action_buttons[0].invoke()
+            self.assertEqual("Session setup", center.system_view.mode)
+            guide.return_button.invoke()
+            self.assertEqual(4, guide.index)
+            guide.next_button.invoke()
+            self.assertEqual("Overview", center.current)
+            self.assertFalse(guide.active)
+            self.assertFalse(guide.banner.winfo_manager())
+            self.assertEqual({}, center.source_reads)
+        self.assertEqual([], list(Path(self.temporary.name).iterdir()))
+
+    def test_wsl_guide_shows_actual_failed_read_and_preserves_optional_selections(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only walkthrough")
+        center = self.center
+        guide = center.system_view.readiness.guide
+        path = Path(self.temporary.name) / "invalid-evidence.json"
+        original = b'PRIVATE token /secret/path'
+        path.write_bytes(original)
+        path.chmod(0o600)
+        center.evidence_view.path = path
+        center.evidence_view.refresh()
+        selected = Path(self.temporary.name) / "missing-udm.json"
+        center.connections_view.paths["UniFi UDM"] = selected
+        center.system_view.readiness.show_guide()
+        guide.go_to(1)
+        self.assertIn("Read failed", guide.observed.cget("text"))
+        self.assertNotIn("PRIVATE", guide.observed.cget("text"))
+        self.assertNotIn(str(path), guide.observed.cget("text"))
+        self.assertIn("completion time: 20", guide.observed.cget("text"))
+        guide.go_to(2)
+        self.assertIn("Not checked this session", guide.observed.cget("text"))
+        guide.skip_connections()
+        self.assertEqual(selected, center.connections_view.paths["UniFi UDM"])
+        self.assertIn("Evidence export: Needs attention", guide.observed.cget("text"))
+        self.assertIn("Pulpo service health: Unknown", guide.observed.cget("text"))
+        guide.go_to(2)
+        self.assertIn("skipped optional", guide.observed.cget("text"))
+        guide.close()
+        center.system_view.readiness.show_guide()
+        self.assertEqual(0, guide.index)
+        self.assertFalse(guide.skipped_connectors)
+        self.assertEqual(original, path.read_bytes())
+        self.assertFalse(center.system_view.session.path.exists())
+
+    def test_wsl_guide_narrow_checklist_switch_focus_and_fixed_navigation(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only walkthrough")
+        readiness = self.center.system_view.readiness
+        guide = readiness.guide
+        self.root.geometry("640x600")
+        readiness.show_guide()
+        self.root.update()
+        self.assertEqual(7, len(self.center.system_view.tabs))  # reuse the existing tab
+        self.assertLessEqual(guide.explanation.winfo_width(), self.center.canvas.winfo_width())
+        guide.next_button.focus_force()
+        self.root.update()
+        self.assertIs(guide.next_button, self.root.focus_get())
+        with self.assertRaises(ValueError): guide.go_to(-1)
+        with self.assertRaises(ValueError): guide.go_to(True)
+        with self.assertRaises(ValueError): guide.open_action("https://example.invalid")
+        readiness.show_checklist()
+        self.assertTrue(guide.active)
+        self.assertFalse(readiness.guide_visible)
+        self.assertTrue(guide.banner.winfo_manager())
+        guide.return_button.invoke()
+        self.assertTrue(readiness.guide_visible)
+        self.assertEqual(0, guide.index)
+        guide.go_to(4)
+        self.root.update()
+        self.assertLessEqual(guide.next_button.winfo_width(), self.center.canvas.winfo_width())
+        guide.close()
+        self.assertFalse(guide.active)
+        self.assertFalse(readiness.guide_visible)
 
     def test_navigation_refresh_and_repeated_visits_do_not_create_state(self):
         self.assertEqual("Overview", self.center.current)
@@ -1133,6 +1249,9 @@ class ControlCenterTests(unittest.TestCase):
                 self.assertTrue(center.system_view.readiness.closed)
                 self.assertIsNone(center.system_view.readiness.center)
                 self.assertIsNone(center.system_view.readiness.timer)
+                self.assertTrue(center.system_view.readiness.guide.closed)
+                self.assertIsNone(center.system_view.readiness.guide.center)
+                self.assertIsNone(center.system_view.readiness.guide.readiness)
             if center.system_view.configuration is not None:
                 self.assertTrue(center.system_view.configuration.closed)
                 self.assertIsNone(center.system_view.configuration.system)
