@@ -1,0 +1,78 @@
+{
+  "package_sha256": "da3ad3a0b5acafc5ed969158ed5172176a765e50a6bb465f361ccc75ea39e6ad",
+  "scope": "Isolated WSL package lifecycle, GUI construction and synthetic data preservation; not visual approval, publisher authentication or enforcement proof",
+  "cases": [
+    {
+      "case": "check-before-install",
+      "returncode": 0,
+      "stdout": "WSL detected\nPython 3.14.4\nTk available (8.6)\nDisplay configured; reachability unverified\nApplication not installed\nNo settings, evidence, credentials or source exports were read\n",
+      "stderr": ""
+    },
+    {
+      "case": "fresh-install",
+      "returncode": 0,
+      "stdout": "Installed 0.1.0-wsl-recovery-preview.1. Settings and evidence were not changed.\n",
+      "stderr": ""
+    },
+    {
+      "case": "packaged-gui-construction",
+      "returncode": 0,
+      "stdout": "PASS bundled Tkinter window construction\n0\n",
+      "stderr": ""
+    },
+    {
+      "case": "check-installed",
+      "returncode": 0,
+      "stdout": "WSL detected\nPython 3.14.4\nTk available (8.6)\nDisplay configured; reachability unverified\nInstalled version: 0.1.0-wsl-recovery-preview.1\nApplication files differing from package: 0 (integrity check, not publisher authentication)\nNo settings, evidence, credentials or source exports were read\n",
+      "stderr": ""
+    },
+    {
+      "case": "check-damaged",
+      "returncode": 0,
+      "stdout": "WSL detected\nPython 3.14.4\nTk available (8.6)\nDisplay configured; reachability unverified\nInstalled version: 0.1.0-wsl-recovery-preview.1\nApplication files differing from package: 2 (integrity check, not publisher authentication)\nNo settings, evidence, credentials or source exports were read\n",
+      "stderr": ""
+    },
+    {
+      "case": "repair-damaged",
+      "returncode": 0,
+      "stdout": "Installed 0.1.0-wsl-recovery-preview.1. Settings and evidence were not changed.\n",
+      "stderr": ""
+    },
+    {
+      "case": "repair-from-independent-installed-setup",
+      "returncode": 0,
+      "stdout": "Installed 0.1.0-wsl-recovery-preview.1. Settings and evidence were not changed.\n",
+      "stderr": ""
+    },
+    {
+      "case": "packaged-gui-after-repair",
+      "returncode": 0,
+      "stdout": "PASS bundled Tkinter window construction\n0\n",
+      "stderr": ""
+    },
+    {
+      "case": "remove",
+      "returncode": 0,
+      "stdout": "Application removed. Settings and evidence retained.\n",
+      "stderr": ""
+    },
+    {
+      "case": "remove-again",
+      "returncode": 0,
+      "stdout": "Application is already absent. Settings and evidence retained.\n",
+      "stderr": ""
+    },
+    {
+      "case": "reinstall-after-removal",
+      "returncode": 0,
+      "stdout": "Installed 0.1.0-wsl-recovery-preview.1. Settings and evidence were not changed.\n",
+      "stderr": ""
+    },
+    {
+      "case": "final-remove",
+      "returncode": 0,
+      "stdout": "Application removed. Settings and evidence retained.\n",
+      "stderr": ""
+    }
+  ]
+}
