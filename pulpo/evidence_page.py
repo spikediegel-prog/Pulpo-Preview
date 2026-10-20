@@ -24,6 +24,7 @@ class EvidencePage:
         from .control_center import StatusRow
         self.center, self.root = center, center.root
         self.path, self.snapshot, self.error = None, None, None
+        self.awaiting_reread = False
         self.history = ActivityHistory()
         self.timer, self.active, self.closed = None, False, False
         self.reviewing = False
@@ -123,14 +124,17 @@ class EvidencePage:
         if self.reviewing:
             self.render()
             self.schedule()
-        else:
+        elif not self.awaiting_reread:
             self.refresh()
+        else:
+            self.render()
+            self.schedule()
 
     def schedule(self):
         if self.timer is not None:
             self.root.after_cancel(self.timer)
             self.timer = None
-        if not self.closed and self.active and self.path is not None and not self.reviewing:
+        if not self.closed and self.active and self.path is not None and not self.reviewing and not self.awaiting_reread:
             self.timer = self.root.after(2000, self.tick)
 
     def mapped(self, event):
@@ -147,7 +151,7 @@ class EvidencePage:
 
     def tick(self):
         self.timer = None
-        if self.active and not self.reviewing and self.root.winfo_viewable() and self.root.state() != "iconic":
+        if self.active and not self.reviewing and not self.awaiting_reread and self.root.winfo_viewable() and self.root.state() != "iconic":
             self.refresh()
         else:
             self.schedule()
@@ -167,6 +171,7 @@ class EvidencePage:
     def refresh(self):
         if self.path is None or self.closed:
             return
+        self.awaiting_reread = False  # Explicit re-read unlocks normal visible polling.
         previous = (self.snapshot.source_id if self.snapshot else None, bool(self.error))
         try:
             import stat
@@ -194,6 +199,7 @@ class EvidencePage:
     def clear(self):
         self.center.source_reads.pop("Evidence", None)
         self.path, self.snapshot, self.error = None, None, None
+        self.awaiting_reread = False
         self.reviewing = False
         self.review_button.configure(text="Pause for review")
         self.history.clear()
@@ -204,7 +210,8 @@ class EvidencePage:
     def render(self):
         s = self.snapshot
         if s is None:
-            self.source.configure(text=self.error or "Unknown · No database observation selected.")
+            self.source.configure(text=("Restored selection · Not checked this session. Press Re-read to inspect the owner export."
+                if self.awaiting_reread else self.error or "Unknown · No database observation selected."))
             for row in self.rows.values():
                 row.update("Unknown", "Unknown · No observation", "Select a trusted-owner export. A missing value is not zero.")
             self.permissions.configure(text="Allowed decisions: Unknown · Denied decisions: Unknown · Approval requests: Unknown\n"

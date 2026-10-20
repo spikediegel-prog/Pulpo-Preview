@@ -176,6 +176,8 @@ class ControlCenter:
         self._activity()
         self._system()
         self.show("Overview")
+        if self.system_view.session is not None:
+            self.system_view.session.restore()
         self.main.bind("<Configure>", self._resize, add="+")
 
     def _resize_sidebar_logo(self, event):

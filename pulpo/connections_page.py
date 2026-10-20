@@ -112,7 +112,8 @@ class ConnectionsPage:
         for provider, row in self.rows.items():
             value = self.observations.get(provider)
             if value is None:
-                row.update("Attention" if provider in self.errors else "Unknown", "Unknown · no valid observation · enforcement unassessed",
+                pending = provider in self.paths and provider not in self.center.source_reads
+                row.update("Attention" if provider in self.errors else "Unknown", "Not checked this session · enforcement Unknown" if pending else "Unknown · no valid observation · enforcement unassessed",
                     self.errors.get(provider, "Expand this row to select a sanitized owner observation. No connection test has run in this window."))
                 continue
             age = value.freshness()
