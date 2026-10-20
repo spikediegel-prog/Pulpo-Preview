@@ -248,6 +248,9 @@ For terminal access to the same resolved tuning settings, use `pulpo tune --show
 
 See [design alternatives and qualification boundaries](docs/CONTROL_CENTER_DESIGN.md).
 See [native resource sources, status semantics and limits](docs/NATIVE_RESOURCE_OVERVIEW.md).
+For the WSL-only offline installation and repair preview, see
+[WSL recovery package](docs/WSL_RECOVERY_PACKAGE.md). The Windows maintenance
+wizard is deferred; the WSL package does not replace an existing checkout.
 
 ```powershell
 git clone --branch preview https://github.com/spikediegel-prog/Pulpo-Preview.git Pulpo-preview
