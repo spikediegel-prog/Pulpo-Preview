@@ -24,6 +24,7 @@ class SystemPage:
         self.operation, self.report = None, None
         self.configuration = None
         self.troubleshooting = None
+        self.session = None
         self.messages, self.stop = queue.Queue(), threading.Event()
         self.active, self.mode = False, "Diagnostics"
         page = center.pages["System"]
@@ -33,7 +34,7 @@ class SystemPage:
         from .setup_readiness import is_wsl
         modes = ("Diagnostics", "Tuning & benchmarks", "Source health")
         if is_wsl():
-            modes += ("Setup readiness", "Configuration", "Troubleshooting")
+            modes += ("Setup readiness", "Configuration", "Troubleshooting", "Session setup")
         for name in modes:
             button = ttk.Button(tabs, text=name, command=lambda selected=name: self.select_mode(selected))
             self.tabs[name] = button
@@ -128,6 +129,9 @@ class SystemPage:
         if "Troubleshooting" in self.views:
             from .troubleshooting_page import TroubleshootingPage
             self.troubleshooting = TroubleshootingPage(self, self.views["Troubleshooting"])
+        if "Session setup" in self.views:
+            from .session_page import SessionPage
+            self.session = SessionPage(self, self.views["Session setup"])
         self.root.bind("<Destroy>", self.destroy, add="+")
         self.refresh_diagnostics()
         self.select_mode("Diagnostics")
@@ -146,6 +150,8 @@ class SystemPage:
             self.configuration.set_active(self.active and mode == "Configuration")
         if self.troubleshooting is not None:
             self.troubleshooting.set_active(self.active and mode == "Troubleshooting")
+        if self.session is not None:
+            self.session.set_active(self.active and mode == "Session setup")
         self.center.canvas.yview_moveto(0)
 
     def set_active(self, active):
@@ -158,6 +164,8 @@ class SystemPage:
             self.configuration.set_active(active and self.mode == "Configuration")
         if self.troubleshooting is not None:
             self.troubleshooting.set_active(active and self.mode == "Troubleshooting")
+        if self.session is not None:
+            self.session.set_active(active and self.mode == "Session setup")
 
     def refresh_diagnostics(self):
         try:

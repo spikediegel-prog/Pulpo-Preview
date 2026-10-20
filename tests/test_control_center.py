@@ -280,6 +280,8 @@ class ControlCenterTests(unittest.TestCase):
             self.assertIsNone(center.system_view.readiness)
             self.assertIsNone(center.system_view.configuration)
             self.assertIsNone(center.system_view.troubleshooting)
+            self.assertIsNone(center.system_view.session)
+            self.assertNotIn("Session setup", center.system_view.tabs)
             self.assertNotIn("Troubleshooting", center.system_view.tabs)
             self.assertNotIn("Configuration", center.system_view.tabs)
             self.assertNotIn("Setup readiness", center.system_view.tabs)
@@ -487,6 +489,104 @@ class ControlCenterTests(unittest.TestCase):
         view.table.selection_set("cleanup")
         view.open_button.invoke()
         self.assertEqual("Tuning & benchmarks", self.center.system_view.mode)
+
+    def test_wsl_session_restore_keeps_sources_unread_until_explicit_recheck(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only session setup")
+        import json
+        from dataclasses import asdict
+        from pulpo import session_preferences as preferences
+        from pulpo.evidence_observation import EvidenceObservation
+        session = self.center.system_view.session
+        evidence = Path(self.temporary.name) / "evidence.json"
+        observation = EvidenceObservation("a" * 32, time.time_ns(), True, 0)
+        evidence.write_text(json.dumps(asdict(observation)))
+        evidence.chmod(0o600)
+        self.center.evidence_view.path = evidence
+        self.center.governance_path = Path(self.temporary.name) / "missing-governance.json"
+        self.center.connections_view.paths["UniFi UDM"] = Path(self.temporary.name) / "missing-udm.json"
+        self.center.monitor.set_range(900)
+        self.center.system_view.monitor.set_range(3600)
+        self.center.evidence_view.set_range(900)
+        session.preferred_page.set("Evidence")
+        session.preferred_tab.set("Source health")
+        session.remember()
+        value = preferences.load(session.path)
+        self.assertEqual({"schema", "sources", "ranges", "page", "system_tab"}, set(value))
+        original = session.path.read_bytes()
+        self.center.monitor.set_range(60)
+        self.assertEqual(original, session.path.read_bytes())  # no auto-save
+        root = tk.Tk()
+        try:
+            with patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("No implicit source reads")), \
+                 patch("pulpo.connections_page.load_connection_observation", side_effect=AssertionError("No implicit source reads")), \
+                 patch("pulpo.governance_observer.observe_snapshot", side_effect=AssertionError("No implicit source reads")):
+                center = ControlCenter(root, self.profile)
+                root.update()
+                self.assertEqual("Evidence", center.current)
+                self.assertEqual("Source health", center.system_view.mode)
+                self.assertEqual((900, 3600, 900), (center.monitor.seconds, center.system_view.monitor.seconds, center.evidence_view.seconds))
+                self.assertEqual({}, center.source_reads)
+                self.assertIsNone(center.evidence_view.snapshot)
+                self.assertEqual({}, center.connections_view.observations)
+                self.assertIn("Not checked this session", center.evidence_view.source.cget("text"))
+                self.assertIn("Not checked this session", center.governance_source.cget("text"))
+                self.assertIn("Not checked this session", center.connections_view.rows["UniFi UDM"].summary.cget("text"))
+                page = center.evidence_view
+                self.assertIsNone(page.timer)
+                page.tick()
+                page.toggle_review()
+                page.toggle_review()
+                self.assertIsNone(page.timer)
+                for _ in range(3):
+                    center.show("Overview")
+                    center.show("Evidence")
+                    root.update()
+                self.assertTrue(page.awaiting_reread)
+            page.refresh_button.invoke()
+            self.assertFalse(page.awaiting_reread)
+            self.assertEqual(observation, page.snapshot)
+            self.assertIsNotNone(center.source_reads.get("Evidence"))
+            self.assertIsNotNone(page.timer)
+            self.assertEqual(original, session.path.read_bytes())
+            center.system_view.session.forget()
+            self.assertFalse(session.path.exists())
+            self.assertEqual(evidence, page.path)
+            self.assertEqual(observation, page.snapshot)
+            self.assertTrue(evidence.exists())
+        finally:
+            root.destroy()
+        self.assertFalse(session.path.exists())  # close never recreates forgotten setup
+
+    def test_wsl_session_invalid_preferences_defaults_narrow_and_no_default_save(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only session setup")
+        view = self.center.system_view.session
+        self.assertFalse(view.path.exists())
+        view.path.write_text('{"credential":"PRIVATE"}')
+        view.path.chmod(0o600)
+        original = view.path.read_bytes()
+        root = tk.Tk()
+        try:
+            center = ControlCenter(root, self.profile)
+            root.geometry("640x600")
+            center.show("System")
+            center.system_view.select_mode("Session setup")
+            root.update()
+            session = center.system_view.session
+            self.assertIn("rejected", session.status.cget("text"))
+            self.assertNotIn("PRIVATE", session.status.cget("text"))
+            self.assertEqual({}, center.source_reads)
+            self.assertIsNone(center.evidence_view.path)
+            self.assertEqual(3, int(center.system_view.tabs["Session setup"].grid_info()["row"]))
+            self.assertLess(session.summary.winfo_width(), root.winfo_width())
+            session.remember()
+            self.assertIn("Could not save", session.status.cget("text"))
+            session.forget()
+            self.assertIn("Could not forget", session.status.cget("text"))
+            self.assertEqual(original, view.path.read_bytes())
+        finally:
+            root.destroy()
 
     def test_navigation_refresh_and_repeated_visits_do_not_create_state(self):
         self.assertEqual("Overview", self.center.current)
@@ -1043,6 +1143,11 @@ class ControlCenterTests(unittest.TestCase):
                 self.assertIsNone(center.system_view.troubleshooting.system)
                 self.assertIsNone(center.system_view.troubleshooting.timer)
                 self.assertIsNone(center.system_view.troubleshooting.preview)
+            if center.system_view.session is not None:
+                self.assertTrue(center.system_view.session.closed)
+                self.assertIsNone(center.system_view.session.system)
+                self.assertIsNone(center.system_view.session.preferred_page)
+                self.assertIsNone(center.system_view.session.preferred_tab)
             self.assertIsNone(page.timer)
             # Later worker collection must have no Tk variable left to finalize.
             worker = threading.Thread(target=gc.collect)

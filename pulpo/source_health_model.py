@@ -33,7 +33,7 @@ class SourceHealth:
 
     @property
     def read_status(self):
-        return "Not selected" if not self.selected else "Not read" if self.read is None else "Read OK" if self.read.succeeded else "Read failed"
+        return "Not selected" if not self.selected else "Not checked this session" if self.read is None else "Read OK" if self.read.succeeded else "Read failed"
 
 
 def source_health(*, governance_selected, governance, evidence_selected, evidence, evidence_error,
