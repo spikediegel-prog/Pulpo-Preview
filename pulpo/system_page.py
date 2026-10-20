@@ -28,11 +28,18 @@ class SystemPage:
         tabs = ttk.Frame(page)
         tabs.pack(fill="x", pady=(0, 12))
         self.tabs = {}
-        for name in ("Diagnostics", "Tuning & benchmarks"):
+        for name in ("Diagnostics", "Tuning & benchmarks", "Source health"):
             button = ttk.Button(tabs, text=name, command=lambda selected=name: self.select_mode(selected))
-            button.pack(side="left", padx=(0, 6))
             self.tabs[name] = button
+        def reflow_tabs(event):
+            cols = 2 if event.width < 600 else 3
+            for i, button in enumerate(self.tabs.values()):
+                button.grid(row=i // cols, column=i % cols, sticky="ew", padx=(0, 6), pady=3)
+            for col in range(3): tabs.columnconfigure(col, weight=1 if col < cols else 0)
+        tabs.bind("<Configure>", reflow_tabs)
         self.views = {name: ttk.Frame(page) for name in self.tabs}
+        from .source_health_page import SourceHealthPage
+        self.source_health = SourceHealthPage(center, self.views["Source health"])
         diagnostics = self.views["Diagnostics"]
         self.monitor = ResourceMonitor(diagnostics, self.root, lambda sample: None)
         self.monitor.set_active(False)
@@ -116,11 +123,13 @@ class SystemPage:
         self.views[mode].pack(fill="x")
         self.mode = mode
         self.monitor.set_active(self.active and mode == "Diagnostics")
+        self.source_health.set_active(self.active and mode == "Source health")
         self.center.canvas.yview_moveto(0)
 
     def set_active(self, active):
         self.active = active
         self.monitor.set_active(active and self.mode == "Diagnostics")
+        self.source_health.set_active(active and self.mode == "Source health")
 
     def refresh_diagnostics(self):
         try:

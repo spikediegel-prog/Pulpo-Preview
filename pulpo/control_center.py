@@ -104,6 +104,7 @@ class ControlCenter:
         self.labels = []
         self.current = None
         self.resource_observation = None
+        self.source_reads = {}
         self.root.title("Pulpo Control Center — Preview")
         self.root.geometry("1200x900")
         self.root.minsize(640, 600)
@@ -351,11 +352,14 @@ class ControlCenter:
     def refresh_governance(self):
         from .governance_observer import observe_snapshot
         if self.governance_path is not None:
-            self._render_governance(observe_snapshot(self.governance_path))
+            observation = observe_snapshot(self.governance_path)
+            self.record_source_read("Governance", observation.policy.startswith("Recorded"))
+            self._render_governance(observation)
 
     def clear_governance(self):
         from .governance_observer import GovernanceObservation
         self.governance_path = None
+        self.source_reads.pop("Governance", None)
         self.governance_refresh.configure(state="disabled")
         self._render_governance(GovernanceObservation())
 
@@ -393,6 +397,12 @@ class ControlCenter:
     def _system(self):
         from .system_page import SystemPage
         self.system_view = SystemPage(self)
+
+    def record_source_read(self, key, succeeded):
+        from .source_health_model import SOURCE_KEYS, SourceRead
+        if key not in SOURCE_KEYS or type(succeeded) is not bool:
+            raise ValueError("unsupported_source_read")
+        self.source_reads[key] = SourceRead(time.time_ns(), succeeded)
 
     def refresh_profile(self):
         classification, explanation = profile_observation(self.profile)

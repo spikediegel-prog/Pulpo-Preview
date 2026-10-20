@@ -1,0 +1,17 @@
+{
+  "base_commit": "c7afe7337045ccb02f6b2eaab86ce29c36aeb164",
+  "lf_normalized_source_sha256": {
+    "pulpo/control_center.py": "a24ac6b9cc4204ec6f90cc56ad9272b8eaaea628121d7db353433fffb752fa56",
+    "pulpo/connections_page.py": "8c26b1c1a6d4d6e47db65b2c97655c250ed3614a1370ff9a444fecbac7869eda",
+    "pulpo/evidence_page.py": "ab13d5fae320d83309796e3978217c995decb02b32ce48b5d7ddee0083830d33",
+    "pulpo/system_page.py": "16bdd35d43f5940b204a7e3470ff84392953ce229ed00cd53e0ac883e9ef2c96",
+    "pulpo/source_health_model.py": "42276fce4194ae489887f29b35787db344b055ad7ceaa0ad3d765124e7f64f4c",
+    "pulpo/source_health_page.py": "74afb0d17fe7f445a6b3333c1305ed63165a93749b0546d02024990aaa61d4c5",
+    "tests/test_control_center.py": "9c34e8fc0c803c952a162ed4c8c7443a044592cf42527ba73556b0ed6605e7e8",
+    "tests/test_source_health.py": "d4222dc61ce705c0196ca9c27c1e56885b83e72b1825b6448eefda483ee5495d"
+  },
+  "exact_log_sha256": {
+    "ubuntu-focused.log": "1c1231240c87279969bd1e5c2e80af5a1c9f6a251fdaa5df0763ce34336e4e8c",
+    "ubuntu-core.log": "25c542374e57529a818ecbca9331906925979bec2f3701ca674094cf384e8b4b"
+  }
+}
