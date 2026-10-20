@@ -1,0 +1,19 @@
+{
+  "python": "3.14.4",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "repo": "<local-checkout>",
+  "results": [
+    {
+      "suite": "core",
+      "returncode": 0,
+      "process_returncode": 0,
+      "resource_warnings": 0,
+      "summary": [
+        "Ran 789 tests in 61.351s",
+        "OK (skipped=2)"
+      ],
+      "log": "ubuntu-core.log",
+      "log_sha256": "68c9c89454c36d1c03e04b89de95504c3f121f990122b20f4c2652f12588e0e4"
+    }
+  ]
+}

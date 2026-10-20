@@ -132,6 +132,7 @@ class ConnectionsPage:
         if hasattr(self.center, "status_rows"):
             self.center.status_rows["Connections"].update("Attention" if issues else "Unknown", self.summary.cget("text"),
                 "Only selected frozen provider reports; no direct UI network access. Reachability and authentication never imply verified enforcement.")
+        self.center.refresh_attention()
 
     def set_active(self, active):
         self.active = active
