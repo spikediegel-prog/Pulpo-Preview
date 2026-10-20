@@ -1,0 +1,92 @@
+{
+  "schema": "pulpo.wsl-troubleshooting.v1",
+  "claim": "Recorded local diagnostic projection",
+  "generated_at": "2026-10-20 08:22:39.835563103 UTC",
+  "scope": "Frozen preview. Check times are local UI receipt times, not source freshness or authenticated timestamps.",
+  "authority_effect": "none",
+  "enforcement": "Unknown",
+  "excluded": "Paths, host/device identifiers, source fingerprints, raw logs, credentials and raw errors are excluded by construction.",
+  "findings": [
+    {
+      "check": "Local UI runtime",
+      "state": "Recorded",
+      "local_check_at": "2026-10-20 08:22:39.835028853 UTC",
+      "source_timestamp": "Unknown",
+      "cause": "Explicit local diagnostic refresh completed.",
+      "impact": "This window running does not prove kernel, collector or service health.",
+      "next_step": "Check this row to refresh existing local diagnostics; open Diagnostics for environment details."
+    },
+    {
+      "check": "Pulpo service health",
+      "state": "Unknown",
+      "local_check_at": "Unknown",
+      "source_timestamp": "Unknown",
+      "cause": "No live service-health observation contract is configured in Control Center.",
+      "impact": "Service uptime, collector liveness and deployment availability cannot be established here.",
+      "next_step": "Ask the trusted deployment owner to inspect the intended Ubuntu service and its status. Do not infer a service name or restart from missing evidence."
+    },
+    {
+      "check": "Governance export",
+      "state": "Unknown",
+      "local_check_at": "Unknown",
+      "source_timestamp": "Unknown",
+      "cause": "No owner export selected.",
+      "impact": "This observation does not establish current service availability, full coverage or enforcement.",
+      "next_step": "Select or re-read the trusted-owner export on its source page. Inspect Source health for reported checks and freshness. Never loosen permissions or provide credentials."
+    },
+    {
+      "check": "Evidence export",
+      "state": "Unknown",
+      "local_check_at": "Unknown",
+      "source_timestamp": "Unknown",
+      "cause": "No owner export selected.",
+      "impact": "This observation does not establish current service availability, full coverage or enforcement.",
+      "next_step": "Select or re-read the trusted-owner export on its source page. Inspect Source health for reported checks and freshness. Never loosen permissions or provide credentials."
+    },
+    {
+      "check": "UniFi UDM export",
+      "state": "Unknown",
+      "local_check_at": "Unknown",
+      "source_timestamp": "Unknown",
+      "cause": "No owner export selected.",
+      "impact": "This observation does not establish current service availability, full coverage or enforcement.",
+      "next_step": "Select or re-read the trusted-owner export on its source page. Inspect Source health for reported checks and freshness. Never loosen permissions or provide credentials."
+    },
+    {
+      "check": "NinjaOne export",
+      "state": "Unknown",
+      "local_check_at": "Unknown",
+      "source_timestamp": "Unknown",
+      "cause": "No owner export selected.",
+      "impact": "This observation does not establish current service availability, full coverage or enforcement.",
+      "next_step": "Select or re-read the trusted-owner export on its source page. Inspect Source health for reported checks and freshness. Never loosen permissions or provide credentials."
+    },
+    {
+      "check": "CrowdStrike export",
+      "state": "Unknown",
+      "local_check_at": "Unknown",
+      "source_timestamp": "Unknown",
+      "cause": "No owner export selected.",
+      "impact": "This observation does not establish current service availability, full coverage or enforcement.",
+      "next_step": "Select or re-read the trusted-owner export on its source page. Inspect Source health for reported checks and freshness. Never loosen permissions or provide credentials."
+    },
+    {
+      "check": "Evidence storage capacity",
+      "state": "Unknown",
+      "local_check_at": "Unknown",
+      "source_timestamp": "Unknown",
+      "cause": "No usable evidence capacity observation is available.",
+      "impact": "Below 10% free is an attention hint. Exported capacity may be historical; it is not local WSL disk capacity or a write/recovery test.",
+      "next_step": "Ask the evidence owner to inspect the reported volume and publish a current export; re-read Evidence. Do not delete evidence to clear a warning."
+    },
+    {
+      "check": "Benchmark worker cleanup",
+      "state": "Unknown",
+      "local_check_at": "Unknown",
+      "source_timestamp": "Unknown",
+      "cause": "No cleanup failure is currently flagged by this window; no independent service/process scan was performed.",
+      "impact": "Unverified cleanup blocks further performance operations; this display cannot clear that block.",
+      "next_step": "Open Tuning & benchmarks and retain the bounded result for operator investigation. No automatic retry or repair."
+    }
+  ]
+}
