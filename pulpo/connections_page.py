@@ -62,6 +62,7 @@ class ConnectionsPage:
         from tkinter import filedialog
         selected = filedialog.askopenfilename(parent=self.root, title=f"Select {provider} owner observation", filetypes=(("JSON observation", "*.json"),))
         if selected:
+            self.center.reset_source_read(provider)
             self.paths[provider] = Path(selected)
             self.refresh_buttons[provider].configure(state="normal")
             self.refresh(provider)
@@ -99,7 +100,7 @@ class ConnectionsPage:
                                         outcome="Failed" if error else "Recorded", severity="Warning" if error else "Info")
 
     def clear(self, provider):
-        self.center.source_reads.pop(provider, None)
+        self.center.reset_source_read(provider)
         self.paths.pop(provider, None)
         self.observations.pop(provider, None)
         self.errors.pop(provider, None)

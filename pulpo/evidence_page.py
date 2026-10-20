@@ -28,6 +28,10 @@ class EvidencePage:
         self.history = ActivityHistory()
         self.timer, self.active, self.closed = None, False, False
         self.reviewing = False
+        self.clarity = center.wsl_clarity
+        self.test_label = tk.BooleanVar(master=self.root, value=False) if self.clarity else None
+        self.source_details_visible = False
+        self.warnings_visible = False
         self.seconds = 60
         page = center.pages["Evidence"]
         center.text(page, "Database activity", "Heading.TLabel")
@@ -44,43 +48,86 @@ class EvidencePage:
             label.grid(row=0, column=index, sticky="ew", padx=4)
             legend.columnconfigure(index, weight=1)
             self.values[key] = label
+        if self.clarity:
+            from .system_navigation import reflow as fit_legend
+            legend.bind("<Configure>", lambda event: fit_legend(legend, tuple(self.values.values()), event.width, maximum=3))
         self.chart = tk.Canvas(self.graph, height=150, highlightthickness=0, background=PALETTE["chart"])
         self.chart.pack(fill="x", pady=8)
         self.chart.bind("<Configure>", lambda event: self.draw())
         self.scale = tk.Label(self.graph, text="Calls/s · awaiting two owner observations", anchor="w",
                               foreground=PALETTE["header_text"], background=PALETTE["chart"], wraplength=700, justify="left")
         self.scale.pack(fill="x")
-        self.graph.bind("<Configure>", lambda event: self.scale.configure(wraplength=max(240, event.width - 24)))
+        self.graph_notice = None
+        if self.clarity:
+            self.graph_notice = tk.Label(self.graph, text="", anchor="w", justify="left",
+                foreground=PALETTE["chart_muted"], background=PALETTE["chart"], wraplength=700)
+            self.graph_notice.pack(fill="x", pady=(6, 0))
+            self.graph.bind("<Configure>", lambda event: self.graph_notice.configure(wraplength=max(220, event.width - 24)), add="+")
+        self.graph.bind("<Configure>", lambda event: self.scale.configure(wraplength=max(220, event.width - 24)), add="+")
         ranges = ttk.Frame(page)
         ranges.pack(fill="x", pady=(0, 10))
+        range_buttons = []
         for index, (label, seconds) in enumerate((("1 min", 60), ("15 min", 900), ("1 hour", 3600))):
-            ttk.Button(ranges, text=label, style="Range.TButton", command=lambda n=seconds: self.set_range(n)).grid(row=0, column=index, padx=2)
+            button = ttk.Button(ranges, text=label, style="Range.TButton", command=lambda n=seconds: self.set_range(n))
+            button.grid(row=0, column=index, padx=2)
+            range_buttons.append(button)
         self.review_button = ttk.Button(ranges, text="Pause for review", style="Range.TButton", command=self.toggle_review)
         ranges.columnconfigure(3, weight=1)
         def reflow(event):
             self.review_button.grid(row=1 if event.width < 600 else 0, column=0 if event.width < 600 else 3,
                                     columnspan=3 if event.width < 600 else 1, sticky="w" if event.width < 600 else "e", pady=4)
-        ranges.bind("<Configure>", reflow)
-        center.text(page, "Reads = completed SELECT calls; writes = completed write/batch calls; commits = completed transactions. "
+        if self.clarity:
+            from .system_navigation import reflow as fit_controls
+            ranges.bind("<Configure>", lambda event: fit_controls(ranges, (*range_buttons, self.review_button), event.width, maximum=4))
+        else:
+            ranges.bind("<Configure>", reflow)
+        center.text(page, "Completed calls and transactions · not rows or disk I/O. Definitions are under Source details." if self.clarity else "Reads = completed SELECT calls; writes = completed write/batch calls; commits = completed transactions. "
                     "Not rows, disk I/O or durable write counts. Includes owner observation reads. "
                     "Rates need two distinct owner samples. Missing readings stay gaps.", "Muted.TLabel")
         controls = ttk.Frame(page)
         controls.pack(fill="x", pady=(0, 10))
-        ttk.Button(controls, text="Select source…", command=self.select).pack(side="left")
+        self.select_button = ttk.Button(controls, text="Select source…", command=self.select)
+        self.select_button.pack(side="left")
         self.refresh_button = ttk.Button(controls, text="Re-read", command=self.refresh, state="disabled")
         self.refresh_button.pack(side="left", padx=6)
-        ttk.Button(controls, text="Clear", command=self.clear).pack(side="left")
+        self.clear_button = ttk.Button(controls, text="Clear selection" if self.clarity else "Clear", command=self.clear)
+        self.clear_button.pack(side="left")
+        if self.clarity:
+            from .system_navigation import reflow as fit_controls
+            for button in (self.select_button, self.refresh_button, self.clear_button):
+                button.pack_forget()
+            controls.bind("<Configure>", lambda event: fit_controls(controls,
+                (self.select_button, self.refresh_button, self.clear_button, self.source_toggle), event.width, maximum=4))
+            self.test_check = ttk.Checkbutton(page, text="Test observations",
+                variable=self.test_label, command=self.set_test_label)
+            self.source_brief = center.text(page, "", "Muted.TLabel")
+            self.source_toggle = ttk.Button(controls, text="Source details", command=self.toggle_source_details)
         self.source = center.text(page, "", "Muted.TLabel")
+        if self.clarity:
+            self.source.pack_forget()
+            self.source_slot = ttk.Frame(page)
+            self.source_slot.pack(fill="x")
+            self.snapshot_summary = center.text(page, "", "Heading.TLabel")
         self.rows = {}
         for key, title in (("storage", "Storage"), ("health", "Database health"), ("integrity", "Audit integrity")):
             self.rows[key] = StatusRow(page, title, "", None)
             self.rows[key].button.configure(width=17)
+        self.warnings_parent = page
+        if self.clarity:
+            self.warnings_parent = ttk.Frame(page)
+            self.warnings_parent.pack(fill="x", pady=(0, 8))
         center.text(page, "Authorization and permission counters", "Heading.TLabel")
         self.permissions = center.text(page, "")
         center.text(page, "AI usage • separate from authorization permits", "Heading.TLabel")
         self.ai = center.text(page, "")
-        center.text(page, "Warnings and alerts", "Heading.TLabel")
-        self.warnings = center.text(page, "")
+        if self.clarity:
+            self.warning_button = ttk.Button(self.warnings_parent, text="Observation notes", command=self.toggle_warnings)
+            self.warning_button.pack(anchor="w", pady=(0, 6))
+        else:
+            center.text(page, "Warnings and alerts", "Heading.TLabel")
+        self.warnings = center.text(self.warnings_parent, "")
+        if self.clarity:
+            self.warnings.pack_forget()
         self.warnings.configure(foreground=PALETTE["warning"])
         center.text(page, "Evidence event index", "Heading.TLabel")
         center.text(page, "Latest 24 redacted canonical event references, not a second audit log. "
@@ -91,16 +138,22 @@ class EvidencePage:
                                 values=("All events", "Policy decisions", "Permit events", "Rejections"))
         selector.pack(anchor="w", pady=(0, 8))
         selector.bind("<<ComboboxSelected>>", lambda event: self.render_logs())
-        log_frame = ttk.Frame(page)
-        log_frame.pack(fill="x", pady=(0, 12))
-        self.logs = tk.Text(log_frame, height=10, wrap="word", state="disabled", padx=10, pady=10,
-                            background=PALETTE["surface"], foreground=PALETTE["text"], font=("TkDefaultFont", 10),
-                            relief="flat", highlightthickness=1, highlightbackground=PALETTE["border"],
-                            highlightcolor=PALETTE["accent"], selectbackground=PALETTE["accent"], selectforeground=PALETTE["header_text"])
-        log_scroll = ttk.Scrollbar(log_frame, command=self.logs.yview)
-        log_scroll.pack(side="right", fill="y")
-        self.logs.configure(yscrollcommand=log_scroll.set)
-        self.logs.pack(side="left", fill="both", expand=True)
+        self.events_view = None
+        if self.clarity:
+            from .evidence_events import EvidenceEvents
+            self.events_view = EvidenceEvents(self, page)
+            self.logs = self.events_view.details
+        else:
+            log_frame = ttk.Frame(page)
+            log_frame.pack(fill="x", pady=(0, 12))
+            self.logs = tk.Text(log_frame, height=10, wrap="word", state="disabled", padx=10, pady=10,
+                                background=PALETTE["surface"], foreground=PALETTE["text"], font=("TkDefaultFont", 10),
+                                relief="flat", highlightthickness=1, highlightbackground=PALETTE["border"],
+                                highlightcolor=PALETTE["accent"], selectbackground=PALETTE["accent"], selectforeground=PALETTE["header_text"])
+            log_scroll = ttk.Scrollbar(log_frame, command=self.logs.yview)
+            log_scroll.pack(side="right", fill="y")
+            self.logs.configure(yscrollcommand=log_scroll.set)
+            self.logs.pack(side="left", fill="both", expand=True)
         center.section(page, "Observation setup",
                        "Choose an existing pulpo.evidence-observation.v1 JSON export produced by the trusted database owner. "
                        "The page re-reads it every 2 seconds while visible. The owner must publish new observations for activity to update. "
@@ -147,6 +200,7 @@ class EvidencePage:
             self.schedule()
             # Release Tk variables on their owner thread, not a later worker GC.
             self.filter = None
+            self.test_label = None
             self.center = None
 
     def tick(self):
@@ -161,6 +215,9 @@ class EvidencePage:
         selected = filedialog.askopenfilename(parent=self.root, title="Select evidence observation",
                                               filetypes=(("JSON observation", "*.json"),))
         if selected:
+            self.center.reset_source_read("Evidence")
+            if self.test_label is not None:
+                self.test_label.set(False)
             self.history.clear()
             self.reviewing = False
             self.review_button.configure(text="Pause for review")
@@ -197,7 +254,9 @@ class EvidencePage:
         self.schedule()
 
     def clear(self):
-        self.center.source_reads.pop("Evidence", None)
+        self.center.reset_source_read("Evidence")
+        if self.test_label is not None:
+            self.test_label.set(False)
         self.path, self.snapshot, self.error = None, None, None
         self.awaiting_reread = False
         self.reviewing = False
@@ -271,6 +330,13 @@ class EvidencePage:
                 "Recorded · Evidence observation loaded; enforcement unassessed",
                 "Frozen owner observation loaded. Metrics and audit results are source-reported, not independently authenticated. "
                 "Open Evidence to inspect timestamps, database health, warnings and redacted record references. No enforcement attestation is made.")
+        if self.clarity:
+            self.render_clarity()
+            definitions = ("\n\nActivity definitions · Reads: completed SELECT calls. Writes: completed write/batch calls. "
+                "Commits: completed transactions. Not rows, disk I/O or durable write counts. Includes owner observation reads. "
+                "Rates require distinct comparable owner timestamps; missing readings stay gaps. "
+                "The Test observations checkbox is a session-only operator label, not authenticated provenance. It is not saved.")
+            self.source.configure(text=self.source.cget("text") + definitions)
         self.render_logs()
         if hasattr(self.center, "decision_explorer"):
             self.center.decision_explorer.render()
@@ -278,6 +344,9 @@ class EvidencePage:
         self.draw()
 
     def render_logs(self):
+        if self.events_view is not None:
+            self.events_view.render()
+            return
         lines = []
         for event in reversed(self.snapshot.events if self.snapshot else ()):
             choice = self.filter.get()
@@ -293,13 +362,16 @@ class EvidencePage:
 
     def draw(self):
         self.chart.delete("all")
-        width, height = max(1, self.chart.winfo_width()), 150
+        width = max(1, self.chart.winfo_width())
         now = time.time()
         points = [(at, rates) for at, rates in self.history.points if now - self.seconds <= at <= now + 5]
         usable = self.snapshot is not None and not self.reviewing and freshness(self.snapshot) == "recent source timestamp"
         values = [v for _, rates in points for v in rates.values() if v is not None]
+        height = 90 if self.clarity and not values else 150
+        if int(self.chart.cget("height")) != height:
+            self.chart.configure(height=height)
         peak = max(1, max(values, default=0))
-        for y in (20, 75, 130): self.chart.create_line(0, y, width, y, fill=PALETTE["chart_grid"])
+        for y in (20, height / 2, height - 20): self.chart.create_line(0, y, width, y, fill=PALETTE["chart_grid"])
         for key, (title, color) in SERIES.items():
             latest = self.history.points[-1][1][key] if self.history.points and usable else None
             self.values[key].configure(text=f"{title}\n" + ("Unknown" if latest is None else f"{latest:.1f}/s"))
@@ -315,6 +387,63 @@ class EvidencePage:
                     self.chart.create_line(previous[0], previous[1], x, y, fill=color, width=2)
                 self.chart.create_oval(x-2, y-2, x+2, y+2, fill=color, outline="")
                 previous = x, y, at
-        if not values:
+        if self.clarity:
+            from .observation_clarity import graph_state
+            title, detail = graph_state(self.snapshot, self.history, selected=self.path is not None,
+                error=bool(self.error), pending=self.awaiting_reread, paused=self.reviewing)
+            self.graph_notice.configure(text=f"{title} · {detail}")
+            if not values:
+                self.chart.create_text(width / 2, height / 2, text=title, width=max(150, width - 28),
+                    justify="center", fill=PALETTE["header_text"])
+        elif not values:
             self.chart.create_text(width / 2, height / 2, text="Awaiting two distinct owner observations", fill=PALETTE["header_text"])
         self.scale.configure(text=f"0–{peak:.1f} calls/s · last {self.seconds // 60} min · connection-scoped counters, session-only history")
+
+    def set_test_label(self):
+        if self.path is not None and self.test_label.get():
+            self.center.source_test_labels["Evidence"] = str(self.path)
+        else:
+            self.center.source_test_labels.pop("Evidence", None)
+        self.center.refresh_observation_context()
+
+    def toggle_source_details(self):
+        self.source_details_visible = not self.source_details_visible
+        if self.source_details_visible:
+            self.source.pack(fill="x", pady=(0, 10), before=self.source_slot)
+            self.test_check.pack(anchor="w", pady=(0, 8), before=self.source)
+        else:
+            self.source.pack_forget()
+            self.test_check.pack_forget()
+        self.source_toggle.configure(text="Hide source details" if self.source_details_visible else "Source details")
+        self.layout_source_controls()
+
+    def layout_source_controls(self):
+        from .system_navigation import reflow
+        frame = self.source_toggle.master
+        reflow(frame, (self.select_button, self.refresh_button, self.clear_button, self.source_toggle), frame.winfo_width(), maximum=4)
+
+    def toggle_warnings(self):
+        self.warnings_visible = not self.warnings_visible
+        if self.warnings_visible:
+            self.warnings.pack(fill="x", pady=(0, 10))
+        else:
+            self.warnings.pack_forget()
+        self.render_clarity()
+
+    def render_clarity(self):
+        self.select_button.configure(text="Replace source…" if self.path is not None else "Select source…")
+        self.test_check.configure(state="normal" if self.path is not None else "disabled")
+        # Operator label is scoped to the current selection, not persisted or provenance.
+        if self.path is None:
+            self.test_label.set(False)
+        name = self.path.name if self.path is not None else "None selected"
+        last = self.center.source_last_success("Evidence")
+        self.source_brief.configure(text=f"Selected export · {name}\nLast successful local read · {last}")
+        state = "read failed" if self.error else "not checked" if self.awaiting_reread else "Unknown" if self.snapshot is None else "Paused" if self.reviewing else freshness(self.snapshot)
+        self.snapshot_summary.configure(text=f"Snapshot summary · {state}")
+        lines = self.warnings.cget("text").splitlines()
+        notes = sum(line.startswith("• ") for line in lines)
+        label = f"Notes ({notes})" if self.snapshot is not None else "Notes · unavailable"
+        self.warning_button.configure(text=f"{label} · {'hide' if self.warnings_visible else 'show'}")
+        self.layout_source_controls()
+        self.center.refresh_observation_context()

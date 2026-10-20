@@ -1192,6 +1192,9 @@ class ControlCenterTests(unittest.TestCase):
         self.assertEqual(3, page.history.points[-1][1]["reads"])
         page.filter.set("Permit events")
         page.render_logs()
+        if page.events_view is not None:
+            page.events_view.table.selection_set(page.events_view.table.get_children()[0])
+            page.events_view.select()
         self.assertIn("c" * 64, page.logs.get("1.0", "end"))
         self.assertNotIn("b" * 64, page.logs.get("1.0", "end"))
         self.assertEqual("disabled", str(page.logs.cget("state")))
