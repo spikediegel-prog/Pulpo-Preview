@@ -1,0 +1,18 @@
+{
+  "base_commit": "104582caee19e36e0a904e3ac55bd273d07b389d",
+  "source_encoding": "UTF-8, LF-normalized",
+  "sources": {
+    "pulpo/attention_model.py": "1bfbd05e0ae3ba0d7d368aad460987140beaede7ae71e79c0b3ae1b2463814f5",
+    "pulpo/attention_panel.py": "07ace9cfe46cae6d247cc3d011bc5ae8148e94619cde07e87fec828678325b2a",
+    "pulpo/control_center.py": "255dda3d1d712808877835a31f7384334001e9b7313258cf2b9d25c3d7997db2",
+    "pulpo/connections_page.py": "ca657b37f1feec1622ef09cedad6dbc5c5d9f87ea706cc892ff5e697b00e0281",
+    "pulpo/evidence_page.py": "a975d61eec5bcad4d4ae2ff8d38706cdf20072a2e9bd735d1b14fecabc897d6d",
+    "tests/test_attention_model.py": "60f4355732f35548bc08a722b4254b01f9e21e2b963e926086f8de0481d98cb7",
+    "tests/test_control_center.py": "491d6b36a3a39000bfcca0843994a18895f51c9a884812ea6b7776b57c721245"
+  },
+  "logs": {
+    "windows-focused.log": "177c356351b528858283e9401bb83cf8fdd3b58a5bfd7dc828b0538934061360",
+    "ubuntu-focused.log": "388e348ddc0a4edbcef7c98d3bbd3c8c18bf381bdf81f48470683ba7fe4b5c3b",
+    "ubuntu-core.log": "68c9c89454c36d1c03e04b89de95504c3f121f990122b20f4c2652f12588e0e4"
+  }
+}

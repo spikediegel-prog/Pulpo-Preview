@@ -91,6 +91,58 @@ class ControlCenterTests(unittest.TestCase):
         self.assertEqual("disabled", self.center.output.cget("state"))
         self.assertFalse(self.profile.exists())
 
+    def test_attention_navigation_uses_only_cached_reports(self):
+        from pulpo.connection_observation import ConnectionObservation
+        center = self.center
+        center.connections_view.observations["UniFi UDM"] = ConnectionObservation("UniFi UDM", time.time_ns(), reason="tls")
+        with patch("pulpo.connections_page.load_connection_observation", side_effect=AssertionError("No file reads")), \
+             patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("No file reads")), \
+             patch("pulpo.governance_observer.observe_snapshot", side_effect=AssertionError("No file reads")):
+            center.refresh_attention()
+            panel = center.needs_attention
+            panel.table.selection_set("connection:UniFi UDM:failure")
+            panel.select()
+            self.assertIn("identity unverified", panel.detail.cget("text"))
+            self.assertEqual("Open UDM setup guide", panel.open_button.cget("text"))
+            panel.open_button.invoke()
+        self.assertEqual("Connections", center.current)
+        self.assertIsNotNone(center.connections_view.setup_guide.window)
+        self.assertEqual("Unknown", center.status_rows["Governance"].state)
+        center.connections_view.setup_guide.window.destroy()
+        self.assertEqual([], list(Path(self.temporary.name).iterdir()))
+
+    def test_attention_age_selection_and_clearing_do_not_resolve_conditions(self):
+        from pulpo.connection_observation import ConnectionObservation
+        center, now = self.center, time.time_ns()
+        page, panel = center.connections_view, center.needs_attention
+        page.observations["UniFi UDM"] = ConnectionObservation("UniFi UDM", now, reason="tls")
+        center.refresh_attention()
+        key = "connection:UniFi UDM:failure"
+        panel.table.selection_set(key)
+        panel.select()
+        with patch("pulpo.attention_model.time.time_ns", return_value=now+61_000_000_000):
+            center.refresh_attention()
+            center.refresh_attention()
+        self.assertEqual((key,), panel.table.selection())
+        self.assertIn("connection:UniFi UDM:age", panel.items)
+        self.assertEqual(len(panel.items), len(panel.table.get_children()))
+        page.clear("UniFi UDM")
+        self.assertIn("does not confirm resolution", panel.detail.cget("text"))
+        self.assertTrue(panel.open_button.instate(("disabled",)))
+        page.observations["UniFi UDM"] = ConnectionObservation("UniFi UDM", time.time_ns(), reason="tls")
+        center.refresh_attention()
+        self.assertTrue(panel.open_button.instate(("disabled",)))
+        self.assertFalse(panel.table.selection())
+        panel.open_selected()
+        self.assertEqual("Overview", center.current)
+        self.root.geometry("640x600")
+        self.root.update()
+        self.assertLessEqual(panel.table.winfo_width(), panel.table.master.winfo_width())
+        self.assertTrue(panel.table.set("evidence:missing", "condition").startswith("Gap ·"))
+        panel.table.selection_set("evidence:missing")
+        panel.select()
+        self.assertIn("Information gap", panel.detail.cget("text"))
+
     def test_udm_guide_requires_review_and_explicit_site_choice(self):
         from pulpo.udm_setup import UdmSites, discovery_source, load_setup
         from pulpo.mcp_boundary import _publish_snapshot
@@ -522,6 +574,8 @@ class ControlCenterTests(unittest.TestCase):
             self.assertFalse(center.sidebar_logo_images)
             self.assertIsNone(logo())
             self.assertIsNone(center.monitor.on_update)
+            self.assertTrue(center.needs_attention.closed)
+            self.assertIsNone(center.needs_attention.center)
             self.assertIsNone(page.timer)
             # Later worker collection must have no Tk variable left to finalize.
             worker = threading.Thread(target=gc.collect)

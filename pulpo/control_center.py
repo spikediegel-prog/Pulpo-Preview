@@ -103,6 +103,7 @@ class ControlCenter:
         self.root, self.profile = root, Path(profile)
         self.labels = []
         self.current = None
+        self.resource_observation = None
         self.root.title("Pulpo Control Center — Preview")
         self.root.geometry("1200x900")
         self.root.minsize(640, 600)
@@ -217,6 +218,7 @@ class ControlCenter:
             self.connections_view.set_active(name == "Connections")
         if hasattr(self, "activity_view"):
             self.activity_view.set_active(name == "Activity")
+        self.refresh_attention()
         if focus:
             self.navigation[name].focus_set()
 
@@ -224,6 +226,8 @@ class ControlCenter:
         page = self.pages["Overview"]
         from .resource_monitor import ResourceMonitor
         self.monitor = ResourceMonitor(page, self.root, self._resource_update)
+        from .attention_panel import AttentionPanel
+        self.needs_attention = AttentionPanel(self, page)
         heading = ttk.Frame(page)
         heading.pack(fill="x", pady=(0, 10))
         self.status_heading = heading
@@ -252,6 +256,7 @@ class ControlCenter:
 
     def _resource_update(self, sample):
         from .local_resources import level
+        self.resource_observation = sample
         metrics = [sample.cpu, sample.memory, sample.storage]
         states = [level(metric.percent) for metric in metrics]
         issues = [name for name, state in zip(("CPU", "Memory", "Storage"), states) if state in ("Elevated", "Attention")]
@@ -273,6 +278,18 @@ class ControlCenter:
         self.attention.configure(text=(f"{len(issues)} resource item(s) need attention" if issues else
                                       "Resource readings incomplete · enforcement unknown" if "Unknown" in states else
                                       "No resource alerts · enforcement unknown"))
+        self.refresh_attention()
+
+    def refresh_attention(self):
+        if self.current != "Overview" or not all(hasattr(self, name) for name in
+                ("needs_attention", "connections_view", "evidence_view", "governance_observation")):
+            return
+        from .attention_model import attention_items
+        self.needs_attention.update(attention_items(
+            connections=self.connections_view.observations, connection_errors=self.connections_view.errors,
+            evidence=self.evidence_view.snapshot, evidence_error=bool(self.evidence_view.error),
+            governance=self.governance_observation, governance_selected=self.governance_path is not None,
+            resources=self.resource_observation))
 
     def _connections(self):
         from .connections_page import ConnectionsPage
@@ -332,6 +349,7 @@ class ControlCenter:
         self._render_governance(GovernanceObservation())
 
     def _render_governance(self, observation):
+        self.governance_observation = observation
         self.governance_status.configure(text=observation.summary,
                                          foreground=PALETTE["error"] if observation.state == "Attention" else PALETTE["muted"])
         location = f"Selected file: {self.governance_path}\n" if self.governance_path else ""
@@ -347,6 +365,7 @@ class ControlCenter:
             row.update(state, summaries[name], getattr(observation, name))
         self.status_rows["Governance"].update(observation.state, observation.summary,
                                                "Enforcement remains unassessed. " + observation.source)
+        self.refresh_attention()
 
     def _activity(self):
         from .activity_page import ActivityPage
