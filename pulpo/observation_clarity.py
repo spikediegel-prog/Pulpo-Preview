@@ -1,5 +1,6 @@
 """Cache-only presentation helpers; names and labels never authenticate sources."""
 from .evidence_observation import freshness
+import time
 
 
 def source_paths(center):
@@ -17,6 +18,41 @@ def source_paths(center):
 
 def test_named(path):
     return path is not None and "test-only" in str(path).casefold()
+
+
+def elapsed_age(timestamp_ns, now_ns=None):
+    """Wall-clock age of a recorded timestamp, never a liveness assessment."""
+    if type(timestamp_ns) is not int or timestamp_ns <= 0:
+        return "Unknown · timestamp unavailable"
+    now_ns = time.time_ns() if now_ns is None else now_ns
+    delta = now_ns - timestamp_ns
+    if delta < 0:
+        return "Unknown · timestamp ahead of this clock"
+    seconds = delta // 1_000_000_000
+    if seconds < 1:
+        return "under 1s ago"
+    if seconds < 60:
+        return f"{seconds}s ago"
+    minutes, seconds = divmod(seconds, 60)
+    if minutes < 60:
+        return f"{minutes}m {seconds}s ago"
+    hours, minutes = divmod(minutes, 60)
+    if hours < 24:
+        return f"{hours}h {minutes}m ago"
+    days, hours = divmod(hours, 24)
+    return f"{days}d {hours}h ago"
+
+
+def machine_description(value):
+    """Short operator text only; never parse it as a host, URL or credential."""
+    if type(value) is not str:
+        raise ValueError("invalid_description")
+    if any(not character.isprintable() for character in value):
+        raise ValueError("invalid_description")
+    value = value.strip()
+    if len(value) > 48:
+        raise ValueError("invalid_description")
+    return value
 
 
 def context_text(paths, labels, compact=False):

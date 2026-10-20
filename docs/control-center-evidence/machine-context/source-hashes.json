@@ -1,0 +1,12 @@
+{
+  "base": "1cb8b3554d516ea6eb282af2f3a9693f53244022",
+  "source_normalization": "CRLF to LF",
+  "source_sha256": {
+    "pulpo/control_center.py": "9321bd9fca634cea3f7a50b1379708929ddb98be0fab507cfee3bb4a90f4eae9",
+    "pulpo/evidence_page.py": "f40366b2178fb81d6f9efc42f1c386fa9ac70dc6baf7546ab3fb496dea84a906",
+    "pulpo/observation_clarity.py": "801dc1c0f07ee67a31d469e69b9ad27662dd4165f71c99dd5061d908169121ca",
+    "pulpo/source_health_page.py": "5dc8e02b9384b8aa88fe36b9a9ff17ddb59676247cff379bc69f66a0d6941e0c",
+    "tests/test_machine_context.py": "a0c4c0976a96d5decc164b01b578fe4c62b797ecd9340077f5e07e51816e46fd"
+  },
+  "exact_core_log_sha256": "a550d1dbe9b0d0a64101896f04d896539511f947c58c9e5307832e787f2c2652"
+}

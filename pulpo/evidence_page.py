@@ -27,6 +27,7 @@ class EvidencePage:
         self.awaiting_reread = False
         self.history = ActivityHistory()
         self.timer, self.active, self.closed = None, False, False
+        self.age_timer = None
         self.reviewing = False
         self.clarity = center.wsl_clarity
         self.test_label = tk.BooleanVar(master=self.root, value=False) if self.clarity else None
@@ -102,6 +103,7 @@ class EvidencePage:
                 variable=self.test_label, command=self.set_test_label)
             self.source_brief = center.text(page, "", "Muted.TLabel")
             self.source_toggle = ttk.Button(controls, text="Source details", command=self.toggle_source_details)
+            self.describe_button = ttk.Button(page, text="Describe source…", command=self.describe_source)
         self.source = center.text(page, "", "Muted.TLabel")
         if self.clarity:
             self.source.pack_forget()
@@ -161,6 +163,7 @@ class EvidencePage:
                        "No purge, repair, checkpoint, permission change or retry is offered.")
         self.root.bind("<Destroy>", self.destroy, add="+")
         self.root.bind("<Map>", self.mapped, add="+")
+        self.root.bind("<Unmap>", self.unmapped, add="+")
         self.render()
 
     def set_range(self, seconds):
@@ -170,6 +173,10 @@ class EvidencePage:
     def set_active(self, active):
         self.active = active
         self.schedule()
+        self.schedule_ages()
+        if self.clarity and active:
+            self.render_timing()
+            self.draw()
 
     def toggle_review(self):
         self.reviewing = not self.reviewing
@@ -193,11 +200,32 @@ class EvidencePage:
     def mapped(self, event):
         if event.widget is self.root:
             self.schedule()
+            self.schedule_ages()
+
+    def unmapped(self, event):
+        if event.widget is self.root:
+            self.schedule_ages()
+
+    def schedule_ages(self):
+        if self.age_timer is not None:
+            self.root.after_cancel(self.age_timer)
+            self.age_timer = None
+        if self.clarity and not self.closed and self.active and self.root.winfo_viewable() and self.root.state() != "iconic":
+            self.age_timer = self.root.after(1000, self.tick_ages)
+
+    def tick_ages(self):
+        self.age_timer = None
+        if self.clarity and not self.closed and self.active and self.root.winfo_viewable() and self.root.state() != "iconic":
+            # Display clocks only: even paused/restored sources are never read here.
+            self.render_timing()
+            self.draw()
+        self.schedule_ages()
 
     def destroy(self, event):
         if event.widget is self.root:
             self.closed = True
             self.schedule()
+            self.schedule_ages()
             # Release Tk variables on their owner thread, not a later worker GC.
             self.filter = None
             self.test_label = None
@@ -335,7 +363,8 @@ class EvidencePage:
             definitions = ("\n\nActivity definitions · Reads: completed SELECT calls. Writes: completed write/batch calls. "
                 "Commits: completed transactions. Not rows, disk I/O or durable write counts. Includes owner observation reads. "
                 "Rates require distinct comparable owner timestamps; missing readings stay gaps. "
-                "The Test observations checkbox is a session-only operator label, not authenticated provenance. It is not saved.")
+                "The Test observations checkbox and source description are session-only operator labels, not authenticated provenance. They are not saved. "
+                "Resource graphs elsewhere describe this WSL Linux VM, not the machine that produced this export.")
             self.source.configure(text=self.source.cget("text") + definitions)
         self.render_logs()
         if hasattr(self.center, "decision_explorer"):
@@ -411,9 +440,11 @@ class EvidencePage:
         if self.source_details_visible:
             self.source.pack(fill="x", pady=(0, 10), before=self.source_slot)
             self.test_check.pack(anchor="w", pady=(0, 8), before=self.source)
+            self.describe_button.pack(anchor="w", pady=(0, 8), before=self.source)
         else:
             self.source.pack_forget()
             self.test_check.pack_forget()
+            self.describe_button.pack_forget()
         self.source_toggle.configure(text="Hide source details" if self.source_details_visible else "Source details")
         self.layout_source_controls()
 
@@ -433,17 +464,29 @@ class EvidencePage:
     def render_clarity(self):
         self.select_button.configure(text="Replace source…" if self.path is not None else "Select source…")
         self.test_check.configure(state="normal" if self.path is not None else "disabled")
+        self.describe_button.configure(state="normal" if self.path is not None else "disabled")
         # Operator label is scoped to the current selection, not persisted or provenance.
         if self.path is None:
             self.test_label.set(False)
-        name = self.path.name if self.path is not None else "None selected"
-        last = self.center.source_last_success("Evidence")
-        self.source_brief.configure(text=f"Selected export · {name}\nLast successful local read · {last}")
-        state = "read failed" if self.error else "not checked" if self.awaiting_reread else "Unknown" if self.snapshot is None else "Paused" if self.reviewing else freshness(self.snapshot)
-        self.snapshot_summary.configure(text=f"Snapshot summary · {state}")
+        self.render_timing()
         lines = self.warnings.cget("text").splitlines()
         notes = sum(line.startswith("• ") for line in lines)
         label = f"Notes ({notes})" if self.snapshot is not None else "Notes · unavailable"
         self.warning_button.configure(text=f"{label} · {'hide' if self.warnings_visible else 'show'}")
         self.layout_source_controls()
         self.center.refresh_observation_context()
+
+    def render_timing(self):
+        if not self.clarity or self.closed:
+            return
+        from .observation_clarity import elapsed_age
+        name = self.path.name if self.path is not None else "None selected"
+        age = elapsed_age(self.snapshot.observed_at_ns) if self.snapshot is not None else "Unknown · no usable source timestamp"
+        state = "read failed" if self.error else "not checked" if self.awaiting_reread else "Unknown" if self.snapshot is None else "Paused" if self.reviewing else freshness(self.snapshot)
+        self.source_brief.configure(text=f"Selected export · {name}\nSource machine · {self.center.source_description('Evidence')}\n"
+            f"Source-data age · {age}\nLast successful read · {self.center.source_read_age('Evidence')} (local UI time)")
+        self.snapshot_summary.configure(text=f"Snapshot summary · {state}")
+
+    def describe_source(self):
+        if self.path is not None and not self.closed:
+            self.center.system_view.source_health.edit_machine_description("Evidence")

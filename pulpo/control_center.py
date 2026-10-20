@@ -107,6 +107,7 @@ class ControlCenter:
         self.source_reads = {}
         self.source_success_reads = {}
         self.source_test_labels = {}
+        self.source_machine_labels = {}
         self.compact_source_context = False
         from .setup_readiness import is_wsl
         self.wsl_clarity = is_wsl()
@@ -159,6 +160,8 @@ class ControlCenter:
         self.page_caption = ttk.Label(header, text="Local resource observations • Live enforcement is not observed",
                                       style="HeaderMuted.TLabel", wraplength=700, justify="left")
         self.page_caption.pack(fill="x", pady=(4, 0))
+        if self.wsl_clarity:
+            self.page_caption.configure(text="This window: WSL · CPU, memory and storage: local Linux VM · enforcement unassessed")
         self.observation_context = ttk.Label(header, text="", style="HeaderMuted.TLabel", justify="left", wraplength=700)
         viewport = ttk.Frame(self.main)
         viewport.pack(fill="both", expand=True, pady=(16, 0))
@@ -429,6 +432,23 @@ class ControlCenter:
         self.source_reads.pop(key, None)
         self.source_success_reads.pop(key, None)
         self.source_test_labels.pop(key, None)
+        self.source_machine_labels.pop(key, None)
+
+    def source_description(self, key):
+        from .observation_clarity import source_paths
+        path = source_paths(self).get(key)
+        label = self.source_machine_labels.get(key)
+        if path is not None and label is not None and label[0] == str(path):
+            return label[1] + " (operator description; unverified)"
+        return "Unknown · exporter machine not supplied"
+
+    def source_read_age(self, key, now_ns=None):
+        from .observation_clarity import source_paths, elapsed_age
+        path = source_paths(self).get(key)
+        value = self.source_success_reads.get(key)
+        if path is None or value is None or value[0] != str(path):
+            return "Unknown · no successful local read"
+        return elapsed_age(value[1], now_ns)
 
     def refresh_observation_context(self):
         if not self.wsl_clarity:
@@ -459,6 +479,9 @@ class ControlCenter:
         width = max(260, event.width - 72)
         self.compact_source_context = width < 650
         self.refresh_observation_context()
+        if self.wsl_clarity:
+            self.page_caption.configure(text="WSL window · local VM resources · enforcement unassessed" if width < 650 else
+                "This window: WSL · CPU, memory and storage: local Linux VM · enforcement unassessed")
         self.page_caption.configure(wraplength=max(220, event.width - 96))
         self.observation_context.configure(wraplength=max(220, event.width - 96))
         for label in self.labels:
