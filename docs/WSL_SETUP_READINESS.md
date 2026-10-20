@@ -68,7 +68,7 @@ The Source Health view's existing visible-only timer/keyboard/teardown behavior
 is reused. Only the active System subview runs its age display timer. Repeated
 updates replace nine stable rows; no history or persistent checklist is added.
 Selections and the reviewed paragraph are preserved on changing observations.
-Wide WSL windows show four System tabs; minimum-size windows use two columns,
+WSL System tabs reflow into multiple columns; minimum-size windows use two columns,
 with a source table scrollbar, page scrolling and a separate detail scrollbar.
 
 ## Required change record

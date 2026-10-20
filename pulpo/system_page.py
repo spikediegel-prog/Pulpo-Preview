@@ -22,6 +22,7 @@ class SystemPage:
         self.busy, self.closed, self.timer = False, False, None
         self.cleanup_blocked = False
         self.operation, self.report = None, None
+        self.configuration = None
         self.messages, self.stop = queue.Queue(), threading.Event()
         self.active, self.mode = False, "Diagnostics"
         page = center.pages["System"]
@@ -31,12 +32,12 @@ class SystemPage:
         from .setup_readiness import is_wsl
         modes = ("Diagnostics", "Tuning & benchmarks", "Source health")
         if is_wsl():
-            modes += ("Setup readiness",)
+            modes += ("Setup readiness", "Configuration")
         for name in modes:
             button = ttk.Button(tabs, text=name, command=lambda selected=name: self.select_mode(selected))
             self.tabs[name] = button
         def reflow_tabs(event):
-            cols = (2 if event.width < 800 else 4) if len(self.tabs) == 4 else (2 if event.width < 600 else 3)
+            cols = (2 if event.width < 800 else 3) if len(self.tabs) > 3 else (2 if event.width < 600 else 3)
             for i, button in enumerate(self.tabs.values()):
                 button.grid(row=i // cols, column=i % cols, sticky="ew", padx=(0, 6), pady=3)
             for col in range(len(self.tabs)): tabs.columnconfigure(col, weight=1 if col < cols else 0)
@@ -120,6 +121,9 @@ class SystemPage:
         center.text(benchmark, "Comparison never saves settings automatically. Saving rechecks correctness through the existing settings path. "
                     "Results expire after 15 minutes or a machine, profile, source or candidate change. "
                     "A passing benchmark does not attest governance or production readiness.", "Muted.TLabel")
+        if "Configuration" in self.views:
+            from .configuration_page import ConfigurationPage
+            self.configuration = ConfigurationPage(self, self.views["Configuration"])
         self.root.bind("<Destroy>", self.destroy, add="+")
         self.refresh_diagnostics()
         self.select_mode("Diagnostics")
@@ -134,6 +138,8 @@ class SystemPage:
         self.source_health.set_active(self.active and mode == "Source health")
         if self.readiness is not None:
             self.readiness.set_active(self.active and mode == "Setup readiness")
+        if self.configuration is not None:
+            self.configuration.set_active(self.active and mode == "Configuration")
         self.center.canvas.yview_moveto(0)
 
     def set_active(self, active):
@@ -142,6 +148,8 @@ class SystemPage:
         self.source_health.set_active(active and self.mode == "Source health")
         if self.readiness is not None:
             self.readiness.set_active(active and self.mode == "Setup readiness")
+        if self.configuration is not None:
+            self.configuration.set_active(active and self.mode == "Configuration")
 
     def refresh_diagnostics(self):
         try:
@@ -178,6 +186,8 @@ class SystemPage:
                                      "Run a new comparison after changing settings or the environment.")
         self.diagnostic_status.configure(text="Recorded · Diagnostics refreshed locally; no settings or canonical state changed.")
         self.summary += "\nLocal performance profile: " + self.center.profile_label.cget("text")
+        if self.configuration is not None:
+            self.configuration.refresh()
 
     def copy_summary(self):
         self.refresh_diagnostics()
@@ -217,6 +227,8 @@ class SystemPage:
             self.save_button.configure(state="disabled")
             self.export_button.configure(state="disabled")
             self.result_title.configure(text="Candidate changed · compare again")
+        if self.configuration is not None:
+            self.configuration.proposal_changed()
 
     def compare(self):
         try:
@@ -243,6 +255,8 @@ class SystemPage:
             action={"compare": "benchmark", "save": "profile_save", "undo": "profile_restore"}[operation], outcome="Started")
         self.stop.clear()
         self.report = None
+        if self.configuration is not None:
+            self.configuration.begin(operation)
         if operation == "compare":
             self.table.delete(*self.table.get_children())
             self.result_title.configure(text="Comparison in progress")
@@ -277,6 +291,8 @@ class SystemPage:
                 else:
                     self.status.configure(text="Setting saved after fresh correctness checks. Effective on the next configured collection.")
                     self.refresh_diagnostics()
+                if self.configuration is not None:
+                    self.configuration.completed(operation)
             elif kind in ("cancelled", "error", "blocked"):
                 self.center.record_activity(result, category="System",
                     action={"compare": "benchmark", "save": "profile_save", "undo": "profile_restore"}[self.operation],
@@ -286,6 +302,8 @@ class SystemPage:
                 self.status.configure(text=result)
                 self.report = None
                 self.table.delete(*self.table.get_children())
+                if self.configuration is not None:
+                    self.configuration.failed(kind)
             elif kind == "done":
                 self.busy = False
                 for button in (self.spin, self.compare_button, self.undo_button):
@@ -293,6 +311,8 @@ class SystemPage:
                 self.cancel_button.configure(state="disabled")
                 self.save_button.configure(state="normal" if self.report else "disabled")
                 self.export_button.configure(state="normal" if self.report else "disabled")
+                if self.configuration is not None:
+                    self.configuration.render()
         if self.busy and not self.closed:
             self.timer = self.root.after(50, self.poll)
 

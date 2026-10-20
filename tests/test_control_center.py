@@ -278,6 +278,8 @@ class ControlCenterTests(unittest.TestCase):
             with patch("pulpo.setup_readiness.is_wsl", return_value=False):
                 center = ControlCenter(root, self.profile)
             self.assertIsNone(center.system_view.readiness)
+            self.assertIsNone(center.system_view.configuration)
+            self.assertNotIn("Configuration", center.system_view.tabs)
             self.assertNotIn("Setup readiness", center.system_view.tabs)
             self.assertEqual(3, len(center.system_view.tabs))
         finally:
@@ -338,6 +340,61 @@ class ControlCenterTests(unittest.TestCase):
         center.system_view.select_mode("Setup readiness")
         view.render()
         self.assertEqual("Unknown", next(row for row in view.rows if row.key == "udm_site").state)
+
+    def test_wsl_configuration_shares_proposal_and_idle_updates_do_not_read_files(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only configuration view")
+        system = self.center.system_view
+        self.center.show("System")
+        system.select_mode("Configuration")
+        view = system.configuration
+        self.assertEqual(0, view.current.workers)
+        self.assertIsNone(view.proposal_at)
+        self.assertIn("initial suggestion", view.proposal.cget("text"))
+        system.candidate.set("1")
+        system.candidate_changed()
+        self.assertIsNotNone(view.proposal_at)
+        self.assertEqual("1", str(view.table.item("workers", "values")[2]))
+        self.assertIn("Both values use serial", view.proposal.cget("text"))
+        with patch("pulpo.configuration_page.inspect_configuration", side_effect=AssertionError("Idle updates are cache-only")):
+            for _ in range(3): view.render()
+            self.center.show("Overview")
+            self.assertFalse(view.active)
+            self.assertIsNone(view.timer)
+        self.assertFalse(self.profile.exists())
+        self.assertEqual([], list(Path(self.temporary.name).iterdir()))
+
+    def test_wsl_configuration_expiry_external_profile_edit_and_minimum_layout(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl(): self.skipTest("WSL-only configuration view")
+        from pulpo import system_benchmark as benchmark
+        from tests.test_system_benchmark import SystemBenchmarkTests
+        import threading
+        system = self.center.system_view
+        view = system.configuration
+        system.candidate.set("1")
+        helper = SystemBenchmarkTests()
+        with patch.object(benchmark, "measure_case", side_effect=lambda workers, *_: helper.row(workers)):
+            system.report = benchmark.compare_settings(self.profile, 1, threading.Event(), lambda text: None)
+        self.root.geometry("640x600")
+        self.center.show("System")
+        system.select_mode("Configuration")
+        self.root.update()
+        self.assertIn("Applicable", view.validity.cget("text"))
+        self.assertIn("Exact benchmark pair: 0 → 1", view.measurements.cget("text"))
+        self.assertLessEqual(sum(view.table.column(c, "width") for c in ("setting", "current", "proposed")), view.table.winfo_width())
+        self.assertEqual(2, int(system.tabs["Configuration"].grid_info()["row"]))
+        completed = system.report["completed_at"]
+        with patch("pulpo.configuration_comparison.time.time", return_value=completed + 901):
+            view.render()
+            self.assertIn("expired", view.validity.cget("text"))
+            self.assertNotIn("Median:", view.measurements.cget("text"))
+        tuning.save_settings(tuning.EvidenceSettings(0), self.profile)
+        before = self.profile.read_bytes()
+        view.refresh()
+        self.assertIn("Current profile changed", view.validity.cget("text"))
+        self.assertEqual(before, self.profile.read_bytes())
+        self.assertIsNone(view.last_change)  # external change time/reason not inferred
 
     def test_navigation_refresh_and_repeated_visits_do_not_create_state(self):
         self.assertEqual("Overview", self.center.current)
@@ -820,13 +877,23 @@ class ControlCenterTests(unittest.TestCase):
             page.compare_button.invoke()
             finish()
         self.assertIsNotNone(page.report)
+        if page.configuration is not None:
+            self.assertIn("Applicable", page.configuration.validity.cget("text"))
+            self.assertIsNone(page.configuration.last_change)
         self.assertFalse(self.profile.exists())
         page.save_button.invoke()
         finish()
         self.assertEqual(1, tuning.load_settings(self.profile).workers)
+        if page.configuration is not None:
+            change = page.configuration.last_change
+            self.assertEqual(("save", 0, 1), (change.operation, change.before_workers, change.after_workers))
+            self.assertIn("Historical profile change time and reason: Unknown", page.configuration.history.cget("text"))
         page.undo_button.invoke()
         finish()
         self.assertEqual(0, tuning.load_settings(self.profile).workers)
+        if page.configuration is not None:
+            change = page.configuration.last_change
+            self.assertEqual(("undo", 1, 0), (change.operation, change.before_workers, change.after_workers))
         page.candidate.set("1")
         with patch.object(benchmark, "measure_case", side_effect=ValueError("Correctness failed")):
             page.compare_button.invoke()
@@ -874,6 +941,11 @@ class ControlCenterTests(unittest.TestCase):
                 self.assertTrue(center.system_view.readiness.closed)
                 self.assertIsNone(center.system_view.readiness.center)
                 self.assertIsNone(center.system_view.readiness.timer)
+            if center.system_view.configuration is not None:
+                self.assertTrue(center.system_view.configuration.closed)
+                self.assertIsNone(center.system_view.configuration.system)
+                self.assertIsNone(center.system_view.configuration.timer)
+                self.assertIsNone(center.system_view.configuration.last_change)
             self.assertIsNone(page.timer)
             # Later worker collection must have no Tk variable left to finalize.
             worker = threading.Thread(target=gc.collect)
