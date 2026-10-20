@@ -28,18 +28,26 @@ class SystemPage:
         tabs = ttk.Frame(page)
         tabs.pack(fill="x", pady=(0, 12))
         self.tabs = {}
-        for name in ("Diagnostics", "Tuning & benchmarks", "Source health"):
+        from .setup_readiness import is_wsl
+        modes = ("Diagnostics", "Tuning & benchmarks", "Source health")
+        if is_wsl():
+            modes += ("Setup readiness",)
+        for name in modes:
             button = ttk.Button(tabs, text=name, command=lambda selected=name: self.select_mode(selected))
             self.tabs[name] = button
         def reflow_tabs(event):
-            cols = 2 if event.width < 600 else 3
+            cols = (2 if event.width < 800 else 4) if len(self.tabs) == 4 else (2 if event.width < 600 else 3)
             for i, button in enumerate(self.tabs.values()):
                 button.grid(row=i // cols, column=i % cols, sticky="ew", padx=(0, 6), pady=3)
-            for col in range(3): tabs.columnconfigure(col, weight=1 if col < cols else 0)
+            for col in range(len(self.tabs)): tabs.columnconfigure(col, weight=1 if col < cols else 0)
         tabs.bind("<Configure>", reflow_tabs)
         self.views = {name: ttk.Frame(page) for name in self.tabs}
         from .source_health_page import SourceHealthPage
         self.source_health = SourceHealthPage(center, self.views["Source health"])
+        self.readiness = None
+        if "Setup readiness" in self.views:
+            from .readiness_page import ReadinessPage
+            self.readiness = ReadinessPage(center, self.views["Setup readiness"])
         diagnostics = self.views["Diagnostics"]
         self.monitor = ResourceMonitor(diagnostics, self.root, lambda sample: None)
         self.monitor.set_active(False)
@@ -124,12 +132,16 @@ class SystemPage:
         self.mode = mode
         self.monitor.set_active(self.active and mode == "Diagnostics")
         self.source_health.set_active(self.active and mode == "Source health")
+        if self.readiness is not None:
+            self.readiness.set_active(self.active and mode == "Setup readiness")
         self.center.canvas.yview_moveto(0)
 
     def set_active(self, active):
         self.active = active
         self.monitor.set_active(active and self.mode == "Diagnostics")
         self.source_health.set_active(active and self.mode == "Source health")
+        if self.readiness is not None:
+            self.readiness.set_active(active and self.mode == "Setup readiness")
 
     def refresh_diagnostics(self):
         try:

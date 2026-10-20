@@ -272,6 +272,73 @@ class ControlCenterTests(unittest.TestCase):
         self.assertIn("Stale", view.details.get("1.0", "end"))
         self.assertEqual(5, len(view.table.get_children()))
 
+    def test_readiness_is_absent_outside_wsl(self):
+        root = tk.Tk()
+        try:
+            with patch("pulpo.setup_readiness.is_wsl", return_value=False):
+                center = ControlCenter(root, self.profile)
+            self.assertIsNone(center.system_view.readiness)
+            self.assertNotIn("Setup readiness", center.system_view.tabs)
+            self.assertEqual(3, len(center.system_view.tabs))
+        finally:
+            root.destroy()
+
+    def test_wsl_readiness_cache_only_navigation_optional_scope_and_lifecycle(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl():
+            self.skipTest("WSL-only checklist")
+        center = self.center
+        view = center.system_view.readiness
+        with patch("pulpo.evidence_page.load_observation", side_effect=AssertionError("No reads")), \
+             patch("pulpo.connections_page.load_connection_observation", side_effect=AssertionError("No reads")), \
+             patch("pulpo.governance_observer.observe_snapshot", side_effect=AssertionError("No reads")):
+            for _ in range(3):
+                center.show("System")
+                center.system_view.select_mode("Setup readiness")
+                self.root.update()
+                self.assertEqual(9, len(view.table.get_children()))
+                self.assertTrue(view.active)
+                self.assertIsNotNone(view.timer)
+                view.table.selection_set("assurance")
+                view.select()
+                self.assertIn("Unknown", view.details.get("1.0", "end"))
+                view.open_button.invoke()
+                self.assertEqual("Governance", center.current)
+                self.assertEqual(str(center.decision_page), center.governance_tabs.select())
+                self.assertFalse(view.active)
+                self.assertIsNone(view.timer)
+        self.assertEqual([], list(Path(self.temporary.name).iterdir()))
+
+    def test_wsl_readiness_narrow_keyboard_and_udm_guide_navigation(self):
+        from pulpo.setup_readiness import is_wsl
+        if not is_wsl():
+            self.skipTest("WSL-only checklist")
+        center = self.center
+        view = center.system_view.readiness
+        self.root.geometry("640x600")
+        center.show("System")
+        center.system_view.select_mode("Setup readiness")
+        self.root.update()
+        self.assertEqual(1, int(center.system_view.tabs["Setup readiness"].grid_info()["row"]))
+        self.assertLessEqual(sum(view.table.column(c, "width") for c in ("step", "state")), view.table.winfo_width())
+        view.table.focus_force()
+        self.root.update()
+        view.table.event_generate("<Down>")
+        self.root.update()
+        self.assertEqual("runtime", view.selected_row().key)
+        view.table.selection_set("udm_site")
+        view.select()
+        self.assertIn("No matching reviewed", view.details.get("1.0", "end"))
+        view.open_button.invoke()
+        self.assertEqual("Connections", center.current)
+        guide = center.connections_view.setup_guide
+        self.assertIsNotNone(guide.window)
+        guide.window.destroy()
+        center.show("System")
+        center.system_view.select_mode("Setup readiness")
+        view.render()
+        self.assertEqual("Unknown", next(row for row in view.rows if row.key == "udm_site").state)
+
     def test_navigation_refresh_and_repeated_visits_do_not_create_state(self):
         self.assertEqual("Overview", self.center.current)
         for _ in range(3):
@@ -803,6 +870,10 @@ class ControlCenterTests(unittest.TestCase):
             self.assertTrue(center.system_view.source_health.closed)
             self.assertIsNone(center.system_view.source_health.center)
             self.assertIsNone(center.system_view.source_health.timer)
+            if center.system_view.readiness is not None:
+                self.assertTrue(center.system_view.readiness.closed)
+                self.assertIsNone(center.system_view.readiness.center)
+                self.assertIsNone(center.system_view.readiness.timer)
             self.assertIsNone(page.timer)
             # Later worker collection must have no Tk variable left to finalize.
             worker = threading.Thread(target=gc.collect)
