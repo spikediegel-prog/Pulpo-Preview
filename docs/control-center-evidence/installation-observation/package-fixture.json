@@ -1,0 +1,36 @@
+{
+  "result": "PASS",
+  "package_sha256": "44e6a1debcb67b6dd246f2098d6f0c29a8dbb29ffc9a0c9e0b38544ac3745ab3",
+  "cycles": [
+    {
+      "classification": "LOCAL VALIDATION",
+      "cycle": 1,
+      "package_version": "0.1.0~ubuntu.preview.2",
+      "files": {
+        "match": 49
+      },
+      "bytes_read": 2126112,
+      "audit_valid": true,
+      "limits": "Manifest comparison only; source-reported audit integrity is not enforcement verification"
+    },
+    {
+      "classification": "LOCAL VALIDATION",
+      "cycle": 2,
+      "package_version": "0.1.0~ubuntu.preview.2",
+      "files": {
+        "match": 49
+      },
+      "bytes_read": 2126112,
+      "audit_valid": true,
+      "limits": "Manifest comparison only; source-reported audit integrity is not enforcement verification"
+    }
+  ],
+  "canonical_allowed": 98,
+  "canonical_consumed": 98,
+  "canonical_denied": 0,
+  "canonical_rejected": 0,
+  "control_center_readers": "both accepted",
+  "installed_fixture_unchanged": true,
+  "private_run_state_removed": true,
+  "limits": "Extracted package fixture in WSL with test-only root/UID redirection; no system package installed, no real VM or production source connected, no native GUI inspection or enforcement claim"
+}

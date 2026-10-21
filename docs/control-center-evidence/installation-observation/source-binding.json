@@ -1,0 +1,11 @@
+{
+  "implementation_revision": "ef269ab1121bbdeae5f97b9e844ff9c93efdaaf4",
+  "module_sha256": "a081f268c4951f9554ad690a51cf3255ec27c2789e20a99fb2045b565dd51518",
+  "test_module_sha256": "96ab73644de1f91da90307caadce64a3d19b44745f048f8b0a42786fa3d237b2",
+  "core_tests_run": 906,
+  "core_tests_passed": 904,
+  "core_tests_skipped": 2,
+  "fixture": "Extracted installer only; system root and UID redirected in test harness",
+  "native_execution": "Pending",
+  "authority_claim": "Local validation only; production enforcement Unknown"
+}
