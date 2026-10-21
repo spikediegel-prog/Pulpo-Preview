@@ -1,0 +1,8 @@
+{
+  "returncode": 0,
+  "log_sha256": "940fcdbb56e7827f06dc06acbeaca5ea7656795ee4412f6207e301c7639b1dd3",
+  "summary": [
+    "Ran 906 tests in 80.104s",
+    "OK (skipped=2)"
+  ]
+}
