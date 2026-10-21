@@ -16,6 +16,12 @@ Pulpo Preview is the testing ground for work that extends that model while prese
 
 ## ⭐ Featured: Windows Preview Installer Experience
 
+For the separate Ubuntu Control Center, an optional
+[local installation observation workload](docs/LOCAL_INSTALLATION_OBSERVATION.md)
+checks its installed public files through the existing one-use permit path and
+publishes the existing Governance/Evidence projections. It is explicitly local
+validation, not a production enforcement claim, and is never started by the UI.
+
 Pulpo Preview now includes a **portable Windows x64 setup executable** designed to make testing much easier.
 
 Instead of requiring testers to manually prepare a Python environment just to try the setup path, the Windows preview packages the setup CLI and Python runtime into:
