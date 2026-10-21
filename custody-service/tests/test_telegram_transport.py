@@ -130,6 +130,20 @@ class TelegramBotApiTransportTests(unittest.TestCase):
                     with self.assertRaises(TelegramExternalRealityUnknown):
                         self.transport().send_message(message)
 
+    def test_untrusted_response_structure_is_unknown_without_retry(self) -> None:
+        message = TelegramOutboundMessage(123456, 123, "governed hello")
+        valid = json.loads(provider_response())
+        for extra in ([0] * 2049, {"nested": "x" * 262145}):
+            payload = json.dumps(dict(valid, extra=extra)).encode()
+            with self.subTest(size=len(payload)), patch(
+                "pulpo_custody_service.telegram_transport.urllib_request.urlopen",
+                return_value=FakeResponse(payload),
+            ) as request:
+                with self.assertRaises(TelegramExternalRealityUnknown) as raised:
+                    self.transport().send_message(message)
+                self.assertEqual(message.message_hash, raised.exception.message_hash)
+                self.assertEqual(1, request.call_count)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,7 +14,7 @@ from dataclasses import asdict, dataclass
 from typing import Callable, Iterator
 
 from pulpo.authority import ApprovalEnvelope
-from pulpo.commerce import DomainPurchaseOrder, SQLiteBudgetAccount, purchase_intent
+from pulpo.commerce import CommerceViolation, DomainPurchaseOrder, SQLiteBudgetAccount, purchase_intent
 from pulpo.custody import AttemptAuthorization, CustodyViolation, SQLiteGovernanceCustody, TransitionReceipt
 from pulpo.custody_domain import GovernedDomainAttempt, GovernedDomainAttemptCoordinator
 from pulpo.custody_evidence import (
@@ -297,10 +297,21 @@ class DomainCustodyService:
             raise ServiceRejected("attempt_unknown")
         if snapshot.object_hash != handle.order_hash:
             raise ServiceRejected("attempt_handle_order_mismatch")
+        if snapshot.target_hash != handle.target_hash:
+            raise ServiceRejected("attempt_handle_target_mismatch")
         try:
             order = self.proposals.order_for_hash(snapshot.object_hash)
         except ProposalCommitmentViolation as exc:
             raise ServiceRejected(f"attempt_provenance_missing:{exc}") from exc
+        # Reject altered issuance fields before opening a kernel session: its
+        # startup audit verification may persist a checkpoint even on rejection.
+        try:
+            reservation = self.budget.reservation_for_order(order)
+        except CommerceViolation as exc:
+            raise ServiceRejected(f"attempt_reservation_missing:{exc}") from exc
+        if (reservation.reservation_id != handle.reservation_id
+                or reservation.reserved_cents != handle.reserved_cents):
+            raise ServiceRejected("attempt_handle_reservation_mismatch")
         try:
             with self._kernel_session() as kernel:
                 records = [row["payload"] for row in kernel.audit
