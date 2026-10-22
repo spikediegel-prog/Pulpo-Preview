@@ -104,3 +104,9 @@ Classification: implementation Proposed until admitted; test outcomes Verified
 only at their recorded commits. Current pin custody/freshness and production
 adoption remain Unknown. Continue with isolated Ubuntu WSL and negative tests;
 no installed runtime update, merge or deployment is part of this change.
+
+The constitutional mutation harness retains its initialization-transaction test
+with an updated exact source pattern and adds removal of the recovery comparison.
+Both must be killed by assertion failures in the existing/new negative tests;
+an unmatched pattern is invalid evidence and still fails the check. No mutation
+or enforcement gate is skipped to accommodate this change.
