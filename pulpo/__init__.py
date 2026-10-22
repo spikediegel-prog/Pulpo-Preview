@@ -35,7 +35,7 @@ from .orchestrator import (
     OrchestrationError,
     PulpoOrchestrator,
 )
-from .state import InMemoryKernelState, KernelState, SQLiteKernelState
+from .state import InMemoryKernelState, KernelState, SQLiteKernelState, StateRecoveryError
 from .resources import ResourceScope
 from .target_reconcile import (
     ArtifactCompletionEvidence,
@@ -45,6 +45,7 @@ from .target_reconcile import (
 from .targets import evaluate_locked_target_with_approval
 
 __all__ = [
+    "StateRecoveryError",
     "ResourceScope",
     "AdaptiveAuditVerificationEngine",
     "AgentGrant",
