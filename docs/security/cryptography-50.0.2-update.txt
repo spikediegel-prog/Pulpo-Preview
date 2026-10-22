@@ -1,0 +1,59 @@
+Cryptography 50.0.2 update — Ubuntu / Ubuntu WSL
+
+Change: advance the root authority extra, authority-service requirement, KMS
+probe image requirement, and optional Ubuntu audit constraint from 50.0.1 to
+50.0.2. Historical audit/performance records retain their original versions.
+The Linux wheel advances embedded OpenSSL from 4.0.2 to 4.0.3.
+
+Invariant: exact signature, key, payload, policy, deployment, freshness and
+replay checks must continue to fail closed. No authority is gained; no
+canonical-state mutation or new capability is introduced. The core dependency
+structure and optional cloud integrations are unchanged. No cloud connection
+or external service requirement is added by this patch.
+
+Verified evidence (JSON summaries in docs/evidence/cryptography-50.0.2):
+- Paired comparison at exact source 2140a528d82b600b801982eb2c8c188d43649631,
+  holding all other public versions fixed; only cryptography changed.
+- Python 3.14.4: both versions passed 1,031 tests, with six expected skips.
+- Python 3.11.16: both versions passed 1,030 tests, with seven expected skips.
+- Both comparisons passed dependency consistency and real MCP/HTTP probes.
+- Updated manifests installed successfully together using the Ubuntu audit
+  constraints, including all optional cloud/database profiles, on Python 3.14.
+  pip check passed. Focused checks passed 157 tests with four PostgreSQL skips
+  (41 core authority, 50 custody, 70 authority service including four skips).
+  Real MCP/HTTP probes passed with unchanged canonical SQL/audit and no provider
+  calls. Focused suite logs and installation summary are preserved alongside
+  the paired comparison summaries.
+
+Adversarial evidence includes valid Ed25519 and fixture P-256 signatures,
+signature/payload/key substitution rejection, malformed assertion rejection,
+expiry, permit replay, interrupted recovery/restart, and audit tampering.
+No private human authority material was used or added.
+
+Eight-pass review:
+Flip: hostile credentials remain subject to existing negative checks.
+Reverse: signature/binding and permit consumption remain earliest barriers.
+Invert: tests reject unauthorized success, not merely external execution.
+Inside-Out: the crypto backend does not acquire an authority or canonical writer.
+Darken: substituted signatures/corrupt state/replay are tested threat cases;
+no claim is made that these attacks occurred in production.
+Lighten: observed compatibility supports the tested paths only.
+Amplify: repeated-call, replay, restart and concurrency regressions passed;
+suite durations are not a performance benchmark.
+Negate: a dependency patch achieves the maintenance purpose without new routes,
+credentials, providers, or alternate execution mechanisms. Continue decision:
+the local source update is supported by the listed evidence.
+
+Temporal boundary: paired environments reconstructed the exact existing Git
+checkpoint with its history and evidence tag, preserving policy/authority.
+This verifies dependency transfer at that checkpoint, not a reusable authority
+lesson across arbitrary older states. No legacy control path was imported.
+
+Unknown / not proved: Python 3.11 container image build and container OS security
+(Docker socket requires administrator access); live PostgreSQL, KMS, IAM,
+Storage, Cloud SQL and physical WebAuthn ceremonies; bare-metal Ubuntu and
+other CPU architectures. Native Windows tests and Python 3.13+ SQLite warning
+tests are skipped where inapplicable. No performance change is proposed.
+Recorded: exact runtime identities and return codes in the evidence summaries.
+Proposed: release/deployment after the remaining target checks. No service,
+installed Control Center or system interpreter was updated by this source edit.

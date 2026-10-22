@@ -46,7 +46,11 @@ put an admin API key in the long-lived daemon.
 Install Pulpo with MCP support:
 
 ```text
-python3 -m pip install -e '.[mcp]'
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install --upgrade 'pip==26.2.2'
+python -m pip install -e '.[mcp]'
+python -m pip check
 ```
 
 Export the runtime key and exact tunnel ID only into the process environment:

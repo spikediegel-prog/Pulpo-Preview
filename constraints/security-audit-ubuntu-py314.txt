@@ -1,6 +1,7 @@
 # Reviewed Ubuntu 26.04 / CPython 3.14 audit resolution, 2026-10-17.
 # Optional constraints for reproducing the audit; not a cross-platform lock.
 # Excludes pip-audit and dependencies used only by the scanner.
+# Cryptography security patch advanced to 50.0.2 after paired Ubuntu WSL tests.
 # Usage: python -m pip install -c constraints/security-audit-ubuntu-py314.txt ".[authority,mcp]" "./custody-service[test]" "./authority-service[test,gcp-auth,gcp-kms,gcp-storage,gcp-cloud-sql]"
 aiohappyeyeballs==2.7.1
 aiohttp==3.14.5
@@ -11,12 +12,12 @@ anyio==4.14.2
 asn1crypto==1.5.1
 attrs==26.1.0
 cbor2==6.1.5
-certifi==2026.7.22
+certifi==2026.10.19
 cffi==2.1.1
 charset-normalizer==3.5.2
 click==8.5.0
 cloud-sql-python-connector==1.22.0
-cryptography==50.0.1
+cryptography==50.0.2
 dnspython==2.9.0
 fastapi==0.141.1
 frozenlist==1.8.0
