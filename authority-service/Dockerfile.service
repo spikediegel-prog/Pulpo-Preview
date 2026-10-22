@@ -12,7 +12,8 @@ WORKDIR /opt/pulpo
 
 COPY authority-service ./authority-service
 
-RUN python -m pip install --no-cache-dir \
+RUN python -m pip install --no-cache-dir --upgrade 'pip==26.2.2' \
+    && python -m pip install --no-cache-dir \
       './authority-service[gcp-auth,gcp-kms,gcp-storage,gcp-cloud-sql]' \
     && chown -R pulpo:pulpo /opt/pulpo
 

@@ -12,7 +12,8 @@ COPY pyproject.toml ./pyproject.toml
 COPY pulpo ./pulpo
 COPY custody-service ./custody-service
 
-RUN python -m pip install --no-cache-dir '.[authority]' './custody-service' \
+RUN python -m pip install --no-cache-dir --upgrade 'pip==26.2.2' \
+    && python -m pip install --no-cache-dir '.[authority]' './custody-service' \
     && mkdir -p /var/lib/pulpo \
     && chown -R pulpo:pulpo /var/lib/pulpo /opt/pulpo
 

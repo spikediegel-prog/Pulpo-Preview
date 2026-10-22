@@ -1,0 +1,82 @@
+Patched installation tooling — Ubuntu and Ubuntu WSL
+
+Change: bootstrap pip 26.2.2 before dependency installs in five Ubuntu workflow
+files (11 installation steps), and in all four authority/custody service/probe
+Dockerfiles. Docker chains the bootstrap with &&; workflow run blocks use
+GitHub's existing fail-on-error shell. No provider invocation or privileged
+workflow permission was added. Jobs that run zero-dependency tests are unchanged.
+Ubuntu and MCP setup documentation now uses a dedicated virtual environment,
+the patched pip, and pip check. The plugin host must use that environment's PATH.
+Historical audit records and native Windows build tooling are outside this
+Ubuntu-focused patch. The previous cryptography 50.0.2 update is preserved.
+
+Security purpose: avoid using the older seeded installer for application
+dependency installs. pip 26.2.2 is the reviewed patch release, including updated
+vendored certificate data. Sources:
+https://pip.pypa.io/en/stable/news/#v26-2-2
+https://pypi.org/project/pip/26.2.2/
+The pip-audit 2.10.1 database query for exact pip 26.2.2 returned no known
+advisories at verification time. This is not an exhaustive security guarantee
+or a full vendored-library/container operating-system audit.
+
+Verified installation evidence:
+- Fresh Python 3.11.16 and 3.14.4 Ubuntu WSL environments bootstrapped 26.2.2.
+- Minimal editable core installation and pip check passed on both versions.
+- Corrected network-audit-hook probes ran from outside the checkout using the
+  installed package, with no optional cryptography/MCP/cloud packages installed.
+  Core import, local allow/permit consumption and replay denial passed with
+  socket operations blocked. The probe also confirmed its guard rejects an
+  attempted socket creation. This proves the exercised path, not every UI or
+  optional integration path under a system-wide firewall.
+- All optional authority, custody, MCP, GCP and PostgreSQL-driver profiles
+  installed under the reviewed Ubuntu audit constraints on both versions.
+  pip check and MCP/HTTP boundary probes passed on both.
+- Python 3.14 minimal core: 917 tests run, 912 passed, five expected skips
+  (three optional Ed25519 cases and two native Windows cases).
+- On EACH version: authority service 70 run, 66 passed, four live PostgreSQL
+  skips; custody 50 passed. Total across these suites: 1,144 passed, 13 skipped.
+- All workflow YAML files parsed successfully in a separate tooling environment.
+- A first offline probe incorrectly replaced socket.socket, which broke ssl's
+  class definition during import. This was a harness failure, not a product
+  defect. It was replaced with an audit hook, repeated in clean minimal
+  environments, and passed. Original failure logs are retained in task evidence.
+
+Authority/evidence review:
+Invariant: install-time maintenance must not add runtime authority, a canonical
+writer, a provider route or a cloud-service dependency. Authority is unchanged;
+no canonical mutation is introduced by this patch. Downloads occur only during
+explicit installation/build. Local operation has no new service requirement.
+No OS-managed pip was overwritten and --break-system-packages is not used.
+Flip: installed inputs remain untrusted; dependency tooling is not an approver.
+Reverse: the patched bootstrap precedes dependency processing at each changed
+install step; failure stops the command chain before application installation.
+Invert: successful installation does not establish authority or production
+readiness; negative/replay and canonical-state probes remain required.
+Inside-Out: CI/container installation does not acquire human signing material
+or bypass the kernel; runtime authority paths are unchanged.
+Darken: malicious package/index input is a relevant threat; this patch reduces
+known installer exposure without claiming to make arbitrary packages trustworthy.
+Lighten: passing installs and scans establish the recorded bounded behavior.
+Amplify: repeated installs on both supported Python lines passed; no fleet/load
+or performance claim is made.
+Negate: project virtual environments and disposable build stages avoid changing
+Ubuntu-managed Python; zero-dependency jobs remain independent of this bootstrap.
+Continue decision: commit the local source/tooling update on its separate branch.
+
+Claim classifications: outcomes above Verified; exact logs/versions Recorded;
+unexecuted hosted CI and container builds Unknown. No private human authority
+material or production provider credentials were used. No legacy control path
+was copied. Temporal evidence uses exact preceding commit
+275db3e29ea6aa5178bff99ac85ae6f634cc41f0 plus the installation-only diff; prior
+cryptography paired tests remain recorded separately. No historical authority
+or policy is expanded and no general reusable authority lesson is claimed.
+
+Limits: Docker access requires an administrator password, so actual image builds
+were not run. Hosted workflows were parsed locally, not dispatched. Live cloud,
+PostgreSQL and physical WebAuthn ceremonies were not exercised. System pip and
+the installed Control Center were not upgraded; this change affects future
+project installs/builds. No merge or deployment was performed.
+
+Evidence summary: docs/evidence/patched-installation-tooling/.
+Full logs, corrected/initial probe results and installation evidence are retained
+in the task deliverable patched-installation-tooling-evidence.zip.

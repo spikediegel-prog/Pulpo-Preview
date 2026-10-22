@@ -14,7 +14,8 @@ WORKDIR /opt/pulpo
 COPY authority-service/src/pulpo_authority_service/cloud_sql_state.py ./authority-service/src/pulpo_authority_service/cloud_sql_state.py
 COPY authority-service/src/pulpo_authority_service/cloud_sql_probe.py ./authority-service/src/pulpo_authority_service/cloud_sql_probe.py
 
-RUN python -m pip install --no-cache-dir \
+RUN python -m pip install --no-cache-dir --upgrade 'pip==26.2.2' \
+    && python -m pip install --no-cache-dir \
       'cloud-sql-python-connector==1.22.0' \
       'pg8000==1.31.5' \
     && chown -R pulpo:pulpo /opt/pulpo
