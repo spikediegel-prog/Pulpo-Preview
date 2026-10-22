@@ -21,6 +21,9 @@ RUN python -m pip install --no-cache-dir --upgrade 'pip==26.2.2' 'setuptools==84
     && python -m pip check \
     && chown -R pulpo:pulpo /opt/pulpo
 
+# Service images do not need terminal inspection tools or SUID/SGID helpers.
+RUN find / -xdev -type f -perm /6000 -exec chmod a-s -- {} + \
+    && rm -f -- /usr/bin/infocmp
 USER pulpo
 
 CMD ["python", "-m", "pulpo_authority_service.cloud_sql_probe"]

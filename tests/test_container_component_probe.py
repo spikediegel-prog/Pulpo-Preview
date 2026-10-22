@@ -8,6 +8,17 @@ from scripts.security import probe_container_components as probe
 
 
 class ContainerComponentProbeTests(unittest.TestCase):
+    def test_hardened_probe_rejects_remaining_helper_or_infocmp(self):
+        for helpers, infocmp in [(['/usr/bin/mount'], None), ([], '/usr/bin/infocmp')]:
+            with patch.object(probe.os, 'geteuid', return_value=1000, create=True), \
+                 patch.object(probe.Path, 'read_text', return_value='CapEff:\t0000000000000000\nNoNewPrivs:\t1'), \
+                 patch.object(probe, 'command', return_value={}), \
+                 patch.object(probe, 'privileged_files', return_value=helpers), \
+                 patch.object(probe.shutil, 'which', side_effect=lambda name: infocmp if name=='infocmp' else None), \
+                 patch.object(probe, 'binary', return_value={'path':'/usr/bin/infocmp'}):
+                with self.assertRaisesRegex(RuntimeError, 'unexpected privilege helper'):
+                    probe.main(require_hardened=True)
+
     def test_privileged_or_incomplete_runtime_denied_before_command_execution(self):
         for uid, status in [(0, 'CapEff:\t0000000000000000\nNoNewPrivs:\t1'),
                             (1000, 'CapEff:\t0000000000000001\nNoNewPrivs:\t1'),
@@ -24,11 +35,12 @@ class ContainerComponentProbeTests(unittest.TestCase):
              patch.object(probe.Path, 'read_text', return_value='CapEff:\t0000000000000000\nNoNewPrivs:\t1'), \
              patch.object(probe.Path, 'exists', return_value=False), \
              patch.object(probe.shutil, 'which', return_value=None), \
+             patch.object(probe, 'privileged_files', return_value=[]), \
              patch.object(probe, 'command', return_value={'exit_code':0,'stdout':'','stderr':''}) as command, \
              patch.dict(probe.os.environ, {'PRIVATE_PROBE_SENTINEL':'do-not-export'}):
             output=io.StringIO()
             with contextlib.redirect_stdout(output):
-                probe.main()
+                probe.main(require_hardened=True)
             report=json.loads(output.getvalue())
             self.assertIn('no advisory waived',report['claim'])
             self.assertNotIn('do-not-export',output.getvalue())

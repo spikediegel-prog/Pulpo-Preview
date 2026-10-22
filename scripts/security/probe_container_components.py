@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import argparse
 import json
 import os
 from pathlib import Path
@@ -34,7 +35,19 @@ def binary(path: str) -> dict:
             "file_capabilities": capabilities, "sha256": digest.hexdigest()}
 
 
-def main() -> None:
+def privileged_files() -> list[str]:
+    found = set()
+    for root in ["/usr", "/bin", "/sbin"]:
+        for directory, _, names in os.walk(root):
+            for name in names:
+                path = Path(directory) / name
+                metadata = path.lstat()
+                if stat.S_ISREG(metadata.st_mode) and metadata.st_mode & (stat.S_ISUID | stat.S_ISGID):
+                    found.add(str(path.resolve()))
+    return sorted(found)
+
+
+def main(require_hardened: bool = False) -> None:
     status = {}
     for line in Path("/proc/self/status").read_text().splitlines():
         key, _, value = line.partition(":")
@@ -52,6 +65,9 @@ def main() -> None:
     for name in COMMANDS:
         path = shutil.which(name)
         commands[name] = binary(path) if path else {"present": False}
+    privileged = privileged_files()
+    if require_hardened and (privileged or commands["infocmp"].get("present") is not False):
+        raise RuntimeError("unexpected privilege helper or infocmp in hardened service image")
     modules = {}
     perl = shutil.which("perl")
     for module in ["Pod::Text", "Archive::Tar"]:
@@ -63,9 +79,13 @@ def main() -> None:
     print(json.dumps({"schema": "pulpo.container-component-evidence.v1", "python": sys.version,
                       "effective_uid": os.geteuid(), "process_security": status,
                       "fstab_noncomment_entries": len(entries), "commands": commands,
+                      "privileged_files": privileged, "hardened_required": require_hardened,
+                      "privileged_scan_roots": ["/usr", "/bin", "/sbin"],
                       "perl_modules": modules, "packages": packages,
                       "claim": "component inventory only; no advisory waived"}, indent=2))
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--require-hardened", action="store_true")
+    main(parser.parse_args().require_hardened)
