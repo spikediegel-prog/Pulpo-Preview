@@ -1,6 +1,7 @@
 # Selective Pulpo1.0 security backport, October 21, 2026
 
-Status: locally tested candidate; no push, PR, merge or deployment performed.
+Status: tested candidate for draft PR review. The follow-up user request authorized
+branch publication and a draft PR; no merge or deployment is authorized.
 Preview base: `c6f6e8e9e269616857df2f36a228eccfa9af75eb`.
 Branch: `backport/selective-pulpo-security-20261021`.
 
@@ -58,7 +59,7 @@ intact. Excluded files stay excluded.
   retained; authority API and custody admission tests passed. No second copy.
 - #247/#276: retain Preview's Windows native-handle snapshot reader and existing
   hardened publication path. Existing Windows replacement/handle-release tests
-  passed. Five POSIX-only controls explicitly skipped on Windows.
+  passed. Five POSIX-only controls skipped on Windows subsequently passed on Linux.
 - #316 `570e78c8430b73e09d9f9fcef5fa8769c60eaf48` also has an empty
   current PR file diff. Preview's Ollama adapter and tests are already present;
   they passed without downloading a model or making live inference calls.
@@ -72,7 +73,7 @@ intact. Excluded files stay excluded.
 - Additional ceremony/provenance schemas, proof labs, documentation and
   packaging changes were not imported. Mac-specific local-intelligence proof
   changes (#241/#287) need separate platform evidence and capability review;
-  this Windows run makes no containment claim for those scripts. No container
+  these focused runs make no containment claim for those scripts. No container
   build, dependency audit, live provider or production proof was performed.
 
 ## Reproduced evidence
@@ -101,6 +102,16 @@ commands are included with the exported logs.
   permission errors. The same selection passed as the normal Windows user with
   LOCALAPPDATA redirected to a task-local test folder. These initial errors are
   retained in the evidence archive; assertions were not weakened.
+
+Follow-up review: no additional actionable defect was found in this bounded diff.
+This is same-assistant review, not independently authenticated approval. Ubuntu
+WSL2 on Linux 6.18.33.2, Python 3.14.4, ran the same 147 core tests against an
+archive of exact commit `0a6a0dc6e5876b539f7ac42bf518c14dc93f20c7` on a native
+Linux temporary filesystem: 145 passed and two Windows-only tests skipped. All
+five previously skipped POSIX tests passed. The complete output is in
+`docs/evidence/selective-backport-20261021/linux-focused-validation.txt`.
+Subsequent publication changes only this record and that test log; runtime source
+and tests remain byte-identical to the reviewed and tested commit.
 
 ## Authority and adversarial transformation record
 
@@ -131,7 +142,7 @@ and reconciliation remain controlled by their original kernel/custody owners.
 Decision: continue to local reviewable candidate only. Verified: stated local
 test outcomes and diff. Recorded: pinned GitHub eligibility and source metadata.
 Proposed: admission of this branch. Unknown: production/provider consequences,
-POSIX semantics on this host, arbitrary hostile-store resistance and complete
+Mac-specific behavior, arbitrary hostile-store resistance and complete
 resource/host containment. JSON structural checks occur after a byte-bounded
 decode; snapshot checks are frozen admission thresholds, not a general sandbox.
 
