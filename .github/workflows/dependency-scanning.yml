@@ -72,6 +72,18 @@ jobs:
           DOCKERFILE: ${{ matrix.dockerfile }}
           IMAGE: ${{ matrix.image }}
         run: docker build --pull -f "$DOCKERFILE" -t "pulpo-dependency-audit:$IMAGE" .
+      - name: Record components and privileges in the exact built image
+        env:
+          IMAGE: ${{ matrix.image }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker image inspect "pulpo-dependency-audit:$IMAGE" > container-image-inspect.json
+          docker run --rm --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges:true \
+            --mount "type=bind,src=$PWD/scripts/security/probe_container_components.py,dst=/component-probe.py,readonly" \
+            --entrypoint python "pulpo-dependency-audit:$IMAGE" /component-probe.py \
+            > container-components.json
       - name: Scan OS and packaged dependencies with Grype
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7
         with:
@@ -88,7 +100,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: container-dependencies-${{ matrix.image }}-${{ github.sha }}
-          path: container-advisories.json
+          path: |
+            container-advisories.json
+            container-components.json
+            container-image-inspect.json
           if-no-files-found: error
 
   dependency-admission:

@@ -1,0 +1,52 @@
+Container advisory applicability review — evidence collection
+
+Review all 14 unresolved advisory IDs against the exact four image builds.
+No vulnerability waiver, VEX statement, severity reduction or scan suppression
+is introduced by this evidence-only change. Branch checks remain enforced.
+
+Primary-source prerequisites to verify:
+CVE-2025-69720: ncurses infocmp CLI analyze_string implementation.
+CVE-2026-102010: GCC libstdc++ PBDS binary-heap erase_if template implementation.
+CVE-2026-95619: libstdc++ aligned allocation overflow.
+CVE-2026-19499: glibc strfmon/strfmon_l with particular width/buffer conditions.
+CVE-2026-5435: legacy glibc DNS-record formatting functions and TSIG records.
+CVE-2026-54369/54370: privileged pathname ACL operations and attacker-controlled
+path components; Debian notes the fix involves new ABI, not a simple patch.
+CVE-2026-76642/78409/78410: particular privileged mount hooks/fstab paths.
+CVE-2026-78408: privileged nsenter --join-cgroup credential/file-descriptor path.
+CVE-2026-82560: Perl Pod::Text document formatting.
+CVE-2026-9538: Perl Archive::Tar entry-size processing.
+CVE-2026-85091: zlib nonblocking gz* write-buffer behavior, with affected-range
+questions requiring source-level verification for the installed Debian package.
+Sources: https://security-tracker.debian.org/tracker/<each-CVE-ID>
+These prerequisite summaries are Recorded source information, not proof of
+absence or applicability in Preview. A missing direct Python reference alone
+cannot prove a native dependency never executes vulnerable code.
+
+The new read-only probe records exact installed package file lists/versions,
+named component paths, hashes, SUID/SGID/file capabilities, Perl module loading,
+and the bounded process security context. It does not dump environment values
+or production credentials. It runs with the image's non-root user, no network,
+read-only root, no capabilities and no-new-privileges. A privileged or incomplete
+probe context fails before subprocess collection. Image identity is preserved
+with the report. No canonical Pulpo state or external provider is accessed.
+
+Eight-pass review: Flip — hostile evidence remains untrusted, not an approval.
+Reverse — require exact image/component evidence before disposition.
+Invert — a package/version label or passing probe does not clear a CVE.
+Inside-Out — collector has no production credential or canonical writer.
+Darken — vulnerable native paths may exist below Python imports; remain blocked
+where evidence is incomplete. Lighten — package-source matching may cover code
+not present in a binary package; prove that before calling it unaffected.
+Amplify — collect all four images and reject elevated/missing security context.
+Negate — use an isolated read-only probe rather than executing exploit payloads
+or changing runtime/scan policy. Continue: collect evidence only.
+
+Claim classes: prerequisites Recorded; before/after scanner matches Verified;
+component presence Unknown until hosted probe evidence is read; reachability
+Unknown unless supported separately. The exact prior checkpoint is
+a9513ecc372871796181d59353abbd22ad6a676c (same tree as published
+2834da97f277aeab175eafaa03156e3cd6a9261c). No historical authority expansion,
+legacy control-path import or general temporal-transfer claim is introduced.
+No merge or deployment. Future source-level backport or not-affected claims
+require their own evidence and regression tests; this probe cannot grant them.
