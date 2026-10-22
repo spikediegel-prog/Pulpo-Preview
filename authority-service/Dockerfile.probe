@@ -1,4 +1,4 @@
-FROM python:3.11-slim@sha256:9534e5a8e315485d4061ed659af0fd78a284c015f9b73661b41d6bab25604534
+FROM python:3.11.17-slim-trixie@sha256:cce12316475d7d56d605f76e1d811d0dc4e7227f2d4afd29951521264f504ff8
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -14,10 +14,11 @@ WORKDIR /opt/pulpo
 COPY authority-service/src/pulpo_authority_service/cloud_sql_state.py ./authority-service/src/pulpo_authority_service/cloud_sql_state.py
 COPY authority-service/src/pulpo_authority_service/cloud_sql_probe.py ./authority-service/src/pulpo_authority_service/cloud_sql_probe.py
 
-RUN python -m pip install --no-cache-dir --upgrade 'pip==26.2.2' \
+RUN python -m pip install --no-cache-dir --upgrade 'pip==26.2.2' 'setuptools==84.2.1' 'wheel==0.48.0' \
     && python -m pip install --no-cache-dir \
       'cloud-sql-python-connector==1.22.0' \
       'pg8000==1.31.5' \
+    && python -m pip check \
     && chown -R pulpo:pulpo /opt/pulpo
 
 USER pulpo

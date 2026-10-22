@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11.17-slim-trixie@sha256:cce12316475d7d56d605f76e1d811d0dc4e7227f2d4afd29951521264f504ff8
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -12,9 +12,10 @@ COPY pyproject.toml ./pyproject.toml
 COPY pulpo ./pulpo
 COPY custody-service ./custody-service
 
-RUN python -m pip install --no-cache-dir --upgrade 'pip==26.2.2' \
+RUN python -m pip install --no-cache-dir --upgrade 'pip==26.2.2' 'setuptools==84.2.1' 'wheel==0.48.0' \
     && python -m pip install --no-cache-dir '.[authority]' './custody-service' \
     && mkdir -p /var/lib/pulpo \
+    && python -m pip check \
     && chown -R pulpo:pulpo /var/lib/pulpo /opt/pulpo
 
 USER pulpo
