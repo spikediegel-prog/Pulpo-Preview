@@ -12,6 +12,7 @@ from hashlib import sha256
 import hmac
 import json
 from os import PathLike
+from pathlib import Path
 import sqlite3
 from threading import RLock
 from typing import Any, Callable, Protocol
@@ -232,17 +233,98 @@ class InMemoryKernelState:
             return None
 
 
+class StateRecoveryError(ValueError):
+    """Recovery cannot establish equality with the independently trusted state."""
+
+
+_RECOVERY_PREFIX = "pulpo.sqlite.recovery.v1:"
+_RECOVERY_TABLES = frozenset({"permits", "approvals", "directives", "permit_directives",
+                              "audit", "audit_head", "audit_integrity_schema"})
+
+
+def _validate_recovery_checkpoint(value: str) -> None:
+    if (type(value) is not str or not value.startswith(_RECOVERY_PREFIX)
+            or len(value) != len(_RECOVERY_PREFIX) + 64
+            or any(char not in "0123456789abcdef" for char in value[len(_RECOVERY_PREFIX):])):
+        raise StateRecoveryError("a valid independently trusted recovery checkpoint is required")
+
+
+def _recovery_checkpoint(connection: sqlite3.Connection) -> str:
+    """Fingerprint canonical data in the caller's single SQLite transaction.
+
+    A digest is a comparison value, not evidence of freshness or an approval.
+    The disposable audit-verification cache is deliberately excluded. Unexpected
+    tables/views are refused rather than silently leaving state outside the pin.
+    """
+    objects = connection.execute(
+        "SELECT type, name, tbl_name, sql FROM sqlite_master ORDER BY type, name"
+    ).fetchall()
+    tables = {name for kind, name, _, _ in objects if kind == "table" and not name.startswith("sqlite_")}
+    if (tables - {"audit_verification_checkpoint"} != _RECOVERY_TABLES
+            or any(kind == "view" or (sql and "CREATE VIRTUAL TABLE" in sql.upper())
+                   for kind, _, _, sql in objects)):
+        raise StateRecoveryError("unsupported or incomplete recovery schema")
+    digest = sha256(_RECOVERY_PREFIX.encode())
+    def add(value):
+        encoded = _canonical(value)
+        digest.update(len(encoded).to_bytes(8, "big"))
+        digest.update(encoded)
+    add([obj for obj in objects if not (obj[0] == "table" and obj[1] == "audit_verification_checkpoint")
+         and not obj[1].startswith("sqlite_")])
+    for table in sorted(_RECOVERY_TABLES):
+        add(table)
+        # Identifiers come only from the fixed canonical table allowlist.
+        rows = connection.execute('SELECT * FROM "' + table + '"').fetchall()
+        for encoded in sorted(_canonical(row) for row in rows):
+            digest.update(len(encoded).to_bytes(8, "big"))
+            digest.update(encoded)
+    return _RECOVERY_PREFIX + digest.hexdigest()
+
+
 class SQLiteKernelState:
-    def __init__(self, path: str | PathLike[str], *, index_audit_events: bool = False) -> None:
-        self._connection = sqlite3.connect(path, factory=ObservedConnection)
+    def __init__(self, path: str | PathLike[str], *, index_audit_events: bool = False,
+                 expected_recovery_checkpoint: str | None = None) -> None:
+        if expected_recovery_checkpoint is not None:
+            _validate_recovery_checkpoint(expected_recovery_checkpoint)
+            # Recovery must never turn a missing snapshot into a new empty state.
+            path = Path(path).absolute().as_uri() + "?mode=rw"
+        self._connection = sqlite3.connect(path, factory=ObservedConnection,
+                                           uri=expected_recovery_checkpoint is not None)
         self._closed = False
         try:
-            self._initialize(index_audit_events=index_audit_events)
+            self._initialize(index_audit_events=index_audit_events,
+                             expected_recovery_checkpoint=expected_recovery_checkpoint)
         except BaseException:
             self.close()
             raise
 
-    def _initialize(self, *, index_audit_events: bool) -> None:
+    @classmethod
+    def recover(cls, path: str | PathLike[str], *, expected_checkpoint: str) -> "SQLiteKernelState":
+        """Open restored state only against a separately retained CURRENT pin.
+
+        Keep execution stopped. If the latest trusted pin is unavailable, do not
+        derive it from this backup or use ordinary construction as a fallback.
+        This does not protect raw file replacement or co-rollback of the pin.
+        """
+        _validate_recovery_checkpoint(expected_checkpoint)
+        return cls(path, expected_recovery_checkpoint=expected_checkpoint)
+
+    def recovery_checkpoint(self) -> str:
+        """Capture a read-only comparison pin after canonical audit verification.
+
+        Quiesce all writers and retain the pin independently of backup rollback.
+        Every subsequent canonical write invalidates it; freshness is the trusted
+        operator's responsibility. No checkpoint store or writer is created.
+        """
+        if self._connection.in_transaction:
+            raise StateRecoveryError("checkpoint capture requires no pending transaction")
+        with self._connection:
+            self._connection.execute("BEGIN")
+            self._checked_audit_rows()
+            return _recovery_checkpoint(self._connection)
+
+    def _initialize(self, *, index_audit_events: bool,
+                    expected_recovery_checkpoint: str | None = None) -> None:
         self._connection.execute("PRAGMA foreign_keys = ON")
         self._connection.execute("PRAGMA synchronous = FULL")
         # executescript commits an existing transaction before running. Execute
@@ -250,6 +332,10 @@ class SQLiteKernelState:
         # validation, legacy ALTERs, head adoption and trigger publication.
         with self._connection:
             self._connection.execute("BEGIN IMMEDIATE")
+            if expected_recovery_checkpoint is not None:
+                actual = _recovery_checkpoint(self._connection)
+                if not hmac.compare_digest(actual, expected_recovery_checkpoint):
+                    raise StateRecoveryError("restored state does not match the trusted current checkpoint")
             self._initialize_transaction(index_audit_events=index_audit_events)
 
     def _initialize_transaction(self, *, index_audit_events: bool) -> None:
