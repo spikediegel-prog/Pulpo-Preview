@@ -11,7 +11,8 @@ System shows every available option under four visible category headings:
 
 There is no category-selection step or hidden second row. Selecting an option
 highlights it and shows a short explanation of its purpose. Buttons wrap into
-fewer columns for narrow windows and larger fonts. Ctrl+K uses the same visible
+fewer columns for narrow windows and larger fonts. The separate Control Center's
+Ctrl+K search uses the same visible
 names and accepts storage terms including NAS, SMB, NFS, SAN and retention;
 previous search words continue to work.
 
