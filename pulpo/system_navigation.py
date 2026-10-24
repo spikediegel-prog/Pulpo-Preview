@@ -1,12 +1,26 @@
-"""Grouped WSL navigation over unchanged System view names and actions."""
+"""Visible, task-named System destinations over the existing view/action keys."""
 GROUPS = {
-    "Monitor": ("Diagnostics", "Source health", "Troubleshooting"),
-    "Set up": ("Setup readiness", "Session setup"),
-    "Tune": ("Configuration", "Tuning & benchmarks"),
+    "System health": ("Diagnostics", "Source health", "Troubleshooting"),
+    "Setup & storage": ("Setup readiness", "Session setup"),
+    "Appearance": ("Display preferences",),
+    "Performance": ("Configuration", "Tuning & benchmarks"),
 }
-LABELS = {"Source health": "Sources", "Troubleshooting": "Troubleshoot",
-    "Setup readiness": "Guide & checklist", "Session setup": "Remember setup",
-    "Configuration": "Compare settings", "Tuning & benchmarks": "Benchmarks"}
+LABELS = {
+    "Diagnostics": "System status", "Source health": "Export sources",
+    "Troubleshooting": "Troubleshooting", "Setup readiness": "Setup guide",
+    "Session setup": "Storage & saved setup", "Display preferences": "Appearance",
+    "Configuration": "Performance settings", "Tuning & benchmarks": "Benchmark tools",
+}
+DESCRIPTIONS = {
+    "Diagnostics": "View this machine's resources, installation details and diagnostics.",
+    "Source health": "Review selected owner exports, their freshness and missing observations.",
+    "Troubleshooting": "Investigate a selected problem and explicitly run an available check.",
+    "Setup readiness": "Follow the setup guide or review the observation checklist.",
+    "Session setup": "Plan customer evidence storage, acknowledge responsibilities and save startup preferences.",
+    "Display preferences": "Choose the theme, text size and spacing.",
+    "Configuration": "Compare the current evidence-worker setting with a proposal.",
+    "Tuning & benchmarks": "Run a disposable performance comparison before explicitly saving a tested setting.",
+}
 
 
 def reflow(frame, buttons, width, maximum=3):
@@ -27,49 +41,41 @@ class SystemNavigation:
         self.group = None
         self.frame = ttk.Frame(parent)
         self.frame.pack(fill="x", pady=(0, 12))
-        self.group_buttons = {}
-        self.last_modes = {name: values[0] for name, values in GROUPS.items()} if grouped else {}
+        self.primary = ttk.Frame(self.frame)
+        self.primary.pack(fill="x")
+        self.sections = {}
+        self.tabs = {}
         if grouped:
-            self.primary = ttk.Frame(self.frame)
-            self.primary.pack(fill="x", pady=(0, 3))
-            for name in GROUPS:
-                self.group_buttons[name] = ttk.Button(self.primary, text=name, command=lambda n=name: self.choose_group(n))
-            self.primary.bind("<Configure>", lambda event: reflow(self.primary, list(self.group_buttons.values()), event.width))
-        self.secondary = ttk.Frame(self.frame)
-        self.secondary.pack(fill="x")
-        self.tabs = {mode: ttk.Button(self.secondary, text=LABELS.get(mode, mode) if grouped else mode,
-            command=lambda m=mode: select_mode(m)) for mode in modes}
-        self.secondary.bind("<Configure>", lambda event: self.layout(event.width))
-        self.location = ttk.Label(self.frame, text="", style="Muted.TLabel", justify="left", wraplength=700) if grouped else None
-        if self.location is not None:
-            self.location.pack(fill="x", pady=(4, 0))
+            for title, members in GROUPS.items():
+                visible = [mode for mode in members if mode in modes]
+                if not visible: continue
+                ttk.Label(self.primary, text=title, style="Muted.TLabel").pack(anchor="w", pady=(6, 0))
+                row = ttk.Frame(self.primary)
+                row.pack(fill="x")
+                self.sections[title] = row
+                for mode in visible:
+                    self.tabs[mode] = ttk.Button(row, text=LABELS[mode], command=lambda m=mode: select_mode(m))
+                row.bind("<Configure>", lambda event: self.layout(event.width))
+        else:
+            self.sections["System"] = self.primary
+            self.tabs = {mode: ttk.Button(self.primary, text=LABELS.get(mode, mode),
+                command=lambda m=mode: select_mode(m)) for mode in modes}
+            self.primary.bind("<Configure>", lambda event: self.layout(event.width))
+        self.location = ttk.Label(self.frame, text="", style="Muted.TLabel", justify="left", wraplength=700)
+        self.location.pack(fill="x", pady=(8, 0))
         self.show_mode("Diagnostics")
-
-    def choose_group(self, name):
-        if name not in self.last_modes: raise ValueError("Unknown System group")
-        self.select_mode(self.last_modes[name])
 
     def show_mode(self, mode):
         if mode not in self.tabs: raise ValueError("Unknown System view")
-        if self.grouped:
-            self.group = next(name for name, values in GROUPS.items() if mode in values)
-            self.last_modes[self.group] = mode
-            for name, button in self.group_buttons.items():
-                button.configure(style="Active.Range.TButton" if name == self.group else "TButton")
-            self.location.configure(text=f"{self.group} · {mode}")
+        self.group = next((title for title, members in GROUPS.items() if mode in members), "System")
         for name, button in self.tabs.items():
-            button.grid_forget()
-            button.configure(style="Active.Range.TButton" if name == mode else "TButton")
-        self.layout(self.secondary.winfo_width())
+            button.configure(style="Active.Range.TButton" if name == mode else "Overview.TButton")
+        self.location.configure(text=f"{LABELS.get(mode, mode)} · {DESCRIPTIONS.get(mode, '')}")
+        self.layout(self.primary.winfo_width())
 
     def layout(self, width):
-        if self.grouped:
-            visible = [self.tabs[name] for name in GROUPS[self.group]]
-            reflow(self.secondary, visible, width)
-            self.location.configure(wraplength=max(220, width))
-        else:
-            # Existing non-WSL three-view layout is retained.
-            columns = 2 if width < 600 else 3
-            for index, button in enumerate(self.tabs.values()):
-                button.grid(row=index // columns, column=index % columns, sticky="ew", padx=(0, 6), pady=3)
-            for column in range(3): self.secondary.columnconfigure(column, weight=1 if column < columns else 0)
+        for title, row in self.sections.items():
+            members = GROUPS[title] if self.grouped else self.tabs
+            buttons = [self.tabs[name] for name in members if name in self.tabs]
+            reflow(row, buttons, width)
+        self.location.configure(wraplength=max(220, width))
