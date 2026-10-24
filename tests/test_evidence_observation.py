@@ -103,6 +103,25 @@ class EvidenceProjectionTests(unittest.TestCase):
         self.assertLess(self.path.stat().st_size, 16384)
         self.assertIsNone(snapshot.ai.cost_microusd)
 
+    @unittest.skipUnless(os.name == "posix", "owner publication filesystem contract")
+    def test_failed_export_preserves_evidence_and_consumed_permit(self):
+        intent = Intent("agent:test", "read", "test-only", 0)
+        decision = self.kernel.evaluate(intent)
+        self.assertTrue(self.kernel.consume(decision.permit, intent))
+        export_evidence_observation(self.owner, self.path)
+        original = self.path.read_bytes()
+        audit = self.kernel.audit
+        writes = self.backend._connection.activity["writes"]
+        with patch("pulpo.mcp_boundary.os.replace", side_effect=OSError("TEST ONLY storage unavailable")):
+            from pulpo.mcp_boundary import MCPBoundaryError
+            with self.assertRaisesRegex(MCPBoundaryError, "commit_unknown"):
+                export_evidence_observation(self.owner, self.path)
+        self.assertEqual(original, self.path.read_bytes())
+        self.assertEqual(audit, self.kernel.audit)
+        self.assertEqual(writes, self.backend._connection.activity["writes"])
+        self.assertTrue(self.kernel.verify_audit())
+        self.assertFalse(self.kernel.consume(decision.permit, intent))
+
     def test_owner_transaction_and_wrong_dependency_are_rejected(self):
         with self.assertRaises(TypeError):
             freeze_evidence_observation(self.kernel)

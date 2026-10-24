@@ -706,10 +706,8 @@ class ControlCenterTests(unittest.TestCase):
         self.assertFalse(guide.active)
         self.assertFalse(readiness.guide_visible)
 
-    def test_wsl_system_groups_preserve_deep_links_and_last_view_without_reads(self):
-        from pulpo.setup_readiness import is_wsl
-        from pulpo.system_navigation import GROUPS
-        if not is_wsl(): self.skipTest("WSL-only grouped navigation")
+    def test_system_destinations_stay_visible_and_preserve_deep_links_without_reads(self):
+        from pulpo.system_navigation import GROUPS, LABELS
         system = self.center.system_view
         navigation = system.navigation
         self.root.geometry("640x600")
@@ -718,21 +716,20 @@ class ControlCenterTests(unittest.TestCase):
              patch("pulpo.connections_page.load_connection_observation", side_effect=AssertionError("No navigation reads")), \
              patch("pulpo.governance_observer.observe_snapshot", side_effect=AssertionError("No navigation reads")), \
              patch("pulpo.session_preferences.save", side_effect=AssertionError("No navigation saves")):
-            for mode, group in (("Troubleshooting", "Monitor"), ("Session setup", "Set up"), ("Configuration", "Tune"),
-                    ("Source health", "Monitor"), ("Setup readiness", "Set up"), ("Tuning & benchmarks", "Tune")):
-                system.select_mode(mode)
+            for mode, button in system.tabs.items():
+                button.invoke()
                 self.root.update()
-                self.assertEqual(group, navigation.group)
-                self.assertIn(mode, navigation.location.cget("text"))
-                self.assertTrue(system.tabs[mode].winfo_ismapped())
-                self.assertTrue(all(not button.winfo_ismapped() for name, button in system.tabs.items()
-                    if name not in GROUPS[group]))
-            navigation.group_buttons["Monitor"].invoke()
-            self.assertEqual("Source health", system.mode)
-            navigation.group_buttons["Set up"].invoke()
-            self.assertEqual("Setup readiness", system.mode)
-            navigation.group_buttons["Tune"].invoke()
-            self.assertEqual("Tuning & benchmarks", system.mode)
+                self.assertEqual(mode, system.mode)
+                self.assertEqual(LABELS[mode], button.cget("text"))
+                self.assertIn(LABELS[mode], navigation.location.cget("text"))
+                self.assertTrue(all(b.winfo_ismapped() for b in system.tabs.values()))
+                self.assertEqual([mode], [key for key, b in system.tabs.items()
+                    if str(b.cget("style")) == "Active.Range.TButton"])
+            for width in (480, 640):
+                self.root.geometry(f"{width}x640")
+                self.root.update()
+                for button in system.tabs.values():
+                    self.assertLessEqual(button.winfo_x() + button.winfo_width(), button.master.winfo_width())
             with self.assertRaises(ValueError): system.select_mode("unsupported")
         self.assertEqual([], list(Path(self.temporary.name).iterdir()))
 
@@ -784,7 +781,7 @@ class ControlCenterTests(unittest.TestCase):
         self.root.update()
         navigation = system.navigation
         self.assertLessEqual(navigation.primary.winfo_reqwidth(), self.center.canvas.winfo_width())
-        for button in (*navigation.group_buttons.values(), *(b for b in system.tabs.values() if b.winfo_ismapped())):
+        for button in tuple(system.tabs.values()):
             self.assertLessEqual(button.winfo_x() + button.winfo_width(), self.center.canvas.winfo_width())
         self.center.show("Overview")
         strip = self.center.monitor.strip
