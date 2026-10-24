@@ -14,7 +14,7 @@ class SessionPage:
         self.preferred_page = tk.StringVar(master=self.root, value="Overview")
         self.preferred_tab = tk.StringVar(master=self.root, value="Diagnostics")
         center = self.center
-        center.text(page, "Remember this setup · WSL", "Heading.TLabel")
+        center.text(page, "Storage & saved setup", "Heading.TLabel")
         center.text(page, "Optional: save the currently selected owner-export locations, three graph ranges and preferred startup view. "
             "Changes are saved only when you press Remember this setup. No save on close.", "Muted.TLabel")
         options = ttk.Frame(page)
