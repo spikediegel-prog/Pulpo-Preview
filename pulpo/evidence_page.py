@@ -131,6 +131,8 @@ class EvidencePage:
         if self.clarity:
             self.warnings.pack_forget()
         self.warnings.configure(foreground=PALETTE["warning"])
+        from .storage_policy import RESPONSIBILITY
+        center.text(page, RESPONSIBILITY, "Muted.TLabel")
         center.text(page, "Evidence event index", "Heading.TLabel")
         center.text(page, "Latest 24 redacted canonical event references, not a second audit log. "
                     "Select and copy a record hash to locate full evidence through the existing trusted audit path. "

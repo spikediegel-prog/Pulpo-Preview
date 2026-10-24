@@ -19,7 +19,8 @@ def preference_path(profile):
 
 
 def validate(value):
-    if (type(value) is not dict or set(value) != {"schema", "sources", "ranges", "page", "system_tab"}
+    required = {"schema", "sources", "ranges", "page", "system_tab"}
+    if (type(value) is not dict or not required <= set(value) <= required | {"storage"}
             or value["schema"] != SCHEMA or value["page"] not in PAGES or value["system_tab"] not in TABS
             or type(value["sources"]) is not dict or not set(value["sources"]) <= set(SOURCES)
             or type(value["ranges"]) is not dict or set(value["ranges"]) != set(RANGES)):
@@ -31,6 +32,9 @@ def validate(value):
             raise ValueError("invalid_source_location")
     if any(type(n) is not int or n not in {60, 900, 3600} for n in value["ranges"].values()):
         raise ValueError("invalid_range")
+    if "storage" in value:
+        from .storage_policy import validate as validate_storage
+        validate_storage(value["storage"])
     return value
 
 

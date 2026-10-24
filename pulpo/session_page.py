@@ -24,6 +24,8 @@ class SessionPage:
             ttk.Label(options, text=label).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=4)
             ttk.Combobox(options, textvariable=variable, values=values, state="readonly", width=24).grid(row=row, column=1, sticky="ew", pady=4)
         options.columnconfigure(1, weight=1)
+        from .storage_settings import StorageSettings
+        self.storage = StorageSettings(center, page)
         self.summary = center.text(page, "", "Muted.TLabel")
         ttk.Button(page, text="Review current setup", command=self.render).pack(anchor="w", pady=(0, 8))
         ttk.Button(page, text="Remember this setup", command=self.remember).pack(anchor="w", pady=(0, 8))
@@ -43,7 +45,8 @@ class SessionPage:
         sources = {key: str(path) for key, path in center.connections_view.paths.items()}
         if center.governance_path is not None: sources["Governance"] = str(center.governance_path)
         if center.evidence_view.path is not None: sources["Evidence"] = str(center.evidence_view.path)
-        return preferences.validate({"schema": preferences.SCHEMA, "sources": sources,
+        storage = self.storage.capture()
+        return preferences.validate({**({"storage": storage} if storage is not None else {}), "schema": preferences.SCHEMA, "sources": sources,
             "ranges": {"overview": center.monitor.seconds, "system": self.system.monitor.seconds, "evidence": center.evidence_view.seconds},
             "page": self.preferred_page.get(), "system_tab": self.preferred_tab.get()})
 
@@ -55,7 +58,7 @@ class SessionPage:
             self.summary.configure(text="Current locations to remember · paths only\n" + locations +
                 "\n\nGraph ranges (seconds): " + ", ".join(f"{key} {n}" for key, n in value["ranges"].items()))
         except (ValueError, TypeError):
-            self.summary.configure(text="Current setup is not supported for saving. Choose supported pages, ranges and absolute local export paths.")
+            self.summary.configure(text="Current setup is not supported for saving. Choose supported pages, ranges and absolute paths; acknowledge the storage plan after any edit.")
 
     def set_active(self, active):
         if active and not self.closed: self.render()
@@ -64,6 +67,7 @@ class SessionPage:
         try:
             value = preferences.load(self.path)
             if value is None: return
+            self.storage.restore(value.get("storage"))
             self.preferred_page.set(value["page"])
             self.preferred_tab.set(value["system_tab"])
             center = self.center
@@ -97,10 +101,10 @@ class SessionPage:
         if self.closed: return
         try:
             preferences.save(self.path, self.capture())
-            self.status.configure(text="Setup saved privately. Next launch restores locations only; sources require explicit re-read. Changes after this save are not remembered automatically.")
+            self.status.configure(text="Setup saved privately. Next launch restores locations only; sources require explicit re-read. Any storage plan acknowledgment is recorded locally; delivery, durability and retention remain unverified. Changes after this save are not remembered automatically.")
             self.render()
         except (OSError, ValueError, TypeError, RecursionError):
-            self.status.configure(text="Could not save setup. Check private directory/file access and supported values. No diagnostic contents were logged.")
+            self.status.configure(text="Could not save setup. Check private directory/file access and supported values. Check the storage plan path and acknowledgment after edits. No diagnostic contents were logged.")
 
     def forget(self):
         if self.closed: return
@@ -113,5 +117,7 @@ class SessionPage:
     def destroy(self, event):
         if event.widget is self.root:
             self.closed = True
+            self.storage.close()
+            self.storage = None
             self.preferred_page = self.preferred_tab = None
             self.center = self.system = None

@@ -1,5 +1,7 @@
 # Pulpo Preview — The Mad Lads Playground
 
+Customer data handling: see [evidence storage responsibilities and supported choices](docs/CUSTOMER_EVIDENCE_STORAGE.md).
+
 > **Unofficial Pulpo preview and tester branch maintained in `spikediegel-prog/Pulpo-Preview`.**
 >
 > Explore upcoming Pulpo features, combined PR work, performance improvements, Windows packaging, and governance proofs before upstream release.
