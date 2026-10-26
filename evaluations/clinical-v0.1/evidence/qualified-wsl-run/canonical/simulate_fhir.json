@@ -1,0 +1,13 @@
+{
+  "entry": [
+    {
+      "resource": {
+        "active": true,
+        "id": "SYNTHETIC-001",
+        "resourceType": "Patient"
+      }
+    }
+  ],
+  "resourceType": "Bundle",
+  "type": "collection"
+}
