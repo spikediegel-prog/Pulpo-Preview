@@ -51,9 +51,16 @@ MUTATIONS: tuple[Mutation, ...] = (
     Mutation(
         "sqlite_upgrade_transaction_removed",
         "pulpo/state.py",
-        'self._connection.execute("BEGIN IMMEDIATE")\n            self._initialize_transaction',
-        'self._initialize_transaction',
+        'self._connection.execute("BEGIN IMMEDIATE")\n            if expected_recovery_checkpoint is not None:',
+        'if expected_recovery_checkpoint is not None:',
         ("tests.test_audit_integrity_migration.AuditIntegrityMigrationTests.test_failed_alter_rolls_back_all_schema_changes",),
+    ),
+    Mutation(
+        "recovery_current_checkpoint_comparison_removed",
+        "pulpo/state.py",
+        'if not hmac.compare_digest(actual, expected_recovery_checkpoint):',
+        'if False and not hmac.compare_digest(actual, expected_recovery_checkpoint):',
+        ("tests.test_guarded_recovery.GuardedRecoveryTests.test_stale_valid_backup_rejected_before_initialization_or_any_write",),
     ),
     Mutation(
         "durable_audit_head_comparison_removed",

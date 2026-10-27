@@ -22,7 +22,7 @@ STEPS = (
      "Live service health remains Unknown without an observation contract; there is no automatic repair or bulk check.",
      (("Open Troubleshooting", "Troubleshooting"),)),
     ("Optionally remember your setup",
-     "Review Session setup if you want to remember export locations, graph ranges and startup choices. Press Remember this setup there to save explicitly. "
+     "Review Session setup to record and acknowledge your customer storage plan, or remember export locations, graph ranges and startup choices. Customers own long-term storage, retention obligations, backups and legal holds. The plan does not activate transfers or deletion. Press Remember this setup there to save explicitly. "
      "The guide does not save anything. Restored sources start Not checked this session; credentials, results and authority are not remembered. "
      "You can return to Overview with remaining gaps; reaching this step is not an overall Ready or governed verdict.",
      (("Review Session setup", "Session setup"),)),

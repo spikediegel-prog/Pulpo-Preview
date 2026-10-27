@@ -1,5 +1,7 @@
 # Pulpo Preview — The Mad Lads Playground
 
+Customer data handling: see [evidence storage responsibilities and supported choices](docs/CUSTOMER_EVIDENCE_STORAGE.md).
+
 > **Unofficial Pulpo preview and tester branch maintained in `spikediegel-prog/Pulpo-Preview`.**
 >
 > Explore upcoming Pulpo features, combined PR work, performance improvements, Windows packaging, and governance proofs before upstream release.
@@ -13,6 +15,52 @@
 > **Intelligence proposes. Governance disposes. Execution obeys. Evidence reports.**
 
 Pulpo Preview is the testing ground for work that extends that model while preserving the core invariant: **learning, performance, memory, successful execution, or added capability never grants authority.**
+
+## Evidence storage and customer responsibilities
+
+**Pulpo is not an indefinite evidence archive or a NAS.** Pulpo provides its
+documented evidence generation, integrity checks and supported exports. Customers
+are responsible for long-term storage, retention obligations, access controls,
+backups, tested recovery and legal holds. A saved storage plan or acknowledgment
+does not establish compliance, archive completeness or verified delivery.
+
+Local observation history and dashboard exports are bounded. The Evidence
+snapshot contains counters and at most **24 recent sanitized events**; subsequent
+publication replaces the snapshot. It is not a complete historical audit archive.
+The canonical audit currently has **no automatic size/time retention or safe
+pruning API** and continues to grow. Monitor capacity and manage workload through
+the existing governed owner path; no automatic capacity admission controller is
+provided by these settings.
+
+| Customer infrastructure | Current support |
+| --- | --- |
+| Local filesystem | Explicit owner publication of public JSON snapshots; manual archival handoff |
+| Mounted NAS (SMB/NFS) | Same file publisher, conditional on an already mounted filesystem meeting its private ownership, non-symlink path, atomic replacement and directory-sync requirements |
+| SAN-backed filesystem | Same conditional file publication; customer provisions and operates the filesystem |
+| SIEM/syslog | Planned; forwarding is not implemented |
+| S3-compatible storage | Planned; object delivery is not implemented |
+| Hybrid local/remote | Customers may handle public exports manually; automated hybrid delivery is planned |
+
+These are filesystem deployment choices, not certified NAS/SAN adapters. In
+**System → Setup & storage → Storage & saved setup**, record the intended
+public-export destination and acknowledge customer responsibilities, then use
+**Remember this setup** to save. The plan does not mount, connect, test, transfer,
+schedule, set a retention quota or delete data. Editing its choice/path clears
+acknowledgment. Store no credentials in the plan.
+
+**Failed or uncertain export must never cause silent evidence deletion.** Even a
+successful dashboard export grants no permission to delete canonical audit or
+enforcement-critical state. Preserve replay guards, consumed permits/approvals,
+directives, unresolved consequences, custody obligations and tamper evidence.
+Do not move a live state database, raw audit payloads or signing material through
+the public-export handoff. Integrity checks alone do not establish offsite
+durability or protection against a complete database rollback.
+
+Full-audit archival, verified archive receipts, safe pruning and automated legal
+holds remain unimplemented. See the [complete data-handling policy, export
+boundaries and proposed appliance sizing](docs/CUSTOMER_EVIDENCE_STORAGE.md).
+Appliance capacity figures there are proposals, not enforced limits or measured
+workload guarantees.
 
 ## ⭐ Featured: Windows Preview Installer Experience
 
