@@ -137,7 +137,9 @@ def parse_linux_ss(text: str) -> tuple[Listener, ...]:
             raise NetworkExposureError(f"unparseable ss row: {line}")
         protocol = fields[0].lower()
         if protocol not in {"tcp", "udp"}:
-            continue
+            # The collector requests TCP/UDP only. An unexpected row means
+            # enumeration is not understood, not that no listener exists.
+            raise NetworkExposureError(f"unsupported ss protocol: {protocol}")
         local = fields[4]
         host, port = _split_host_port(local)
         listeners.add(Listener(protocol, host, port))
