@@ -80,6 +80,12 @@ def normalize_staging_permissions(folder):
             staged.chmod((staged.stat().st_mode | readable) & ~0o022)
 
 
+def require_executable_staging(path):
+    # Native Python extensions require executable mappings. Keep /run noexec;
+    # stage root-owned application copies on an executable application volume.
+    require(not (os.statvfs(path).f_flag & os.ST_NOEXEC), "staging filesystem is mounted noexec")
+
+
 def worker(config_path):
     from pulpo import GovernanceKernel, Intent, Policy, SQLiteKernelState
 
@@ -231,7 +237,9 @@ def run(output, *, system=False, runtime=None, cleanup_unit=None):
               "launcher_uid": os.getuid()}
     if cleanup_unit:
         result["prior_runtime_marker"] = {"unit": cleanup_unit, "removed": prior_marker_removed}
-    scratch = tempfile.TemporaryDirectory(prefix="pulpo-e1-service-", dir="/run" if system else Path.home())
+    staging_parent = Path("/opt") if system else Path.home()
+    require_executable_staging(staging_parent)
+    scratch = tempfile.TemporaryDirectory(prefix="pulpo-e1-service-", dir=staging_parent)
     folder = Path(scratch.name)
     folder.chmod(0o755 if system else 0o700)
     state = Path("/run") / name if system else folder / "state"

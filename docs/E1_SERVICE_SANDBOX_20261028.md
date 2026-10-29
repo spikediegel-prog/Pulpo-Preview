@@ -203,3 +203,33 @@ Verified via report and host inspection: v3 unit stopped, staging and runtime
 path removed, no pulpo-e1 unit or runtime path remained. Full positive service
 validation remains Unknown. A further sudo run is needed to obtain the child
 error under the actual DynamicUser system profile.
+
+## Native-loader cause established and staging corrected
+
+Recorded latest system report: service-sandbox-1793255840874432550-d005484c.json,
+at cec881b233d451a9116ba573702dd81b5a937d91. Persistent child diagnostics now
+show ImportError from pydantic_core: failed to map segment from shared object.
+Both negative-startup subprocesses failed during dependency import, before
+authority configuration was examined. This is not authority acceptance evidence.
+
+Verified host mount observation: /run is tmpfs with rw,nosuid,nodev,noexec.
+/opt is on the executable root ext4 filesystem. A disposable native-extension
+loader comparison reproduces mapping failure on a noexec mount and succeeds on
+the executable home filesystem; all comparison files are removed. This confirms
+the relevant native-loader boundary independently of service configuration.
+
+The root launcher now uses a unique /opt/pulpo-e1-service-* directory for its
+root-owned source/runtime/configuration copies, checks the staging filesystem
+permits executable mappings before staging, and removes that exact temporary
+directory at cleanup. Writable disposable state stays in the private /run unit
+directory. No mount is remounted and no address-family, identity, filesystem or
+network restriction is relaxed. Existing /opt contents are untouched. The prior
+/run code-staging descriptions above record previous attempts, not the current
+layout. No permanent installation or enabled service is introduced.
+
+SSH command access is verified, while sudo -n still requires a password. Full
+positive system-service and restart validation remains pending the user's next
+sudo invocation. The noexec cause is established; that does not predetermine the
+remaining test outcomes. Existing seven proof regressions pass. All failed run
+reports remain preserved; latest report confirms stopped unit and full temporary
+cleanup. No transient pulpo-e1 system unit remained on inspection.
