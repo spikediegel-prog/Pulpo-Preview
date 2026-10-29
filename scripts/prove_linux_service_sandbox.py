@@ -8,6 +8,7 @@ and uses DynamicUser. Successful runtime checks, not settings, establish proof.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -86,9 +87,78 @@ def require_executable_staging(path):
     require(not (os.statvfs(path).f_flag & os.ST_NOEXEC), "staging filesystem is mounted noexec")
 
 
-def worker(config_path):
+def audit_digest(records):
+    return hashlib.sha256(json.dumps(list(records), sort_keys=True,
+        separators=(",", ":")).encode()).hexdigest()
+
+
+def exercise_restart_fixture(state, secret):
+    """Only this proof's synthetic local-read state; never a provider fixture."""
     from pulpo import GovernanceKernel, Intent, Policy, SQLiteKernelState
 
+    permit_file = state / "fixture-permit"
+    intent = Intent("agent:e1-fixture", "read", "local:e1-fixture", 0, "e1")
+    checks = {}
+    with SQLiteKernelState(state / "restart-fixture.sqlite3") as backend:
+        kernel = GovernanceKernel(Policy(frozenset({"read"}), 0), secret=secret, state=backend)
+        before = len(kernel.audit)
+        before_digest = audit_digest(kernel.audit)
+        if permit_file.exists():
+            checks["spent_permit_replay_denied"] = not kernel.consume(permit_file.read_text(), intent)
+            phase = "restart"
+        else:
+            permit = kernel.evaluate(intent).permit
+            require(permit is not None, "fixture permit missing")
+            require(kernel.consume(permit, intent), "fixture consume failed")
+            with permit_file.open("x") as stream:
+                stream.write(permit)
+                stream.flush()
+                os.fsync(stream.fileno())
+            directory = os.open(state, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+            phase = "initial"
+        checks["canonical_audit_valid"] = kernel.verify_audit()
+        checks["prior_evidence_preserved"] = len(kernel.audit) > before
+        checks["forbidden_action_denied"] = kernel.evaluate(
+            Intent("agent:e1-fixture", "purchase_domain", "example.invalid")).outcome == "deny"
+        checks["canonical_audit_valid"] = kernel.verify_audit()
+        return {"phase": phase, "checks": checks, "audit_rows": len(kernel.audit),
+                "audit_rows_before": before, "audit_before_sha256": before_digest,
+                "audit_after_sha256": audit_digest(kernel.audit)}
+
+
+def disk_mount_observation(path):
+    observed = json.loads(subprocess.check_output(["findmnt", "--json", "--target", str(path),
+        "--output", "TARGET,SOURCE,FSTYPE"], text=True, timeout=10))["filesystems"]
+    require(len(observed) == 1 and observed[0]["fstype"] not in
+            {"tmpfs", "ramfs", "devtmpfs"}, "disk fixture must not use volatile memory storage")
+    return observed[0]
+
+
+def remove_disk_fixture(parent, name):
+    """Delete only this generated synthetic fixture after all services stopped."""
+    require(re.fullmatch(r"pulpo-e1-[0-9a-f]{10}", name), "invalid disk fixture name")
+    public = parent / name
+    private = parent / "private" / name
+    if public.is_symlink():
+        require(os.readlink(public) in ("private/" + name, str(private)), "unexpected disk fixture link")
+        require(not private.is_symlink(), "unexpected private fixture link")
+        if private.exists():
+            require(private.is_dir(), "private fixture is not a directory")
+            shutil.rmtree(private)
+        public.unlink()
+    elif public.exists():
+        require(public.is_dir() and not private.exists(), "ambiguous disk fixture location")
+        shutil.rmtree(public)
+    elif private.exists():
+        raise RuntimeError("unlinked private fixture retained for inspection")
+    return not os.path.lexists(public) and not os.path.lexists(private)
+
+
+def worker(config_path):
     config = json.loads(config_path.read_text())
     state = Path(config["PULPO_CUSTODY_STATE_PATH"]).parent
     environment = {**os.environ, **config, "PYTHONPATH": os.pathsep.join(sys.path[:2]),
@@ -143,26 +213,8 @@ def worker(config_path):
 
     # Separate, explicitly synthetic canonical-kernel fixture. The saved permit
     # never leaves the disposable state directory or becomes a service API.
-    permit_file = state / "fixture-permit"
-    intent = Intent("agent:e1-fixture", "read", "local:e1-fixture", 0, "e1")
-    with SQLiteKernelState(state / "restart-fixture.sqlite3") as backend:
-        kernel = GovernanceKernel(Policy(frozenset({"read"}), 0),
-            secret=bytes.fromhex(config["PULPO_KERNEL_SECRET_HEX"]), state=backend)
-        before = len(kernel.audit)
-        if permit_file.exists():
-            checks["spent_permit_replay_denied"] = not kernel.consume(permit_file.read_text(), intent)
-            phase = "restart"
-        else:
-            permit = kernel.evaluate(intent).permit
-            require(permit is not None, "fixture permit missing")
-            require(kernel.consume(permit, intent), "fixture consume failed")
-            permit_file.write_text(permit)
-            phase = "initial"
-        checks["canonical_audit_valid"] = kernel.verify_audit()
-        checks["prior_evidence_preserved"] = len(kernel.audit) > before
-        checks["forbidden_action_denied"] = kernel.evaluate(
-            Intent("agent:e1-fixture", "purchase_domain", "example.invalid")).outcome == "deny"
-        audit_rows = len(kernel.audit)
+    fixture = exercise_restart_fixture(state, bytes.fromhex(config["PULPO_KERNEL_SECRET_HEX"]))
+    checks.update(fixture.pop("checks"))
 
     require(all(checks.values()), "service confinement or kernel check failed: " +
             ",".join(k for k, v in checks.items() if not v))
@@ -200,7 +252,7 @@ def worker(config_path):
         except urllib.error.HTTPError as exc:
             checks["unapproved_unknown_commitment_denied"] = exc.code == 403
         require(all(checks.values()), "custody health or rejection check failed")
-        report = {"phase": phase, "checks": checks, "audit_rows": audit_rows,
+        report = {**fixture, "checks": checks,
                   "pid": os.getpid(), "uid": os.getuid(), "passed": True}
         pending = state / f"report-{os.getpid()}.pending"
         pending.write_text(json.dumps(report, indent=2))
@@ -214,9 +266,10 @@ def worker(config_path):
             child.wait(timeout=8)
 
 
-def run(output, *, system=False, runtime=None, cleanup_unit=None):
+def run(output, *, system=False, runtime=None, cleanup_unit=None, disk_state=False):
     require(sys.platform == "linux", "Linux required")
     require((os.getuid() == 0) == system, "--system requires root; user proof must run without root")
+    require(not disk_state or system, "disk-backed service proof requires --system")
     require(not os.path.lexists(output) and output.is_absolute(), "new absolute evidence path required")
     prior_marker_removed = None
     if cleanup_unit is not None:
@@ -229,12 +282,14 @@ def run(output, *, system=False, runtime=None, cleanup_unit=None):
         require(prior_marker_removed, "prior runtime directory still exists; refusing deletion")
     name = "pulpo-e1-" + secrets.token_hex(5)
     unit = name + ".service"
+    units = [unit]
     manager = [] if system else ["--user"]
     result = {"classification": "Recorded", "unit": unit, "runs": [], "passed": False,
               "base_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
               "boundary": ("Disposable system service with DynamicUser, root-owned staging and no external network."
                            if system else "Same-UID user-service probe; confinement must be independently checked."),
               "launcher_uid": os.getuid()}
+    result["storage_mode"] = "disk_stop_and_fresh_service" if disk_state else "volatile_service_restart"
     if cleanup_unit:
         result["prior_runtime_marker"] = {"unit": cleanup_unit, "removed": prior_marker_removed}
     staging_parent = Path("/opt") if system else Path.home()
@@ -242,7 +297,10 @@ def run(output, *, system=False, runtime=None, cleanup_unit=None):
     scratch = tempfile.TemporaryDirectory(prefix="pulpo-e1-service-", dir=staging_parent)
     folder = Path(scratch.name)
     folder.chmod(0o755 if system else 0o700)
-    state = Path("/run") / name if system else folder / "state"
+    state = (Path("/var/lib") if disk_state else Path("/run")) / name if system else folder / "state"
+    if disk_state:
+        require(not os.path.lexists(state) and not os.path.lexists(Path("/var/lib/private") / name),
+                "disk fixture path already exists")
     configuration = folder / "configuration"
     if not system:
         state.mkdir(mode=0o700)
@@ -291,8 +349,11 @@ def run(output, *, system=False, runtime=None, cleanup_unit=None):
         "BindReadOnlyPaths": " ".join((str(source), str(python.parent.parent), str(configuration))),
         "BindPaths": str(state)}
     if system:
-        properties.update(DynamicUser="yes", RuntimeDirectory=name, RuntimeDirectoryMode="0700",
-                          RuntimeDirectoryPreserve="restart")
+        properties["DynamicUser"] = "yes"
+        if disk_state:
+            properties.update(StateDirectory=name, StateDirectoryMode="0700")
+        else:
+            properties.update(RuntimeDirectory=name, RuntimeDirectoryMode="0700", RuntimeDirectoryPreserve="restart")
     command = ["systemd-run", *manager, "--collect", "--service-type=exec", "--unit=" + unit]
     for name, value in properties.items():
         command.extend(["--property", name + "=" + value])
@@ -301,7 +362,27 @@ def run(output, *, system=False, runtime=None, cleanup_unit=None):
         subprocess.run(command, check=True, capture_output=True, text=True, timeout=20)
         for iteration in range(2):
             if iteration:
-                subprocess.run(["systemctl", *manager, "restart", unit], check=True, timeout=20)
+                if disk_state:
+                    cgroup = subprocess.check_output(["systemctl", "show", unit, "--property=ControlGroup", "--value"],
+                                                     text=True, timeout=10).strip()
+                    subprocess.run(["systemctl", "stop", unit], check=True, timeout=20)
+                    active = subprocess.run(["systemctl", "is-active", unit], capture_output=True, text=True, timeout=10)
+                    require(active.stdout.strip() in ("inactive", "unknown"), "first service did not stop cleanly")
+                    require(cgroup.startswith("/") and ".." not in Path(cgroup).parts, "unexpected cgroup path")
+                    processes = Path("/sys/fs/cgroup") / cgroup.lstrip("/") / "cgroup.procs"
+                    require(not processes.exists() or not processes.read_text().strip(), "first service still has processes")
+                    database = state / "restart-fixture.sqlite3"
+                    require(database.is_file() and database.stat().st_size > 0, "disk state lost on full stop")
+                    result["stopped_interval"] = {"first_service_stopped": True, "first_cgroup_empty": True,
+                        "database_bytes": database.stat().st_size,
+                        "database_sha256": hashlib.sha256(database.read_bytes()).hexdigest(),
+                        "mount": disk_mount_observation(state)}
+                    unit = units[0].removesuffix(".service") + "-fresh.service"
+                    units.append(unit)
+                    fresh_command = ["--unit=" + unit if arg.startswith("--unit=") else arg for arg in command]
+                    subprocess.run(fresh_command, check=True, capture_output=True, text=True, timeout=20)
+                else:
+                    subprocess.run(["systemctl", *manager, "restart", unit], check=True, timeout=20)
             deadline = time.monotonic() + 25
             while len(list(state.glob("report-*.json"))) <= iteration:
                 active = subprocess.run(["systemctl", *manager, "is-active", unit],
@@ -316,6 +397,9 @@ def run(output, *, system=False, runtime=None, cleanup_unit=None):
             *["--property=" + key for key in properties]], text=True, timeout=10).splitlines()
         require(result["runs"][1]["phase"] == "restart", "restart fixture was not reused")
         require(result["runs"][0]["pid"] != result["runs"][1]["pid"], "service process did not restart")
+        require(result["runs"][1]["audit_before_sha256"] == result["runs"][0]["audit_after_sha256"],
+                "prior audit history changed across process recovery")
+        result["exact_prior_audit_preserved"] = True
         if system:
             require(all(r["uid"] != 0 and r["uid"] != int(os.environ.get("SUDO_UID", "0"))
                         for r in result["runs"]), "dedicated service identity not established")
@@ -334,18 +418,28 @@ def run(output, *, system=False, runtime=None, cleanup_unit=None):
                 result["startup_observations"] = json.loads(observations.read_text())
         except (OSError, ValueError) as exc:
             result["startup_observation_error"] = type(exc).__name__
-        subprocess.run(["systemctl", *manager, "stop", unit], capture_output=True, timeout=20)
-        active = subprocess.run(["systemctl", *manager, "is-active", unit], capture_output=True, text=True, timeout=10)
-        result["unit_stopped"] = active.stdout.strip() in ("inactive", "failed", "unknown")
+        stopped = {}
+        for started in units:
+            subprocess.run(["systemctl", *manager, "stop", started], capture_output=True, timeout=20)
+            active = subprocess.run(["systemctl", *manager, "is-active", started], capture_output=True, text=True, timeout=10)
+            stopped[started] = active.stdout.strip() in ("inactive", "failed", "unknown")
+        result["stopped_units"] = stopped
+        result["unit_stopped"] = all(stopped.values())
         scratch.cleanup()
         result["disposable_files_removed"] = not folder.exists()
         if system:
             try:
-                result["runtime_directory_removed"] = result["unit_stopped"] and remove_runtime_marker(state)
-            except RuntimeError as exc:
-                result["runtime_directory_removed"] = False
-                result["cleanup_error"] = str(exc)
-            result["passed"] = result["passed"] and result["runtime_directory_removed"]
+                removed = result["unit_stopped"] and (remove_disk_fixture(Path("/var/lib"), state.name)
+                                                      if disk_state else remove_runtime_marker(state))
+                result["state_directory_removed"] = removed
+                if not disk_state:
+                    result["runtime_directory_removed"] = removed
+            except (RuntimeError, OSError) as exc:
+                result["state_directory_removed"] = False
+                if not disk_state:
+                    result["runtime_directory_removed"] = False
+                result["cleanup_error"] = type(exc).__name__ + ": " + str(exc)
+            result["passed"] = result["passed"] and result.get("state_directory_removed", False)
         result["passed"] = result["passed"] and result["unit_stopped"] and result["disposable_files_removed"]
         output.parent.mkdir(parents=True, exist_ok=True)
         with output.open("x") as stream:
@@ -366,6 +460,7 @@ if __name__ == "__main__":
     parser.add_argument("--system", action="store_true", help="Root launcher; service uses DynamicUser, never root")
     parser.add_argument("--runtime", type=Path, help="Explicit existing Python venv to stage for system proof")
     parser.add_argument("--cleanup-unit", help="Exact stopped disposable unit whose dangling marker should be removed")
+    parser.add_argument("--disk-state", action="store_true", help="Disposable /var/lib fixture; full stop then fresh service")
     args = parser.parse_args()
     if args.worker:
         worker(args.worker)
@@ -376,4 +471,4 @@ if __name__ == "__main__":
             args.evidence = args.evidence_dir / ("service-sandbox-" + str(time.time_ns()) + "-" + secrets.token_hex(4) + ".json")
         require(args.evidence is not None, "--evidence required")
         print("Service test report: " + str(args.evidence), flush=True)
-        run(args.evidence, system=args.system, runtime=args.runtime, cleanup_unit=args.cleanup_unit)
+        run(args.evidence, system=args.system, runtime=args.runtime, cleanup_unit=args.cleanup_unit, disk_state=args.disk_state)
