@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 import secrets
 import shutil
 import signal
@@ -44,6 +45,29 @@ def write_denied(path):
         return False
 
 
+def network_interfaces(text):
+    """Read this process's /proc/net/dev without opening an AF_NETLINK socket."""
+    lines = text.splitlines()
+    require(len(lines) >= 3 and "Inter-" in lines[0] and "face" in lines[1],
+            "unrecognized network interface observation")
+    interfaces = set()
+    for line in lines[2:]:
+        name, separator, _counters = line.partition(":")
+        require(separator and name.strip(), "malformed network interface observation")
+        interfaces.add(name.strip())
+    return interfaces
+
+
+def remove_runtime_marker(path):
+    """Remove only our exact dangling systemd marker; never delete its target."""
+    require(re.fullmatch(r"pulpo-e1-[0-9a-f]{10}", path.name), "invalid runtime marker name")
+    if path.is_symlink():
+        require(os.readlink(path) == "private/" + path.name and not path.exists(),
+                "runtime marker is not the expected dangling link")
+        path.unlink()
+    return not os.path.lexists(path)
+
+
 def worker(config_path):
     from pulpo import GovernanceKernel, Intent, Policy, SQLiteKernelState
 
@@ -70,7 +94,7 @@ def worker(config_path):
             checks["external_route_denied"] = exc.errno in (101, 100, 13)
         else:
             checks["external_route_denied"] = False
-    checks["only_loopback_interface"] = set(socket.if_nameindex()) == {(1, "lo")}
+    checks["only_loopback_interface"] = network_interfaces(Path("/proc/net/dev").read_text()) == {"lo"}
     (state / "write-probe").write_text("synthetic fixture")
     checks["state_writable"] = True
 
@@ -162,10 +186,19 @@ def worker(config_path):
             child.wait(timeout=8)
 
 
-def run(output, *, system=False, runtime=None):
+def run(output, *, system=False, runtime=None, cleanup_unit=None):
     require(sys.platform == "linux", "Linux required")
     require((os.getuid() == 0) == system, "--system requires root; user proof must run without root")
     require(not output.exists() and output.is_absolute(), "new absolute evidence path required")
+    prior_marker_removed = None
+    if cleanup_unit is not None:
+        require(system and re.fullmatch(r"pulpo-e1-[0-9a-f]{10}", cleanup_unit),
+                "system mode and exact disposable unit name required for marker cleanup")
+        active = subprocess.run(["systemctl", "is-active", cleanup_unit + ".service"],
+                                capture_output=True, text=True, timeout=10)
+        require(active.stdout.strip() in ("inactive", "failed", "unknown"), "prior unit may still be active")
+        prior_marker_removed = remove_runtime_marker(Path("/run") / cleanup_unit)
+        require(prior_marker_removed, "prior runtime directory still exists; refusing deletion")
     name = "pulpo-e1-" + secrets.token_hex(5)
     unit = name + ".service"
     manager = [] if system else ["--user"]
@@ -174,6 +207,8 @@ def run(output, *, system=False, runtime=None):
               "boundary": ("Disposable system service with DynamicUser, root-owned staging and no external network."
                            if system else "Same-UID user-service probe; confinement must be independently checked."),
               "launcher_uid": os.getuid()}
+    if cleanup_unit:
+        result["prior_runtime_marker"] = {"unit": cleanup_unit, "removed": prior_marker_removed}
     scratch = tempfile.TemporaryDirectory(prefix="pulpo-e1-service-", dir="/run" if system else Path.home())
     folder = Path(scratch.name)
     folder.chmod(0o755 if system else 0o700)
@@ -241,8 +276,12 @@ def run(output, *, system=False, runtime=None):
                 subprocess.run(["systemctl", *manager, "restart", unit], check=True, timeout=20)
             deadline = time.monotonic() + 25
             while len(list(state.glob("report-*.json"))) <= iteration:
+                active = subprocess.run(["systemctl", *manager, "is-active", unit],
+                                        capture_output=True, text=True, timeout=5)
+                require(active.stdout.strip() in ("active", "activating", "reloading"),
+                        "service exited before producing its report")
                 require(time.monotonic() < deadline, "service proof timeout")
-                time.sleep(.1)
+                time.sleep(.2)
             reports = [json.loads(p.read_text()) for p in state.glob("report-*.json")]
             result["runs"] = sorted(reports, key=lambda r: r["audit_rows"])
         result["properties"] = subprocess.check_output(["systemctl", *manager, "show", unit,
@@ -267,7 +306,11 @@ def run(output, *, system=False, runtime=None):
         scratch.cleanup()
         result["disposable_files_removed"] = not folder.exists()
         if system:
-            result["runtime_directory_removed"] = not state.exists()
+            try:
+                result["runtime_directory_removed"] = result["unit_stopped"] and remove_runtime_marker(state)
+            except RuntimeError as exc:
+                result["runtime_directory_removed"] = False
+                result["cleanup_error"] = str(exc)
             result["passed"] = result["passed"] and result["runtime_directory_removed"]
         result["passed"] = result["passed"] and result["unit_stopped"] and result["disposable_files_removed"]
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -286,9 +329,10 @@ if __name__ == "__main__":
     parser.add_argument("--evidence", type=Path)
     parser.add_argument("--system", action="store_true", help="Root launcher; service uses DynamicUser, never root")
     parser.add_argument("--runtime", type=Path, help="Explicit existing Python venv to stage for system proof")
+    parser.add_argument("--cleanup-unit", help="Exact stopped disposable unit whose dangling marker should be removed")
     args = parser.parse_args()
     if args.worker:
         worker(args.worker)
     else:
         require(args.evidence is not None, "--evidence required")
-        run(args.evidence, system=args.system, runtime=args.runtime)
+        run(args.evidence, system=args.system, runtime=args.runtime, cleanup_unit=args.cleanup_unit)

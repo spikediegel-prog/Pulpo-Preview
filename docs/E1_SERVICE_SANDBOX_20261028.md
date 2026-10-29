@@ -111,3 +111,40 @@ Stop/continue: the failed user attempt is reconciled as failed and cleaned up.
 Continue only with the explicitly prepared system test under the user's sudo
 authorization. Do not declare it verified until its behavioral and cleanup
 results pass. No push, merge, release or production operation is authorized here.
+
+## First system attempt and correction
+
+Recorded failure at parent 3a146e597bb164304ed117b970bd4f2da3335e1f:
+the system service started but its worker exited when socket.if_nameindex()
+attempted the disallowed AF_NETLINK family. The launcher obscured the immediate
+exit with a 25-second report timeout. No report or isolation pass was produced.
+The unit stopped and staging/private runtime contents were removed. Inspection
+found a dangling /run/pulpo-e1-8dbb800ba2 marker. The original cleanup check used
+Path.exists(), so it incorrectly treated a dangling link as fully removed.
+That original failure JSON is preserved without editing or replacing it.
+
+The corrected interface observation reads this process's /proc/net/dev, retaining
+the same no-external-interface acceptance rule and the original restricted
+address families. It neither adds AF_NETLINK permission nor falls back to a
+weaker network profile. The supervisor checks active unit state while awaiting
+reports and surfaces early exits immediately. Runtime cleanup now checks lexical
+existence and removes only the exact expected dangling private/<unit> link;
+it never deletes a target directory or follows another link. The --cleanup-unit
+option accepts only an exact stopped pulpo-e1-<10 hex> unit and applies the same
+bounded dangling-marker cleanup to the previous failed test.
+
+Verified correction evidence: five regression tests cover interface recognition,
+malformed observation rejection, expected dangling-marker removal, preservation
+of live/wrong targets and files, and rejection of arbitrary names. A systemd user
+subprocess under RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 reproduces the
+original EAFNOSUPPORT failure and succeeds using the new observation, reporting
+eth0 and lo. Thus an unrestricted host is not misclassified as loopback-only.
+This does not prove the pending system service's network isolation. No additional
+service privilege or canonical-state mutation is introduced by the correction.
+
+The next system run must use a new output path, service-sandbox-system-v2.json,
+and --cleanup-unit pulpo-e1-8dbb800ba2. Administrative command access still requires
+the user's sudo action. The complete system lifecycle remains Unknown pending
+that run. The existing eight-pass review applies unchanged: this correction
+especially tests Invert (settings are not success), Inside-Out (the proof can
+fail), Darken (report/cleanup uncertainty), and Negate (no extra socket capability).
