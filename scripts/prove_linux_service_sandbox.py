@@ -68,6 +68,18 @@ def remove_runtime_marker(path):
     return not os.path.lexists(path)
 
 
+def normalize_staging_permissions(folder):
+    """Staged code/runtime must be readable by DynamicUser, even with umask 077.
+
+    This applies only to disposable source/runtime copies, never live secrets.
+    Root ownership and no group/other writes preserve the privilege boundary.
+    """
+    for staged in folder.rglob("*"):
+        if not staged.is_symlink():
+            readable = 0o555 if staged.is_dir() else 0o444
+            staged.chmod((staged.stat().st_mode | readable) & ~0o022)
+
+
 def worker(config_path):
     from pulpo import GovernanceKernel, Intent, Policy, SQLiteKernelState
 
@@ -100,6 +112,7 @@ def worker(config_path):
 
     # Actual custody entrypoint must fail before creating state if authority is
     # absent or malformed. No private signing material is constructed.
+    startup_observations = {}
     for label, value in (("missing", None), ("malformed", "not-hex")):
         negative = dict(environment)
         negative["PULPO_CUSTODY_STATE_PATH"] = str(state / (label + ".sqlite3"))
@@ -112,6 +125,12 @@ def worker(config_path):
         checks[label + "_authority_startup_denied"] = (
             result.returncode != 0 and "RuntimeConfigError" in result.stderr
             and not Path(negative["PULPO_CUSTODY_STATE_PATH"]).exists())
+        startup_observations[label] = {"returncode": result.returncode,
+            "state_created": Path(negative["PULPO_CUSTODY_STATE_PATH"]).exists(),
+            "stderr": result.stderr[-8000:]}
+    # These errors contain only synthetic fixture context. Retain the actual
+    # child failure rather than losing it behind a generic boolean assertion.
+    (state / "startup-observations.json").write_text(json.dumps(startup_observations, indent=2))
 
     # Separate, explicitly synthetic canonical-kernel fixture. The saved permit
     # never leaves the disposable state directory or becomes a service API.
@@ -189,7 +208,7 @@ def worker(config_path):
 def run(output, *, system=False, runtime=None, cleanup_unit=None):
     require(sys.platform == "linux", "Linux required")
     require((os.getuid() == 0) == system, "--system requires root; user proof must run without root")
-    require(not output.exists() and output.is_absolute(), "new absolute evidence path required")
+    require(not os.path.lexists(output) and output.is_absolute(), "new absolute evidence path required")
     prior_marker_removed = None
     if cleanup_unit is not None:
         require(system and re.fullmatch(r"pulpo-e1-[0-9a-f]{10}", cleanup_unit),
@@ -236,9 +255,7 @@ def run(output, *, system=False, runtime=None, cleanup_unit=None):
         python = folder / "runtime/bin/python"
         # Source modes from user checkout may be group-writable. Root ownership
         # and removal of group/other writes make staging immutable to DynamicUser.
-        for staged in folder.rglob("*"):
-            if not staged.is_symlink():
-                staged.chmod(staged.stat().st_mode & ~0o022)
+        normalize_staging_permissions(folder)
     config_path = configuration / "sandbox.json"
     # Only synthetic non-signing secrets and a public fixture key. No human
     # signing key or authentic Name.com credential exists in this proof.
@@ -300,6 +317,12 @@ def run(output, *, system=False, runtime=None, cleanup_unit=None):
             capture_output=True, text=True, timeout=10).stdout
         raise
     finally:
+        observations = state / "startup-observations.json"
+        try:
+            if observations.is_file():
+                result["startup_observations"] = json.loads(observations.read_text())
+        except (OSError, ValueError) as exc:
+            result["startup_observation_error"] = type(exc).__name__
         subprocess.run(["systemctl", *manager, "stop", unit], capture_output=True, timeout=20)
         active = subprocess.run(["systemctl", *manager, "is-active", unit], capture_output=True, text=True, timeout=10)
         result["unit_stopped"] = active.stdout.strip() in ("inactive", "failed", "unknown")

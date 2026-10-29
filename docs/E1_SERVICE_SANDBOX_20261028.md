@@ -148,3 +148,38 @@ the user's sudo action. The complete system lifecycle remains Unknown pending
 that run. The existing eight-pass review applies unchanged: this correction
 especially tests Invert (settings are not success), Inside-Out (the proof can
 fail), Darken (report/cleanup uncertainty), and Negate (no extra socket capability).
+
+## V2 result and diagnostic preparation
+
+Recorded: service-sandbox-system-v2.json already existed when the command was
+submitted again. The second invocation correctly refused to replace it. Its
+earlier run at e7f20c934b74a8cb061de164948c3946908ba302 failed before producing
+a positive report: missing_authority_startup_denied and
+malformed_authority_startup_denied were false. The worker captured child stderr
+but did not retain it, so the underlying child exception is Unknown. This is
+not evidence that missing or malformed authority was accepted by the app.
+
+Verified cleanup from the report plus current host inspection: previous marker
+removed, unit stopped, staging removed, runtime directory/marker removed, and
+no pulpo-e1 system unit or runtime path remains. The failed v2 JSON is retained.
+
+Unprivileged staged-startup reproduction copied the same code/environment and
+exercised missing, malformed and valid synthetic configurations. Missing and
+malformed configurations raised RuntimeConfigError without creating state;
+valid configuration imported the actual app and created disposable state. This
+also passed under a user-manager filesystem mask and the same address-family
+restriction. It is not a reproduction of the full DynamicUser system profile.
+
+The next version preserves bounded child tracebacks and return codes in the
+sanitized report even when a startup assertion fails. It also normalizes read
+and directory-traversal permission on root-owned staged code/runtime copies,
+while removing shared write permission. A private launcher umask must not make
+staged dependencies unreadable to DynamicUser. No live source permission,
+real secret, service network privilege or governance policy changes. Whether
+readability caused the v2 failure remains Unknown until further system evidence.
+
+Seven regression tests pass, including umask/private-mode staging, removal of
+shared write permission and preserving symlink targets. Child-observation read
+failure cannot skip the cleanup path. Next output: service-sandbox-system-v3.json;
+no previous-marker cleanup option is needed. Full isolation/HTTP/restart proof
+remains pending the next user-authorized sudo run.

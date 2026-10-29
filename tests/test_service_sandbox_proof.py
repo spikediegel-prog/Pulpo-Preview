@@ -4,13 +4,39 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from scripts.prove_linux_service_sandbox import network_interfaces, remove_runtime_marker
+from scripts.prove_linux_service_sandbox import (
+    network_interfaces, remove_runtime_marker, normalize_staging_permissions,
+)
 
 
 HEADER = "Inter-| Receive | Transmit\n face |bytes packets |bytes packets\n"
 
 
 class ServiceProofTests(unittest.TestCase):
+    def test_private_umask_does_not_make_staged_code_unreadable_to_service(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "source"
+            source.mkdir(mode=0o700)
+            module = source / "module.py"
+            module.write_text("synthetic code")
+            module.chmod(0o600)
+            normalize_staging_permissions(Path(folder))
+            self.assertEqual(0o755, source.stat().st_mode & 0o777)
+            self.assertEqual(0o644, module.stat().st_mode & 0o777)
+
+    def test_normalization_never_follows_links_or_keeps_shared_write(self):
+        with tempfile.TemporaryDirectory() as folder, tempfile.TemporaryDirectory() as outside:
+            target = Path(outside) / "untouched"
+            target.write_text("private fixture")
+            target.chmod(0o600)
+            (Path(folder) / "link").symlink_to(target)
+            shared = Path(folder) / "shared.py"
+            shared.write_text("fixture")
+            shared.chmod(0o666)
+            normalize_staging_permissions(Path(folder))
+            self.assertEqual(0o600, target.stat().st_mode & 0o777)
+            self.assertEqual(0o644, shared.stat().st_mode & 0o777)
+
     def test_loopback_and_external_interfaces_are_distinguished(self):
         self.assertEqual({"lo"}, network_interfaces(HEADER + " lo: 10 2 10 2\n"))
         self.assertEqual({"lo", "eth0"}, network_interfaces(
