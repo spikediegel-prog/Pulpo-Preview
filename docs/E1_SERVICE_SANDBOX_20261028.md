@@ -1,7 +1,9 @@
 # E1 Linux service sandbox
 
-Status: Prepared, not verified as a system service. User-service confinement
-probe failed; no successful service-isolation claim is made.
+Current status: Verified bounded system-service fixture at
+44270dfa44f414a583539eb0f2ea37ad17ef20bf. Full E1 and production readiness remain
+unverified. Earlier sections retain failed attempts and their classifications;
+the final system-proof record is the current result.
 
 Parent: c72bd8ee3bab9d96a1f708e65ae86c2c3e10704c. VM: pulpo-os,
 Ubuntu 24.04.5, systemd 255. Existing Preview and Control Center checkouts are
@@ -233,3 +235,50 @@ sudo invocation. The noexec cause is established; that does not predetermine the
 remaining test outcomes. Existing seven proof regressions pass. All failed run
 reports remain preserved; latest report confirms stopped unit and full temporary
 cleanup. No transient pulpo-e1 system unit remained on inspection.
+
+## Final system-proof result
+
+Verified bounded fixture: report
+service-sandbox-1793256669135979170-404dfbe7.json records passed=true at tested
+commit 44270dfa44f414a583539eb0f2ea37ad17ef20bf. Initial worker PID 13704 and
+restarted worker PID 13720 ran as transient UID 62170, distinct from root and
+the interactive user UID 1000. Selected systemd properties match the intended
+profile, and the behavioral checks pass in both executions.
+
+The initial run passes 18 checks; the restart passes 19, adding spent-permit
+replay rejection. These include effective code/configuration write-open denial,
+root ownership, hidden home credentials, no-new-privileges, zero effective
+capabilities, non-root identity, denied external route, loopback-only interfaces,
+writable private state, missing/malformed authority startup rejection, valid
+canonical audit, preservation of prior fixture evidence, forbidden action denial,
+actual custody HTTP health and HTTP 403 for an unapproved unknown commitment.
+The canonical fixture audit grows from 3 rows to 5 across restart. The missing
+and malformed authority probes report RuntimeConfigError and create no state.
+
+The report records unit_stopped=true, disposable_files_removed=true and
+runtime_directory_removed=true. Independent subsequent SSH inspection found no
+pulpo-e1 system unit and no matching /run runtime or /opt staging path. The
+development branch was clean before this documentation record. Prior untracked
+work in the separate original Preview checkout remains outside this test.
+
+Claim limits: these results establish only this transient synthetic sandbox and
+its exact service profile. The replay database is an explicitly separate
+canonical-kernel test fixture; this does not prove a provider-executed custody
+transaction survived restart. No real credential, human signer, provider action,
+valid signed purchase approval, machine reboot, production installation or
+customer data was involved. /run state is intentionally disposable; durable
+on-disk system-service recovery needs its own test. PrivateNetwork denies all
+external routes; approved provider egress, enterprise proxy/CA configuration and
+TLS lifecycle are still unverified. Dependency admission and held PR #48 remain
+separate. No release, push, merge or production change occurred.
+
+Eight-pass reconciliation: Flip/Reverse checks establish bounded effective
+denials before external effects; Invert/Inside-Out retain failed proof attempts
+without promoting settings into success; Darken covers missing/malformed
+authority and replay; Lighten attributes the observed earlier native-loader
+failure to the verified noexec staging mismatch; Amplify includes actual process
+restart; Negate preserves /run noexec and moves only temporary immutable code to
+an executable application filesystem. No authority expansion or live canonical
+mutation is introduced by this documentation record. The verified lesson is
+limited to this exact VM/profile and parent checkpoints; no whole-system
+historical-transfer or generally reusable organizational-learning claim is made.
