@@ -50,6 +50,7 @@ def backend(variant, revision):
         return candidate_module, SQLiteKernelState
     source = subprocess.check_output(["git", "show", revision + ":pulpo/state.py"], cwd=ROOT)
     module = types.ModuleType("pulpo._crash_baseline")
+    module.__package__ = "pulpo"
     sys.modules[module.__name__] = module
     exec(compile(source, "git:" + revision + ":pulpo/state.py", "exec"), module.__dict__)
     return module, module.SQLiteKernelState

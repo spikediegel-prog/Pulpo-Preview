@@ -4,14 +4,45 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import sys
+import tempfile
 
 from pulpo.network_exposure import (
     NetworkExposureError,
     audit_network_exposure,
     parse_allowlist,
 )
+
+
+def publish_report(destination: Path, payload: str) -> None:
+    """Publish a private, complete diagnostic without replacing any old file.
+
+    Use an operator-owned directory. Hard-link publication fails closed on
+    filesystems without this primitive. A post-link sync failure is unknown
+    durability; the report is retained and the CLI returns an error.
+    """
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=destination.parent,
+            prefix=".pulpo-network-", delete=False,
+        ) as stream:
+            temporary = Path(stream.name)
+            stream.write(payload + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(temporary, destination)
+    finally:
+        if temporary is not None:
+            temporary.unlink()
+    if sys.platform == "linux":
+        directory = os.open(destination.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
 
 
 def main(argv=None) -> int:
@@ -28,7 +59,7 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--evidence",
         type=Path,
-        help="Optional path for machine-readable JSON evidence.",
+        help="New report path in an operator-owned directory; existing files are never replaced.",
     )
     args = parser.parse_args(argv)
 
@@ -39,9 +70,13 @@ def main(argv=None) -> int:
         return 2
 
     payload = report.to_json()
-    print(payload)
     if args.evidence is not None:
-        args.evidence.write_text(payload + "\n", encoding="utf-8")
+        try:
+            publish_report(args.evidence, payload)
+        except OSError as exc:
+            print(f"pulpo_network_evidence_error:{exc}; publication durability unknown", file=sys.stderr)
+            return 2
+    print(payload)
 
     return 0 if report.passed else 1
 

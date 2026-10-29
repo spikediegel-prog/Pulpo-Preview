@@ -16,12 +16,58 @@ Customer data handling: see [evidence storage responsibilities and supported cho
 
 Pulpo Preview is the testing ground for work that extends that model while preserving the core invariant: **learning, performance, memory, successful execution, or added capability never grants authority.**
 
+## Enterprise readiness: tested stages
+
+**As of 2026-10-29, the bounded E1 Linux engineering scope is complete.**
+Testing used an Ubuntu 24.04.5 development VM and an isolated Python 3.12.3
+acceptance environment. This establishes the behavior below in its tested
+fixtures; it is not production certification or release/deployment approval.
+
+The following are stages within E1, not claims that later enterprise readiness
+phases have been completed.
+
+| E1 stage | What was tested | Evidence and status |
+| --- | --- | --- |
+| 1. Linux service security | Root-owned staged code/configuration, dynamic non-root service identity, no effective capabilities, no-new-privileges, isolated networking, private writable state, authority rejection and fixture cleanup | **Recorded:** successful disposable hardened system-service proof at `da4913186bcb494cf3a9252bdc36294a9d46b4da`. [Service security evidence](docs/E1_SERVICE_SANDBOX_20261028.md). No production service installation claimed. |
+| 2. Networking diagnostics and configuration validation | Strict listener parsing and explicit allowlists; create-only reports; TLS/certificate/hostname checks; redirect, timeout and failure handling; rejection of ambient TLS key logging | **Verified:** bounded fixture behavior. **Recorded:** VM inventory without external probes. [Network readiness evidence](docs/E1_NETWORK_READINESS_20261029.md). Customer network integration remains unverified. |
+| 3. Local evidence and storage diagnostics | Capacity/inode headroom, read-only flags, path/device uncertainty and report-publication failures; supported SQLite storage-failure fixtures | **Verified:** bounded diagnostics and negative checks. **Recorded:** current shared-volume observations. [Storage evidence](docs/E1_STORAGE_PRESSURE_20261029.md). Local capacity remains operator-managed; no automatic canonical rotation or pruning. |
+| 4. Restart recovery and canonical integrity | Full disposable service exit, fresh processes/services reopening saved ext4 fixture state, exact prior audit preservation, spent-permit replay rejection and supported tamper/failure checks | **Verified:** fresh user-service restart and targeted recovery checks. [Recovery evidence](docs/E1_DISK_RECOVERY_20261029.md) and [scope closure](docs/E1_SCOPE_CLOSURE_20261029.md). No OS-reboot, power-loss or whole-database rollback guarantee. |
+
+**Latest targeted E1 verification:** 83 tests passed with warnings treated as
+errors, zero skips/failures/errors, at
+`74378f5d90ca3e0ef894a19bd138f788b1118cd7`. This included the explicitly enabled
+disposable user-service restart proof and clear transient-unit enumeration
+afterward. The subsequent scope-closure commit changed documentation only.
+
+**Earlier consolidated acceptance:** 1,055 successful tests and 59 skips across
+core, authority and custody suites at
+`da4913186bcb494cf3a9252bdc36294a9d46b4da`. The skips cover graphical/platform/
+Python-version cases and four PostgreSQL cases without a disposable test DSN;
+they are not passes. The suite logs, hardened system-service report and nine
+relevant runtime source hashes were rechecked during closure. This was not a
+new full-suite or privileged system-service run. These test counts describe
+separate runs and must not be added together. See the [acceptance record](docs/E1_ACCEPTANCE_20261029.md).
+
+**Remaining deployment checks:** customer proxy/CA rollout and certificate
+lifecycle, routed IPv6, VLAN/VPN and external reachability; skipped GUI/platform/
+PostgreSQL coverage; hardware durability and whole-valid-database rollback;
+current dependency/container/release admission. These remain **Unknown** or
+unassessed, rather than completed enterprise stages.
+
+**External storage is the end user's responsibility:** provisioning, integrity
+verification of external copies, backups/tested recovery, access controls,
+retention and legal holds. External storage integration and independent backup
+durability are outside E1. The optional synthetic archive/VM-to-host experiments
+do not change that boundary or establish an independent backup. Pulpo retains
+its documented canonical integrity and replay checks. See the [E1 scope closure](docs/E1_SCOPE_CLOSURE_20261029.md).
+
 ## Evidence storage and customer responsibilities
 
 **Pulpo is not an indefinite evidence archive or a NAS.** Pulpo provides its
 documented evidence generation, integrity checks and supported exports. Customers
-are responsible for long-term storage, retention obligations, access controls,
-backups, tested recovery and legal holds. A saved storage plan or acknowledgment
+are responsible for long-term storage, integrity verification of external copies,
+retention obligations, access controls, backups, tested recovery and legal holds.
+A saved storage plan or acknowledgment
 does not establish compliance, archive completeness or verified delivery.
 
 Local observation history and dashboard exports are bounded. The Evidence
@@ -37,9 +83,9 @@ provided by these settings.
 | Local filesystem | Explicit owner publication of public JSON snapshots; manual archival handoff |
 | Mounted NAS (SMB/NFS) | Same file publisher, conditional on an already mounted filesystem meeting its private ownership, non-symlink path, atomic replacement and directory-sync requirements |
 | SAN-backed filesystem | Same conditional file publication; customer provisions and operates the filesystem |
-| SIEM/syslog | Planned; forwarding is not implemented |
-| S3-compatible storage | Planned; object delivery is not implemented |
-| Hybrid local/remote | Customers may handle public exports manually; automated hybrid delivery is planned |
+| SIEM/syslog | Not implemented; outside E1 |
+| S3-compatible storage | Object delivery is not implemented; outside E1 |
+| Hybrid local/remote | Customers may handle public exports manually; automated delivery is outside E1 |
 
 These are filesystem deployment choices, not certified NAS/SAN adapters. In
 **System → Setup & storage → Storage & saved setup**, record the intended
