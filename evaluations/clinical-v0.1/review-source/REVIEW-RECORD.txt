@@ -1,0 +1,108 @@
+REVIEW RECORD / ADVERSARIAL TRANSFORMATION REVIEW
+Classification: Proposed clinical integration; bounded tests Verified at source pins.
+
+Purpose and requested outcome
+A configurable synthetic clinical evaluation that a central IT team and satellite
+clinics can inspect, configure and test, with an observer Control Center and a
+reviewable offline package. No production effect, merge or deployment.
+
+1. Invariant / failure addressed
+An attractive clinical UI, successful connection, valid chain or helpful model
+answer must not imply execution authority, current state or a completed effect.
+Preserve one canonical policy/permit/state/evidence path. Scope synthetic actions
+to the exact site/ring/update, and expose revocation, replay, expiry and offline
+limits rather than narrating them as solved.
+
+2. Authority delta
+No production authority gained or changed. The test process constructs bounded
+synthetic policy and uses only publicly known fixture approval material. Its
+ephemeral MAC and temporary SQLite state do not survive into the evaluation
+package. No human credential is used. Control Center remains an observer and
+holds no canonical writer, kernel, orchestrator, executor or approval signer.
+
+3. Canonical mutations and capability boundaries
+Only the existing kernel's test state is mutated: approval nonce use, directive
+activation/revocation, permit issuance/binding/consumption, and canonical audit
+appends. Authority transitions use the existing approved controller path; normal
+permit transitions use the existing kernel/projection. No new canonical state
+API, second executor, ledger or authority store is added. Fixed test inventory
+mutation is a synthetic consequence receipt after consume, not production code.
+The raw kernel is a trusted test capability; it must not be exposed to a hostile
+worker as if mandatory directive narrowing were structurally guaranteed.
+
+4. Exact success and adversarial evidence
+SOURCE-PINS.json, evidence/source-verification.json, final Ubuntu test logs,
+43 assertions per source pin, 11 reader/config tests, additional 41-assertion
+configuration smoke, and selected upstream regression modules. SHA256 manifests
+bind packaged file bytes; they do not authenticate source custody or freshness.
+
+5. Unproved boundary
+Independent human approval, real WSUS executor, distributed site state, remote
+revocation delivery, trusted offline time, atomic provider effects, production
+recovery, ESXi/Hyper-V execution, native visual qualification and clinical safety.
+
+6. Claim classifications
+Verified: exact bounded code/test behavior and bundled source comparisons.
+Recorded: generated fixture observations, test output, timestamps and setup choice.
+Inferred: isolated Ubuntu is a useful next guest test environment.
+Proposed: production adapters, deployment, rollout promotion and clinical integration.
+Unknown: actual infrastructure, production enforcement, trust, safety and compliance.
+
+7. Reused sources without copying their control path
+Upstream canonical incident-response proof established the distinction between
+the kernel and an in-memory fixture sink. Existing directives, kernel, state and
+authority test helper are used as shipped. Control Center theme, shell and
+navigation are reused directly; no duplicate service/connector is added. Existing
+WSL setup-readiness, session-restore, configuration-comparison and guarded-recovery
+documents supplied requirements. No historical observed metric is promoted into
+a clinical capacity or enforcement claim.
+
+8. Temporal transfer
+No relevant historical checkpoint exists for this new clinical kit. No reusable
+clinical organizational lesson or retroactive authority transfer is claimed.
+Exact current canonical/Preview pins are evaluated independently, preserving
+their differences; Preview fixes are not silently ported into canonical.
+Earlier VM/WSL observations inform candidate requirements only. The source pins,
+public fixture authority and local scope are preserved for each test process.
+
+Eight-pass analytical review (grants no authority)
+Flip: a hostile observer gets no kernel handle, signer or execution callback.
+Malformed/injected reports cannot supply those capabilities through projection.
+The trusted runner is explicitly test tooling, not a deployed worker boundary.
+
+Reverse: a real patch would require an external adapter, credentials and execution
+surface. None is wired. The fake state changes only in a fixed test branch after
+canonical consume. Proposed real execution must first establish its own reviewed
+adapter and consequence reconciliation boundary.
+
+Invert: successful synthetic state change is insufficient if authority assertions
+fail. Test result FAIL is retained. A consumed permit with a missing receipt stays
+consequence Unknown, even when authorization passed.
+
+Inside-Out: the same-process public test signer cannot prove independent human
+authority. A valid local audit cannot prove freshest state or an external effect.
+Observers do not ratify those claims or write canonical state.
+
+Darken: snapshot rollback, compromised clock/raw kernel access, remote revocation
+loss or a fresh permit for a repeated logical patch can defeat stronger inferred
+claims. These are bounded threat cases/limitations; no occurrence in a real clinic
+is asserted. No automatic recovery or disconnected rollout is supplied.
+
+Lighten: the Windows regression errors have a bounded file-sharing explanation;
+Ubuntu tests pass. That does not certify every host. Native widget construction
+and responsive HTML tests have different evidentiary scope.
+
+Amplify: repeated permit/approval use is tested. Per-action cost is not a fleet
+budget; synthetic extra-site metadata is not fleet validation. No many-clinic
+consistency or effect exactly-once proof is inferred from single-state results.
+
+Negate: the legitimate evaluation needs neither provider access nor production
+authority. Keep one local kernel, generated fixtures, explicit snapshots and a
+read-only clinical view. Defer all live adapters and hypervisor automation.
+
+Decision
+Continue only as a synthetic review package. No alternate governance mechanism,
+credential-state export or production effect was introduced. No merge/deployment
+is performed or authorized by this record. The smallest next proof is a local
+operator running this unchanged package in an isolated ESXi Ubuntu guest, then
+Hyper-V, preserving new evidence and recording the remaining Unknowns.

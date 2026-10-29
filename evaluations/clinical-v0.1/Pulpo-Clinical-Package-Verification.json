@@ -1,0 +1,29 @@
+{
+  "schema": "pulpo.clinical-package-smoke.v0.1",
+  "zip": "Pulpo-Clinical-Evaluation-Kit-v0.1.zip",
+  "zip_sha256": "68f0f48ac277b2c50ef243c377ace18945b3013b68675cff2f5decb2684d54cb",
+  "files": 514,
+  "bytes": 4898008,
+  "checksum_verification": {
+    "result": "PASS",
+    "checked": 513,
+    "mismatches": [],
+    "boundary": "Manifest comparison only; authenticity and completeness require independent custody"
+  },
+  "extracted_runs": [
+    {
+      "result": "PASS",
+      "passed": 43,
+      "total": 43,
+      "engine": "canonical"
+    },
+    {
+      "result": "PASS",
+      "passed": 43,
+      "total": 43,
+      "engine": "preview"
+    }
+  ],
+  "result": "PASS",
+  "scope": "Extracted-package smoke on Windows; Ubuntu regressions are separate evidence"
+}
