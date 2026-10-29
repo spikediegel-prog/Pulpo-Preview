@@ -1,0 +1,125 @@
+name: Preview Dependency Scanning
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-dependencies:
+    name: Python dependencies (${{ matrix.python }}, ${{ matrix.resolution }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.14']
+        resolution: [fresh, reviewed]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Audit all declared profiles and resolved transitive packages
+        env:
+          RESOLUTION: ${{ matrix.resolution }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+          if [ "$RESOLUTION" = reviewed ]; then
+            args+=(--constraints constraints/security-audit-ubuntu-py314.txt)
+          fi
+          python scripts/security/audit_dependencies.py --output "$RUNNER_TEMP/dependency-audit" "${args[@]}"
+      - name: Preserve exact inventory and advisory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dependencies-${{ matrix.python }}-${{ matrix.resolution }}-${{ github.sha }}
+          path: ${{ runner.temp }}/dependency-audit
+          if-no-files-found: error
+
+  container-dependencies:
+    name: Container dependencies (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: authority
+            dockerfile: authority-service/Dockerfile.service
+          - image: custody
+            dockerfile: custody-service/Dockerfile
+          - image: cloudsql-probe
+            dockerfile: authority-service/Dockerfile.probe
+          - image: kms-probe
+            dockerfile: authority-service/Dockerfile.kms-probe
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build exact candidate image
+        env:
+          DOCKERFILE: ${{ matrix.dockerfile }}
+          IMAGE: ${{ matrix.image }}
+        run: docker build --pull -f "$DOCKERFILE" -t "pulpo-dependency-audit:$IMAGE" .
+      - name: Record components and privileges in the exact built image
+        env:
+          IMAGE: ${{ matrix.image }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker image inspect "pulpo-dependency-audit:$IMAGE" > container-image-inspect.json
+          docker run --rm --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges:true \
+            --mount "type=bind,src=$PWD/scripts/security/probe_container_components.py,dst=/component-probe.py,readonly" \
+            --entrypoint python "pulpo-dependency-audit:$IMAGE" /component-probe.py --require-hardened \
+            > container-components.json
+      - name: Scan OS and packaged dependencies with Grype
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7
+        with:
+          image: pulpo-dependency-audit:${{ matrix.image }}
+          grype-version: v0.121.0
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: false
+          config: scripts/security/grype.yaml
+          output-format: json
+          output-file: container-advisories.json
+      - name: Preserve container advisory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-dependencies-${{ matrix.image }}-${{ github.sha }}
+          path: |
+            container-advisories.json
+            container-components.json
+            container-image-inspect.json
+          if-no-files-found: error
+
+  dependency-admission:
+    name: preview-dependency-admission
+    if: ${{ always() }}
+    needs: [python-dependencies, container-dependencies]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require every scan matrix to succeed
+        env:
+          DEPENDENCY_NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python scripts/security/check_dependency_admission.py

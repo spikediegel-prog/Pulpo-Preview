@@ -1,0 +1,2 @@
+# No project vulnerability suppressions. Report all severities, block high/critical.
+ignore: []

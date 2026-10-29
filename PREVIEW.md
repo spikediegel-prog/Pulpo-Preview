@@ -49,6 +49,26 @@ python -m pulpo.cli setup --json-report perf-results/pulpo-preview-setup.json
 
 ## Setup/bootstrap included in this branch
 
+### Ubuntu and Ubuntu WSL package installation
+
+Use a dedicated virtual environment so Ubuntu-managed Python packages remain
+under the operating system's package manager:
+
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install --upgrade 'pip==26.2.2'
+python -m pip install -e .
+python -m pip check
+pulpo setup --json-report perf-results/pulpo-preview-setup.json
+```
+
+The patched installer is build/setup tooling, not a Pulpo runtime dependency.
+Package downloads require installation-time connectivity (or a separately
+prepared trusted wheelhouse); normal local operation gains no cloud requirement.
+Do not overwrite Ubuntu's system pip or use `--break-system-packages`.
+
+
 **Verified source presence:** this preview contains `pulpo/setup.py`, the `pulpo setup` console command, and `tests/test_setup.py`. Install the Python package from the cloned preview, then run the bootstrap:
 
 ```powershell

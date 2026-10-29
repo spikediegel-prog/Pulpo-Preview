@@ -1,0 +1,98 @@
+Container advisory applicability review — evidence and image hardening
+
+Review all 14 unresolved advisory IDs against the exact four image builds.
+No vulnerability waiver, VEX statement, severity reduction or scan suppression
+is introduced. Branch checks remain enforced.
+
+Primary-source prerequisites to verify:
+CVE-2025-69720: ncurses infocmp CLI analyze_string implementation.
+CVE-2026-102010: GCC libstdc++ PBDS binary-heap erase_if template implementation.
+CVE-2026-95619: libstdc++ aligned allocation overflow.
+CVE-2026-19499: glibc strfmon/strfmon_l with particular width/buffer conditions.
+CVE-2026-5435: legacy glibc DNS-record formatting functions and TSIG records.
+CVE-2026-54369/54370: privileged pathname ACL operations and attacker-controlled
+path components; Debian notes the fix involves new ABI, not a simple patch.
+CVE-2026-76642/78409/78410: particular privileged mount hooks/fstab paths.
+CVE-2026-78408: privileged nsenter --join-cgroup credential/file-descriptor path.
+CVE-2026-82560: Perl Pod::Text document formatting.
+CVE-2026-9538: Perl Archive::Tar entry-size processing.
+CVE-2026-85091: zlib nonblocking gz* write-buffer behavior, with affected-range
+questions requiring source-level verification for the installed Debian package.
+Sources: https://security-tracker.debian.org/tracker/<each-CVE-ID>
+These prerequisite summaries are Recorded source information, not proof of
+absence or applicability in Preview. A missing direct Python reference alone
+cannot prove a native dependency never executes vulnerable code.
+
+The new read-only probe records exact installed package file lists/versions,
+named component paths, hashes, SUID/SGID/file capabilities, Perl module loading,
+and the bounded process security context. It does not dump environment values
+or production credentials. It runs with the image's non-root user, no network,
+read-only root, no capabilities and no-new-privileges. A privileged or incomplete
+probe context fails before subprocess collection. Image identity is preserved
+with the report. No canonical Pulpo state or external provider is accessed.
+
+Eight-pass review: Flip — hostile evidence remains untrusted, not an approval.
+Reverse — require exact image/component evidence before disposition.
+Invert — a package/version label or passing probe does not clear a CVE.
+Inside-Out — collector has no production credential or canonical writer.
+Darken — vulnerable native paths may exist below Python imports; remain blocked
+where evidence is incomplete. Lighten — package-source matching may cover code
+not present in a binary package; prove that before calling it unaffected.
+Amplify — collect all four images and reject elevated/missing security context.
+Negate — remove unused infocmp and SUID/SGID helper privileges at image build,
+then verify with an isolated read-only probe. Continue: narrow image capabilities
+and collect evidence without executing exploit payloads or changing scan policy.
+
+Claim classes: prerequisites Recorded; before/after scanner matches Verified;
+component presence Unknown until hosted probe evidence is read; reachability
+Unknown unless supported separately. The exact prior checkpoint is
+a9513ecc372871796181d59353abbd22ad6a676c (same tree as published
+2834da97f277aeab175eafaa03156e3cd6a9261c). No historical authority expansion,
+legacy control-path import or general temporal-transfer claim is introduced.
+No merge or deployment. Future source-level backport or not-affected claims
+require their own evidence and regression tests; this probe cannot grant them.
+
+Recorded exact-image evidence: GitHub Actions run 39727639563, PR head
+4f5c81eb8944064daace52d18e53887a3bab98b2. All four collected images run as
+UID 999 in the probe, CapEff zero, NoNewPrivs 1, no fstab entries. Pod::Text
+and Archive::Tar fail to load with "Can't locate"; ACL command-line tools are
+absent. infocmp and SUID mount/umount are present before this hardening.
+These are Verified observations of that run, not an all-runtime exemption.
+
+Proposed image hardening: remove /usr/bin/infocmp and strip SUID/SGID on regular
+files in the image filesystem. Keep runtime libraries, package records and
+non-root service entrypoints. This narrows OS helper capabilities; introduces
+no canonical state mutation, credential, authority route or production access.
+The strict image probe rejects a remaining infocmp or SUID/SGID file under
+/usr, /bin or /sbin, as well as root/capable/missing no-new-privileges contexts.
+Build success and service regressions must be checked at the published tree.
+
+Disposition for each unresolved advisory (no exceptions applied):
+CVE-2025-69720: affected infocmp CLI removal proposed; verify rebuilt images.
+CVE-2026-82560: Pod::Text absent in all four observed images; component absence
+verified for those exact images only. Package/source scanner match retained.
+CVE-2026-9538: Archive::Tar absent in all four observed images; same boundary.
+CVE-2026-102010: PBDS header/template issue; runtime-package source association
+does not prove affected code is present or absent. Unknown; remains blocked.
+CVE-2026-95619: libstdc++ native allocation path not cleared; remains blocked.
+CVE-2026-19499: glibc formatting path not cleared; remains blocked.
+CVE-2026-5435: deprecated glibc DNS formatting path not cleared; remains blocked.
+CVE-2026-54369: ACL tools absent, but libacl remains. Privileged pathname/library
+reachability not proved absent; remains blocked.
+CVE-2026-54370: same ACL boundary; remains blocked.
+CVE-2026-76642: privileged mount prerequisites reduced by helper hardening and
+tested runtime restrictions, but mount binary remains; mitigation, not a fix.
+CVE-2026-78408: nsenter present without SUID, tested process has no capabilities;
+root/privileged container launch is outside this proof. Remains blocked.
+CVE-2026-78409: mount/subdirectory path remains; same mitigation boundary.
+CVE-2026-78410: no fstab entries in tested image; bind-mount race code remains.
+No general non-applicability claim; remains blocked.
+CVE-2026-85091: upstream nonblocking gzwrite code affected range differs from
+the installed package version label. Full Debian source/patch provenance has
+not been established; Unknown, remains blocked.
+
+Recorded vendor status: current stable Debian packages have no applicable
+scanner-recognized fix for these remaining matches. An unstable-distribution
+library upgrade is not adopted without ABI and service regression proof.
+The prior checkpoint above is the before-state for this bounded hardening;
+no general reusable temporal-transfer or legacy control-path claim is made.
