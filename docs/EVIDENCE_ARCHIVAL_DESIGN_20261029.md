@@ -2,6 +2,14 @@
 
 Date: 2026-10-29. Baseline: `63c67d6f04abc147934d5c947c5a123aff4897a5`.
 
+Scope update, 2026-10-29: the user assigns external storage, retention,
+backup/restore operations and integrity verification of external copies to the
+end user. This archival design and its synthetic prototype are retained as
+optional exploratory work, not an E1 requirement or approved implementation
+roadmap. Independent storage and archival/pruning work are not prerequisites
+for the bounded closure in `E1_SCOPE_CLOSURE_20261029.md`. Pulpo's existing
+canonical integrity checks remain in scope and unchanged.
+
 ## Status and invariant
 
 **Proposed:** a production archival contract. **Verified in bounded tests:** the

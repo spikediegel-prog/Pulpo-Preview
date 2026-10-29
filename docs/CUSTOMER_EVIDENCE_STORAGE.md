@@ -4,6 +4,16 @@ Status: Recorded implementation boundaries; Proposed appliance sizing and future
 
 ## Responsibilities
 
+Scope decision, 2026-10-29: external storage, external copies' integrity
+verification, backup/restore operations, retention and legal holds belong to the
+end user. They are excluded from Preview E1 acceptance. Pulpo does not provision
+or certify an external archive or require an external-storage integration to
+complete this bounded Linux slice. See `E1_SCOPE_CLOSURE_20261029.md`.
+
+Pulpo retains responsibility for its documented canonical evidence validation
+and rejection of supported corrupt/unverifiable state. Delegating external
+storage operations does not disable these checks or authorize canonical deletion.
+
 Pulpo is responsible for its documented evidence generation, bounded local
 observation history, integrity checks and supported export behavior. It is not
 an indefinite archive or NAS. Customers are responsible for provisioning and
@@ -26,9 +36,9 @@ No automatic capacity admission controller is added by this change.
 | Local filesystem | Existing explicit owner publication of sanitized JSON projections to a private absolute file path | Manual handoff; not a complete historical archive |
 | Mounted NAS: SMB/NFS | Same file publication contract, conditional on an already mounted filesystem satisfying private ownership, non-symlink path, atomic replacement and directory synchronization requirements | Customer mounts, secures and validates it; mount failure or incompatible semantics is failure/unknown, not success |
 | SAN-backed filesystem | Same conditional file publication contract on an already provisioned filesystem | Pulpo does not manage SAN block devices, mounts or redundancy |
-| SIEM/syslog | Planned | No selectable forwarding integration or delivery guarantee |
-| S3-compatible object storage | Planned | No selectable S3 integration, credentials or Object Lock configuration |
-| Hybrid local buffer plus remote archive | Customer can manually handle existing public exports; automated hybrid delivery is planned | No durable transfer queue, retry/receipt protocol, full-audit archive or pruning |
+| SIEM/syslog | Not implemented; outside E1 | No selectable forwarding integration or delivery guarantee |
+| S3-compatible object storage | Not implemented; outside E1 | No selectable S3 integration, credentials or Object Lock configuration |
+| Hybrid local buffer plus remote archive | Customer can manually handle existing public exports; automated delivery is outside E1 | No durable transfer queue, retry/receipt protocol, full-audit archive or pruning |
 
 These filesystem choices describe a deployment of the same implemented file
 exporter, not separately certified NAS/SAN integrations. A storage plan in
@@ -81,6 +91,9 @@ must be maintained in their archival process; automated legal-hold enforcement
 and full-audit archive verification remain unimplemented.
 
 ## Planned appliance capacity (Proposed; not an implemented quota)
+
+The following are historical, nonbinding sizing examples, not E1 requirements,
+committed product settings or obligations to implement archival/pruning.
 
 Initial design target: a 256 GB SSD, a 32 GiB operational evidence budget and a
 64 GiB configurable local evidence ceiling per appliance. Reserve separate room

@@ -1,5 +1,10 @@
 # Pulpo Preview E1 acceptance check — 2026-10-29
 
+Scope update: see `E1_SCOPE_CLOSURE_20261029.md` for the later bounded E1 closure
+and the user's external-storage responsibility decision. This document retains
+the exact historical acceptance results and original gaps below; external
+archival work is not a current E1 completion requirement.
+
 Status: Bounded functional acceptance checks passed at the current tested source
 commit, including the hardened disk-system-service proof. Enterprise deployment
 admission and production readiness remain unassessed.
