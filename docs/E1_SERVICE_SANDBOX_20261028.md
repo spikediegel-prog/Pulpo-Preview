@@ -183,3 +183,23 @@ shared write permission and preserving symlink targets. Child-observation read
 failure cannot skip the cleanup path. Next output: service-sandbox-system-v3.json;
 no previous-marker cleanup option is needed. Full isolation/HTTP/restart proof
 remains pending the next user-authorized sudo run.
+
+## V3 result: diagnostic lifecycle correction
+
+Recorded: v3 at 595b84117c7284d4e37e8ac949e6d1b4f643d5fa failed the same
+two authority-startup checks. The diagnostic file did not survive: systemd
+removed RuntimeDirectory when the worker exited, before the launcher read it.
+The attempted diagnostic preservation was therefore ineffective. No claim is
+made that staged permission normalization fixed the unknown child failure.
+
+The worker now flushes bounded synthetic child errors directly to the service
+journal before asserting. This survives runtime-directory teardown. Existing
+failure handling collects that persistent journal. --evidence-dir selects a
+fresh unique report and prints its path before launch; explicit --evidence
+continues to reject existing paths. Prior reports are preserved. No service
+restriction is loosened and no new authority or canonical mutation is added.
+
+Verified via report and host inspection: v3 unit stopped, staging and runtime
+path removed, no pulpo-e1 unit or runtime path remained. Full positive service
+validation remains Unknown. A further sudo run is needed to obtain the child
+error under the actual DynamicUser system profile.

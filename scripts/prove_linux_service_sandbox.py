@@ -128,6 +128,9 @@ def worker(config_path):
         startup_observations[label] = {"returncode": result.returncode,
             "state_created": Path(negative["PULPO_CUSTODY_STATE_PATH"]).exists(),
             "stderr": result.stderr[-8000:]}
+        # RuntimeDirectory may disappear as soon as this process exits. The
+        # persistent journal must receive child errors before any assertion.
+        print("pulpo_e1_startup=" + json.dumps({label: startup_observations[label]}), flush=True)
     # These errors contain only synthetic fixture context. Retain the actual
     # child failure rather than losing it behind a generic boolean assertion.
     (state / "startup-observations.json").write_text(json.dumps(startup_observations, indent=2))
@@ -349,7 +352,9 @@ def run(output, *, system=False, runtime=None, cleanup_unit=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--worker", type=Path)
-    parser.add_argument("--evidence", type=Path)
+    evidence_arguments = parser.add_mutually_exclusive_group()
+    evidence_arguments.add_argument("--evidence", type=Path)
+    evidence_arguments.add_argument("--evidence-dir", type=Path, help="Existing directory; create a unique report per invocation")
     parser.add_argument("--system", action="store_true", help="Root launcher; service uses DynamicUser, never root")
     parser.add_argument("--runtime", type=Path, help="Explicit existing Python venv to stage for system proof")
     parser.add_argument("--cleanup-unit", help="Exact stopped disposable unit whose dangling marker should be removed")
@@ -357,5 +362,10 @@ if __name__ == "__main__":
     if args.worker:
         worker(args.worker)
     else:
+        if args.evidence_dir is not None:
+            require(args.evidence_dir.is_absolute() and args.evidence_dir.is_dir(),
+                    "existing absolute evidence directory required")
+            args.evidence = args.evidence_dir / ("service-sandbox-" + str(time.time_ns()) + "-" + secrets.token_hex(4) + ".json")
         require(args.evidence is not None, "--evidence required")
+        print("Service test report: " + str(args.evidence), flush=True)
         run(args.evidence, system=args.system, runtime=args.runtime, cleanup_unit=args.cleanup_unit)
