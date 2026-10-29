@@ -1,8 +1,10 @@
 # E1 disk recovery on the personal Ubuntu VM
 
 Current classification: Verified bounded disk-backed canonical-kernel fixture
-in transient user services. Full hardened custody system-service disk recovery,
-machine reboot and physical power-loss recovery remain Unknown.
+in both transient user services and the hardened system-service profile, at
+8c542ae0fb825eada5ee2137852ad899c4908e01. Machine reboot and physical power-loss
+recovery remain Unknown. Preparation notes below retain earlier claim limits;
+the final system-service result is the current record.
 
 ## Purpose and smallest proof
 
@@ -107,3 +109,51 @@ process start on the personal VM. It does not prove physical durability after
 power loss, host storage integrity, VM reboot, recovery from valid whole-database
 rollback, production load, actual provider transactions or the combined hardened
 system-service disk lifecycle. Those remain separate tests and Unknown claims.
+
+## Final hardened system-service disk result
+
+Verified bounded fixture: user-authorized sudo run at tested commit
+8c542ae0fb825eada5ee2137852ad899c4908e01 produced
+service-sandbox-1793283285784433656-77d146da.json with passed=true and
+storage_mode=disk_stop_and_fresh_service. The following supersedes the earlier
+prepared/unverified status of the combined profile.
+
+The first unit pulpo-e1-86ef4589d6.service (worker PID 16975) stopped completely;
+its cgroup was empty. The 57,344-byte fixture database remained on ext4 under
+the generated private systemd StateDirectory. A distinct unit,
+pulpo-e1-86ef4589d6-fresh.service (worker PID 16995), reopened the same files.
+Both workers ran as non-root dynamic UID 63080. The initial 3-row audit SHA-256
+4572074a6ee9864da24fe06022233c082b822a822330cae5cc764454f3d4e5a2 exactly
+matches the fresh service's audit before new mutations. The fresh worker denied
+spent-permit replay and the fixture audit grew to 5 valid rows.
+
+Both runs passed code/configuration write denial, root ownership, hidden home
+credentials, no-new-privileges, zero effective capabilities, non-root identity,
+denied external routing, loopback-only interfaces, writable private state,
+missing/malformed authority startup denial without state creation, valid audit,
+prior evidence preservation, forbidden-action denial, actual custody HTTP health
+and HTTP 403 for an unapproved unknown commitment. The selected unit properties
+include DynamicUser, StateDirectoryMode=0700, ProtectSystem=strict,
+ProtectHome=tmpfs, PrivateNetwork/PrivateDevices/PrivateTmp, empty capability
+bounding set, NoNewPrivileges and control-group termination.
+
+The report's root cleanup checks confirm both units stopped, temporary /opt
+staging removed and the generated /var/lib/private fixture plus alias removed.
+Subsequent SSH enumeration found no pulpo-e1 system unit, matching /opt staging,
+/run runtime or public /var/lib fixture path. No production or personal data,
+real provider credential, human signer, persistent unit or permanent service
+account was used. No push, merge, release, reboot or power-loss action occurred.
+
+Scope remains exact: this verifies the canonical local-read fixture's on-disk
+history/replay behavior alongside the actual custody app's startup/health/denial
+behavior under the same hardened service profile. It does not establish recovery
+of an actual provider transaction or completed domain purchase. Machine reboot,
+physical power loss, storage-device durability, valid whole-database rollback,
+production load and allowed enterprise/provider egress remain unverified.
+
+Authority and eight-pass review remain unchanged: only synthetic fixture state
+mutates through the existing canonical kernel, cleanup is limited to generated
+test paths, and the exact stopped interval/hash comparison upgrades this bounded
+combined-profile claim from Unknown to Verified. The user supplied sudo
+authorization for this run; no credential or signing capability was copied into
+the report. This documentation record adds no execution or authority capability.
