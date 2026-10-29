@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+import atexit
+from pulpo.performance_tuning import AdaptiveAuditVerificationEngine, AuditPerformanceTuner
 from pathlib import Path
 import time
 
@@ -95,10 +97,13 @@ class RuntimeConfig:
     namecom_username: str
     namecom_executor_token: str
     namecom_observer_token: str
+    audit_performance_profile: Path | None = None
 
     @classmethod
     def from_environ(cls, environ: dict[str, str] | None = None) -> "RuntimeConfig":
         env = dict(os.environ if environ is None else environ)
+        profile_raw = env.get("PULPO_AUDIT_PERFORMANCE_PROFILE")
+        audit_performance_profile = Path(profile_raw).expanduser() if profile_raw else None
         state_path = Path(_required("PULPO_CUSTODY_STATE_PATH", env))
         if not state_path.is_absolute():
             raise RuntimeConfigError("PULPO_CUSTODY_STATE_PATH must be absolute")
@@ -140,6 +145,7 @@ class RuntimeConfig:
             namecom_username=username,
             namecom_executor_token=executor_token,
             namecom_observer_token=observer_token,
+            audit_performance_profile=audit_performance_profile,
         )
 
 
@@ -147,6 +153,11 @@ def build_service(config: RuntimeConfig) -> DomainCustodyService:
     """Build one sandbox-only trusted service from custody-side configuration."""
 
     config.state_path.parent.mkdir(parents=True, exist_ok=True)
+
+    audit_engine = None
+    if config.audit_performance_profile is not None:
+        audit_engine = AdaptiveAuditVerificationEngine(AuditPerformanceTuner.load(config.audit_performance_profile), cache_size=0)
+        atexit.register(audit_engine.close)
 
     verifier = Ed25519ApprovalVerifier(
         authority_id=config.authority_id,
@@ -179,6 +190,7 @@ def build_service(config: RuntimeConfig) -> DomainCustodyService:
                 approval_verifier=verifier,
                 clock=time.time_ns,
                 state=state,
+                audit_verification_engine=audit_engine,
             )
         except Exception:
             state.close()
