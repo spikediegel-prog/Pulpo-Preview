@@ -59,8 +59,8 @@ IPv6 absence is an observation, not a blanket failure of an IPv4-only deployment
 
 ## Verified tests and VM observations
 
-41 targeted tests passed, including 16 new tests. Existing listener, report
-publication and transport security suites also passed. The new cases cover
+50 targeted tests passed, including 18 new tests. Existing listener, report
+publication, transport security and GitHub transport suites also passed. The new cases cover
 malformed/mixed inventory, unsupported enumeration/timeout, route-family
 mismatch, multipath presence, resolver uncertainty, redaction of proxy secrets
 and CA paths, origin rejection, no default probes, prior-report preservation,
@@ -133,3 +133,40 @@ support, customer CA rollout and certificate lifecycle, external DNS/HTTPS
 reachability, IPv6 default routing, VLAN/VPN/policy-routing behavior and network
 segmentation acceptance. These require separate explicit configuration and
 deployment tests. This slice adds diagnostics, not those integrations.
+
+## TLS secret-logging boundary found during read-only review
+
+Verified baseline at collector commit 2b60e2a7e58695545f8f5781531bda2918f3c68c:
+Python's installed ssl.create_default_context reads SSLKEYLOGFILE and assigns
+keylog_filename. In a disposable no-traffic fixture, Pulpo's existing
+_ssl_context created a 54-byte log header simply by constructing the context.
+No handshake, actual session secret or provider traffic was involved. The file
+was removed with the test directory; the baseline JSON is retained. This was
+not evidence of prior live credential exposure.
+
+The shared existing transport now rejects a nonempty SSLKEYLOGFILE before
+calling ssl.create_default_context, and sanitized_transport_environment removes
+that variable. The readiness inventory reports only its presence, never its
+value/path. Diagnostic trust evaluation and probes therefore reject that
+configuration without opening a log or contacting a destination. There is no
+new logging, key export or opt-in bypass. Other trust/proxy/redirect behavior
+remains in its existing control path; ordinary matching-CA HTTPS still passes
+the real IPv4/IPv6 loopback and bounded-child fixtures.
+
+Authority/capability delta: the ambient TLS secret-export path is narrowed;
+no authority is gained and no canonical-state mutation is introduced. This
+shared transport check applies to callers on other platforms too, but native
+verification here is Ubuntu only. The successful test predicates include no
+context constructor call, no resolver call, no key-log file, redacted output,
+and removal of the directive from sanitized child environments.
+
+Eight-pass reconciliation: Flip/Inside-Out treat ambient process variables and
+the diagnostic's own library initialization as capable of side effects;
+Reverse rejects before context construction; Invert prevents a successful
+connectivity observation from masking secret export; Darken tests rejected
+logging configuration without live traffic; Lighten records only a header
+creation, not an observed session-secret leak; Amplify blocks inheritance by
+transport child environments; Negate achieves diagnostics without enabling
+session-key logging. The exact baseline/candidate fixture comparison is bounded
+temporal evidence for this one behavior, not a whole-system historical replay
+or a general organizational-learning claim.

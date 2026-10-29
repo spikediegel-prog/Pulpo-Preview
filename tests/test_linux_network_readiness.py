@@ -14,9 +14,31 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import patch
 
 from scripts import check_linux_network_readiness as diagnostic
+from pulpo.transport import TransportConfigurationError, _ssl_context, sanitized_transport_environment
 
 
 class NetworkInventoryTests(unittest.TestCase):
+    def test_key_logging_rejects_before_context_creation_or_destination_access(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "secret-canary.log"
+            with patch.dict(os.environ, {"SSLKEYLOGFILE": str(path)}, clear=True), \
+                    patch("pulpo.transport.ssl.create_default_context") as create, \
+                    patch("socket.getaddrinfo") as resolve:
+                with self.assertRaisesRegex(TransportConfigurationError, "key_logging_not_permitted"):
+                    _ssl_context()
+                report = diagnostic.trust_observation()
+                self.assertEqual("error", report["state"])
+                self.assertNotIn("secret-canary", json.dumps(report))
+                self.assertIn("SSLKEYLOGFILE", report["override_variables_present"])
+                self.assertEqual("trust_configuration_rejected", diagnostic.probe_https("https://example.invalid/")["state"])
+                create.assert_not_called()
+                resolve.assert_not_called()
+            self.assertFalse(path.exists())
+
+    def test_transport_sanitizer_removes_tls_secret_logging(self):
+        self.assertEqual({"SAFE": "kept"}, sanitized_transport_environment(
+            {"SSLKEYLOGFILE": "/private-secret-canary.log", "SAFE": "kept"}))
+
     def test_interface_addresses_and_link_kind_are_observations(self):
         result = diagnostic.interfaces([{"ifname": "vlan17", "mtu": 1500, "operstate": "UP",
             "linkinfo": {"info_kind": "vlan"}, "addr_info": [

@@ -25,6 +25,7 @@ _AMBIENT_CA_VARS = (
     "CURL_CA_BUNDLE",
 )
 _PROXY_VARS = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy")
+_TLS_SECRET_VARS = ("SSLKEYLOGFILE",)
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -33,6 +34,8 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 def _ssl_context() -> ssl.SSLContext:
+    if any(os.environ.get(name) for name in _TLS_SECRET_VARS):
+        raise TransportConfigurationError("tls_key_logging_not_permitted")
     configured = os.environ.get("PULPO_CA_BUNDLE")
     ambient = {name: os.environ.get(name) for name in _AMBIENT_CA_VARS if os.environ.get(name)}
     if ambient and not configured:
@@ -69,7 +72,7 @@ def sanitized_transport_environment(
     """Remove ambient proxy/CA controls and restore only explicit CA policy."""
 
     runtime = dict(environment)
-    for name in (*_PROXY_VARS, *_AMBIENT_CA_VARS):
+    for name in (*_PROXY_VARS, *_AMBIENT_CA_VARS, *_TLS_SECRET_VARS):
         runtime.pop(name, None)
     if ca_bundle is not None:
         bundle = Path(ca_bundle).expanduser()
