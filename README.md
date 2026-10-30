@@ -84,6 +84,21 @@ Customer storage/backups/retention/external-copy integrity, Windows/WSL and E3
 installation/upgrade are excluded. This is bounded development validation,
 not production or release admission.
 
+### E3: Ubuntu lifecycle, state upgrade and publisher verification
+
+**The bounded E3 Ubuntu/Linux engineering test scope is complete.** Tests cover
+application install/upgrade/repair/rollback/removal and interruption recovery,
+genuine privileged package checks with verified cleanup, canonical legacy-state
+migration/restart/replay protection, and a real human-publisher signature checked
+against an independently supplied fingerprint and exact Control Center candidate.
+No observer kernel/writer or agent-held human signing credential was introduced.
+
+See [E3 scope closure, exact commits, evidence and limits](docs/E3_SCOPE_CLOSURE.md)
+and the [state-upgrade proof](docs/E3_STATE_UPGRADE.md). This is local VM/candidate
+qualification, not production release admission, publication, certification or a
+promise of all-version compatibility. Database downgrade is unsupported. Customer
+external storage, backups, retention and external-copy integrity remain excluded.
+
 ## Evidence storage and customer responsibilities
 
 **Pulpo is not an indefinite evidence archive or a NAS.** Pulpo provides its
