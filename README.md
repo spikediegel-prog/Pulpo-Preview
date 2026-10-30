@@ -61,6 +61,29 @@ durability are outside E1. The optional synthetic archive/VM-to-host experiments
 do not change that boundary or establish an independent backup. Pulpo retains
 its documented canonical integrity and replay checks. See the [E1 scope closure](docs/E1_SCOPE_CLOSURE_20261029.md).
 
+### E2: owner operational status for Ubuntu Control Center
+
+The additive [owner operational projection](docs/E2_OPERATIONAL_EXPORT.md)
+exposes a public policy fingerprint, canonical audit result, optional database
+check and nullable count of unprojected custody evidence. The already-owning
+process publishes it explicitly through the existing private snapshot exporter;
+Control Center never receives a kernel, writer, signer or raw database path.
+
+The companion Ubuntu E2 Operations view combines that frozen metadata with
+explicit read-only local service/dependency samples and a session policy
+comparison baseline. Missing/stale/failed data stays visible; no UI control
+changes policy, drains evidence, retries execution or repairs services. Source
+authenticity and deployed enforcement are not inferred from running processes,
+matching fingerprints or zero pending evidence. Existing export schemas are
+unchanged and no installed service/owner timer is automatically configured.
+
+Owner validation selects 13 export/canonical-convergence checks; companion
+Control Center validation selects 94 Ubuntu/Pulpo checks and a separate-process
+handoff proof. Exact final commits/results are retained with E2 evidence.
+Customer storage/backups/retention/external-copy integrity, Windows/WSL and E3
+installation/upgrade are excluded. This is bounded development validation,
+not production or release admission.
+
 ## Evidence storage and customer responsibilities
 
 **Pulpo is not an indefinite evidence archive or a NAS.** Pulpo provides its
