@@ -8,6 +8,11 @@ This branch in **spikediegel-prog/Pulpo-Preview** is an unofficial preview for t
 
 ## Snapshot: 2026-10-03
 
+This document and `PREVIEW_MANIFEST.json` preserve the 2026-10-03 snapshot.
+PR heads, checks, branch names, and hosted-run results below are historical
+evidence, not current project, PR, or workflow status. Re-verify the exact
+candidate and its checks before relying on them.
+
 **Verified selection:** 18 open, ready-for-review PR heads had all reported GitHub checks passing when inspected. Draft PRs, explicit holds, failed/pending/missing checks, and unverified heads are excluded. The check requirement applies to exact individual PR heads; it is not permission to weaken checks or bypass official review.
 
 **Combined preview:** #230, #235, #237, #238, #249, #275, #276, #277, #289, #293, #294, #295.

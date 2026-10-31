@@ -1,5 +1,10 @@
 # Ubuntu kit release scope and authority review
 
+This is a dated candidate-review record for 2026-10-28. Pending checks below
+describe that review point; they do not establish current release status.
+Current admission or publication requires fresh evidence for the exact
+candidate. This document does not assert that a release occurred.
+
 The October 28 kit packages current merged main with a narrowly scoped Linux
 listener parser backport and cryptography 50.0.2. The standalone Control Center
 is the separately published Preview 15, with unchanged artifact bytes. The kit
