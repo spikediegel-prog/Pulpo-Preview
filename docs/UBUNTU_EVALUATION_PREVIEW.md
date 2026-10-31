@@ -31,6 +31,15 @@ until the exact-head `Ubuntu evaluation preview` CI job passes on
 `ubuntu-24.04`. CI is evidence for the tested source and runner only; it is not
 production-readiness approval.
 
+**Verified:** exact-head CI run
+[41153934426](https://github.com/spikediegel-prog/Pulpo-Preview/actions/runs/41153934426)
+passed at commit `3b8800d654d84249aaa7f6186c550425c5bd6d2b` on GitHub-hosted
+Ubuntu 24.04 with Python 3.12.3. The full suite ran 422 tests with one skip;
+the bounded tournament ran 138 test executions with zero failures, errors, or
+skips and 10,600 scheduled mixed operations. The source remained unchanged and
+the checkout remained clean. This evidence applies only to that commit and
+environment; every later release candidate must pass its own exact-head job.
+
 **Verified:** the bounded exact-source tournament passed at snapshot commit
 `f5cae2be2a188fbd54d78cb875e608f30af806ad` on Ubuntu 26.04.1 LTS under WSL2
 with Python 3.14.4: 138 test executions, zero failures, errors, or skips, and
@@ -83,15 +92,14 @@ outcomes.
    writer is introduced. CI runs tests and the existing tournament with
    synthetic local state; workflow permissions are read-only.
 4. **Success and adversarial evidence:** Exact-source tournament result and
-   command are recorded above; the Ubuntu 24.04 CI job must pass at the PR head
-   before claiming that environment was verified.
+   command and the exact-head Ubuntu 24.04 CI result are recorded above. A
+   later release candidate must pass its own exact-head Ubuntu 24.04 job.
 5. **Unproven boundary:** No `.deb`/offline installer, systemd deployment,
    production authority, host isolation, real Node/Incident Response behavior,
    provider containment, independent review, or customer outcome is proved.
-6. **Claim classification:** Exact-source WSL tournament result is **Verified**
-   for that commit and environment. Ubuntu 24.04 support is **Proposed** until
-   its CI result is observed. Production deployment remains **Blocked** by the
-   documented gates.
+6. **Claim classification:** The exact-source tournament and Ubuntu 24.04 CI
+   results are **Verified** only for their recorded commits/environments.
+   Production deployment remains **Blocked** by the documented gates.
 7. **Legacy source disposition:** No historical runtime or control path is
    imported.
 8. **Temporal transfer:** No reusable lesson or authority change is introduced.
