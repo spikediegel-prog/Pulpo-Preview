@@ -105,6 +105,18 @@ class ExternalIntegrityTests(unittest.TestCase):
         self.assertEqual(CheckStatus.FAIL, digest_check.status)
         self.assertIn("differ from", digest_check.summary)
 
+    def test_kernel_and_audit_sources_are_part_of_integrity_scope(self):
+        self.assertIn("pulpo/kernel.py", VERIFIED_FILES)
+        self.assertIn("pulpo/state.py", VERIFIED_FILES)
+        self.assertIn("pulpo/audit_parallel.py", VERIFIED_FILES)
+        manifest = self.manifest()
+        manifest["files"]["pulpo/kernel.py"] = "0" * 64
+
+        check, _ = self.invoke(manifest)
+
+        self.assertEqual(CheckStatus.FAIL, check.status)
+        self.assertIn("pulpo/kernel.py", check.evidence[-1])
+
     def test_stale_manifest_and_wrong_pin_fail_closed(self):
         stale = self.manifest(
             generated_at=datetime(2026, 10, 30, 12, 0, tzinfo=timezone.utc)

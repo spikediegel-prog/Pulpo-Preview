@@ -22,18 +22,13 @@ from .report import CheckStatus, VerificationCheck
 
 MAX_MANIFEST_BYTES = 64 * 1024
 MANIFEST_TIMEOUT_SECONDS = 10
-VERIFIED_FILES = (
-    "pulpo/__init__.py",
-    "pulpo/cli.py",
-    "pulpo/verifier/__init__.py",
-    "pulpo/verifier/audit.py",
-    "pulpo/verifier/authority.py",
-    "pulpo/verifier/constitutional.py",
-    "pulpo/verifier/custody.py",
-    "pulpo/verifier/engine.py",
-    "pulpo/verifier/evidence.py",
-    "pulpo/verifier/external_integrity.py",
-    "pulpo/verifier/report.py",
+PACKAGE_ROOT = Path(__file__).resolve().parents[1]
+VERIFIED_FILES = tuple(
+    sorted(
+        path.relative_to(PACKAGE_ROOT.parent).as_posix()
+        for path in PACKAGE_ROOT.rglob("*.py")
+        if path.is_file()
+    )
 )
 
 SignatureVerifier = Callable[[bytes, bytes, bytes], bool]

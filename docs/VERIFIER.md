@@ -48,11 +48,15 @@ pulpo verify `
 
 The verifier sends a fresh 256-bit nonce in the `nonce` query parameter. The
 endpoint must respond with a JSON envelope containing exactly `manifest` and
-`signature`. The signed manifest contains exactly `schema` (`pulpo.integrity-manifest.v1`),
-`version`, `nonce`, timezone-qualified `generated_at`, and `files`. `files` must
-contain exactly the verifier source paths listed in
+`signature`. The signed manifest contains exactly `schema`
+(`pulpo.integrity-manifest.v1`), `version`, `nonce`, timezone-qualified
+`generated_at`, and `files`. `files` must contain exactly every Python source
+file in the first-party `pulpo` package, as enumerated by
 `pulpo.verifier.external_integrity.VERIFIED_FILES`, each mapped to its
-lowercase SHA-256 digest. The signature is lowercase hex Ed25519 over the
+lowercase SHA-256 digest. This includes the CLI, verifier, kernel, authority,
+and audit implementation used by the local probes. It does not authenticate
+Python, installed dependencies, loaded code, or the host. The signature is
+lowercase hex Ed25519 over the
 UTF-8 canonical manifest JSON (sorted keys, compact separators, ASCII escaping).
 The endpoint should construct the response for the requested nonce and publish
 it promptly; stale, replayed, malformed, wrongly signed, or mismatching
@@ -69,14 +73,14 @@ The report records the challenge, key fingerprint, manifest timestamp, and
 file-check result.
 
 **This is tamper evidence, not proof that compromise is impossible.** The
-check compares on-disk verifier source with a fresh statement from a pinned
-publisher. It cannot prove the currently running process, loaded memory,
-interpreter, operating system, scheduler, public-key provisioning, or publisher
-has not been compromised. A modified verifier could lie about its own result.
-For detection of that threat, an independent monitor on a separate trust domain
-must obtain and hash the installation itself, verify the signature with its
-own key pin, and retain the result outside the checked host. No setting inside
-the verifier can guarantee its own immunity to compromise.
+check compares on-disk first-party Pulpo package source with a fresh statement
+from a pinned publisher. It cannot prove the currently running process, loaded
+memory, interpreter, operating system, scheduler, public-key provisioning, or
+publisher has not been compromised. A modified verifier could lie about its
+own result. For detection of that threat, an independent monitor on a separate
+trust domain must obtain and hash the installation itself, verify the signature
+with its own key pin, and retain the result outside the checked host. No
+setting inside the verifier can guarantee its own immunity to compromise.
 
 ## Adversarial transformation review
 

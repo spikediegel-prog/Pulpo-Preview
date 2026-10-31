@@ -12,8 +12,6 @@ jobs:
   verify-and-attest:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      PULPO_CI_EVIDENCE: ${{ runner.temp }}/pulpo-ci-evidence
     permissions:
       contents: read
       id-token: write
@@ -43,22 +41,22 @@ jobs:
 
       - name: Install pinned authority verifier dependency
         run: |
-          mkdir -p "${PULPO_CI_EVIDENCE}"
+          mkdir -p "${RUNNER_TEMP}/pulpo-ci-evidence"
           python -m pip install '.[authority]'
           python -m pip check
-          python -m pip freeze > "${PULPO_CI_EVIDENCE}/pip-freeze.txt"
+          python -m pip freeze > "${RUNNER_TEMP}/pulpo-ci-evidence/pip-freeze.txt"
 
       - name: Run exact-source test suite
         run: |
           set -o pipefail
           python -W error -m unittest discover -s tests -v 2>&1 \
-            | tee "${PULPO_CI_EVIDENCE}/full-test-suite.log"
+            | tee "${RUNNER_TEMP}/pulpo-ci-evidence/full-test-suite.log"
 
       - name: Run randomized constitutional sequence
         run: |
           set -o pipefail
           python -W error -m unittest tests.test_constitutional_sequences -v 2>&1 \
-            | tee "${PULPO_CI_EVIDENCE}/constitutional-sequence.log"
+            | tee "${RUNNER_TEMP}/pulpo-ci-evidence/constitutional-sequence.log"
 
       - name: Run constitutional mutation proof
         env:
@@ -66,8 +64,8 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/run_constitutional_mutations.py --output "${REPORT}" \
-            | tee "${PULPO_CI_EVIDENCE}/constitutional-mutation-proof.log"
-          cp "${REPORT}" "${PULPO_CI_EVIDENCE}/constitutional-survival.json"
+            | tee "${RUNNER_TEMP}/pulpo-ci-evidence/constitutional-mutation-proof.log"
+          cp "${REPORT}" "${RUNNER_TEMP}/pulpo-ci-evidence/constitutional-survival.json"
           python - "${REPORT}" <<'PY'
           import json
           import sys
@@ -96,7 +94,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp -a "${PULPO_CI_EVIDENCE}" dist/ci-evidence
+          cp -a "${RUNNER_TEMP}/pulpo-ci-evidence" dist/ci-evidence
           archive="dist/pulpo-linux-source-${GITHUB_SHA}.tar.gz"
           git archive --format=tar.gz --prefix="pulpo-${GITHUB_SHA}/" "${GITHUB_SHA}" -o "${archive}"
           archive_sha256="$(sha256sum "${archive}" | cut -d ' ' -f 1)"
