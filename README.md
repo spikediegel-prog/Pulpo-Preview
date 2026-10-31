@@ -364,6 +364,22 @@ Authority changes ........ NONE
 
 Performance configuration is not an authority credential.
 
+For the focused Ubuntu/Linux release-evidence path, see the
+[cold reproduction and source attestation procedure](docs/LINUX_COLD_REPRODUCTION.md).
+Windows packaging and qualification are deferred and are not implied by Linux
+evidence.
+
+## Verify governance contracts
+
+Run `pulpo verify` (or `python -m pulpo.cli verify`) to exercise isolated
+in-memory kernel probes and write `evidence/verifier_report.json`. Checks that
+require a live approval verifier, custody store, executor, or independent event
+source remain **UNVERIFIABLE**; the command does not claim deployment
+verification. An optional challenge-bound signed manifest check can compare
+the installed verifier files against an independently pinned publisher; it
+does not prove the running process or host is uncompromised. See the
+[verifier scope and evidence semantics](docs/VERIFIER.md).
+
 ## Test the preview
 
 ### Local Control Center

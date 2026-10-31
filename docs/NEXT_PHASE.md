@@ -4,6 +4,12 @@ Status: **Proposed phase contract / review required**
 
 Phase entry point: protected `main` at `8e1aab5daaba55228189c994ddad5b86b5aed8ae` (PR #229).
 
+Scope note: The current near-term reproduction work targets Ubuntu VM/Linux.
+Windows packaging and qualification are deferred because they require
+additional cost; they are not prerequisites for the selected Linux proof.
+Deferral does not transfer Linux evidence to Windows or establish Windows
+support.
+
 ## Purpose
 
 Phase II converts Pulpo from a proof-rich advanced prototype into a smaller, admitted, externally reproducible consequence-authority system.
