@@ -1,0 +1,56 @@
+name: Ubuntu evaluation preview
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/ubuntu-evaluation-preview.yml"
+      - "README.md"
+      - "PREVIEW.md"
+      - "PREVIEW_MANIFEST.json"
+      - "docs/**"
+      - "pulpo/**"
+      - "tests/**"
+      - "scripts/run_gladiator_tournament.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-24-04:
+    name: Ubuntu 24.04 source evaluation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Run source test suite
+        run: python3 -W error -m unittest discover -s tests -v
+
+      - name: Run exact-head bounded tournament
+        shell: bash
+        env:
+          EXPECTED_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/pulpo-evaluation-preview"
+          mkdir -p "$evidence"
+          python3 -W error scripts/run_gladiator_tournament.py \
+            --repo . \
+            --expected-revision "$EXPECTED_REVISION" \
+            --output "$evidence"
+
+      - name: Preserve bounded proof evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulpo-ubuntu-evaluation-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/pulpo-evaluation-preview
+          if-no-files-found: warn
+          retention-days: 14
