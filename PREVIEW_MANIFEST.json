@@ -33,9 +33,23 @@
     ],
     "boundary": "Applies to the exact source commit and recorded runtime; does not establish current PR status, cross-platform workflows, production readiness, or deployment behavior."
   },
+  "windows_observation": {
+    "classification": "Recorded",
+    "source_commit_tested": "6b3caacbc28a7b40ebf5ea6295bc8058804de6e3",
+    "command": "python -m unittest discover -s tests -v",
+    "environment": "Windows host",
+    "result": "FAILED",
+    "tests_run": 416,
+    "failures": 14,
+    "errors": 60,
+    "skipped": 2,
+    "elapsed_seconds": 56.941,
+    "boundary": "Failure causes were not diagnosed; this result does not establish Windows compatibility or the cause of the failures."
+  },
   "classification": {
     "source_identity": "Verified",
     "test_result": "Verified",
+    "windows_test_result": "Recorded",
     "current_unmerged_pr_status": "Unknown",
     "production_readiness": "Unknown"
   }
