@@ -2,6 +2,13 @@
 
 Pulpo is the governance and evidence plane between AI intelligence and consequential execution. It turns explicit intent into deterministic governance, binds allowed work to narrowly scoped one-use permits, and preserves durable evidence for verification and reconciliation.
 
+## Ubuntu evaluation preview
+
+This repository offers a **source-only evaluation preview**, not a full Pulpo
+product installer or production deployment. Start with the
+[Ubuntu evaluation guide](docs/UBUNTU_EVALUATION_PREVIEW.md) for exact-source
+checkout, verification commands, and the boundaries of what this preview proves.
+
 The `preview-current-20261030` branch records upstream `main` at exact commit
 `6b3caacbc28a7b40ebf5ea6295bc8058804de6e3`, without unmerged PR changes. See
 the [snapshot record](PREVIEW.md) and [machine-readable manifest](PREVIEW_MANIFEST.json).
