@@ -197,7 +197,7 @@ The current executable is an **unsigned portable preview build**, not an MSI, Wi
 
 The current `preview` branch combines selected upstream PR work plus preview-specific validation and repair work.
 
-The snapshot manifest records exact PR heads, checks, inclusion state, conflicts, and provenance. See [PREVIEW.md](PREVIEW.md) and [PREVIEW_MANIFEST.json](PREVIEW_MANIFEST.json).
+The historical 2026-10-03 preview snapshot records exact PR heads, checks, inclusion state, conflicts, and provenance; it is not current PR or workflow status. See [PREVIEW.md](PREVIEW.md) and [PREVIEW_MANIFEST.json](PREVIEW_MANIFEST.json).
 
 ### Combined preview PRs
 
@@ -487,8 +487,8 @@ Repository tests and bounded provider proofs establish controls only in their te
 
 For the current preview evidence and limitations, start with:
 
-- [Preview status and validation](PREVIEW.md)
-- [Machine-readable preview manifest](PREVIEW_MANIFEST.json)
+- [Historical preview snapshot and validation](PREVIEW.md)
+- [Machine-readable 2026-10-03 preview manifest](PREVIEW_MANIFEST.json)
 - [Windows preview executable](docs/WINDOWS_PREVIEW_EXE.md)
 - [Audit CPU workers and performance](docs/AUDIT_CPU_WORKERS.md)
 - [Current state](docs/CURRENT_STATE.md)
