@@ -4,9 +4,66 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from .setup import run_setup
+
+
+def _verify_command(args: argparse.Namespace) -> int:
+    from .verifier import run_verification
+    from .verifier.evidence import write_report
+    from .verifier.external_integrity import check_external_integrity
+    from .verifier.report import build_report
+
+    report = run_verification()
+    integrity_options = (
+        args.integrity_manifest_url,
+        args.integrity_public_key,
+        args.integrity_key_sha256,
+    )
+    if any(integrity_options) and not all(integrity_options):
+        raise ValueError(
+            "--integrity-manifest-url, --integrity-public-key, and --integrity-key-sha256 must be used together"
+        )
+    if all(integrity_options):
+        check = check_external_integrity(
+            manifest_url=args.integrity_manifest_url,
+            public_key_path=args.integrity_public_key,
+            pinned_key_sha256=args.integrity_key_sha256,
+            max_age_seconds=args.integrity_max_age_seconds,
+        )
+        report = build_report((*report.checks, check))
+        report = replace(
+            report,
+            scope={
+                **report.scope,
+                "external_integrity": (
+                    "challenge-bound HTTPS manifest signature and verifier file digests checked "
+                    "against an independently provisioned key pin"
+                ),
+                "external_integrity_boundary": (
+                    "does not attest the running process, loaded memory, host, or independence of the "
+                    "local trust-pin provisioning"
+                ),
+            },
+        )
+    destination = write_report(report, args.report)
+    print("PULPO VERIFIER")
+    print()
+    for check in report.checks:
+        print(f"{check.status.value:13} {check.check_id}: {check.summary}")
+    counts = report.check_counts
+    score = report.governance_score
+    print()
+    print(f'Governance score .......... {score["passed"]}/{score["total"]} ({score["percentage"]}%)')
+    print(
+        f'Checks .................... {counts["pass"]} PASS, {counts["fail"]} FAIL, '
+        f'{counts["unverifiable"]} UNVERIFIABLE'
+    )
+    print(f"Report .................... {destination}")
+    print(f"Overall ................... {report.status.value}")
+    return 0 if report.status.value == "PASS" else 1
 
 
 def _setup_command(args: argparse.Namespace) -> int:
@@ -104,6 +161,35 @@ def _tune_command(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="pulpo")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    verify = subparsers.add_parser(
+        "verify",
+        help="run isolated governance probes and write a scoped verification report",
+    )
+    verify.add_argument(
+        "--report",
+        default="evidence/verifier_report.json",
+        help="verifier report path (default: evidence/verifier_report.json)",
+    )
+    verify.add_argument(
+        "--integrity-manifest-url",
+        help="optional HTTPS endpoint for a fresh signed verifier-integrity manifest",
+    )
+    verify.add_argument(
+        "--integrity-public-key",
+        help="path to the independently provisioned Ed25519 public key (raw 32 bytes or PEM)",
+    )
+    verify.add_argument(
+        "--integrity-key-sha256",
+        help="out-of-band pinned SHA-256 fingerprint of the raw Ed25519 public key",
+    )
+    verify.add_argument(
+        "--integrity-max-age-seconds",
+        type=int,
+        default=300,
+        help="maximum signed-manifest age (1-604800 seconds; default: 300)",
+    )
+    verify.set_defaults(func=_verify_command)
 
     setup = subparsers.add_parser(
         "setup",

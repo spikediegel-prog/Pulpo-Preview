@@ -14,7 +14,7 @@ pulpo-git-clarity = "pulpo.git_clarity:main"
 pulpo-mcp-tunnel = "pulpo.mcp_tunnel:main"
 
 [tool.setuptools]
-packages = ["pulpo"]
+packages = ["pulpo", "pulpo.verifier"]
 
 [tool.setuptools.package-data]
 pulpo = ["assets/*.png"]
