@@ -1,0 +1,42 @@
+{
+  "schema": "pulpo.preview.snapshot.v1",
+  "snapshot_date": "2026-10-30",
+  "snapshot_ref": "refs/heads/preview-current-20261030",
+  "source": {
+    "repository": "Ironnember/Pulpo1.0",
+    "branch": "main",
+    "commit": "6b3caacbc28a7b40ebf5ea6295bc8058804de6e3",
+    "tree": "df6310dc0b6eaec50b7870832dd8cb379096f778"
+  },
+  "original_preview": {
+    "repository": "spikediegel-prog/Pulpo-Preview",
+    "ref": "refs/heads/preview",
+    "commit": "606a4c55f092e15a581da099c646d9eea6dabe84",
+    "preserved_tag": "refs/tags/preview-original-2026-10-30"
+  },
+  "included_unmerged_prs": [],
+  "unmerged_pr_audit": "not performed; snapshot contains upstream main only",
+  "authority_effect": "none",
+  "canonical_state_mutations": [],
+  "validation": {
+    "classification": "Verified",
+    "source_commit_tested": "6b3caacbc28a7b40ebf5ea6295bc8058804de6e3",
+    "command": "python3 -m unittest discover -s tests -v",
+    "environment": "Ubuntu 26.04.1 LTS; Python 3.14.4; full-history Linux clone",
+    "result": "OK",
+    "tests_run": 422,
+    "skipped": 1,
+    "historical_checkpoints": [
+      "4ee6af94ea8c55d2393351ffcb17f3dcdc792d08",
+      "81338eed28ec32fe214c7eee086a82840ca0923f",
+      "0eb1266fecf586c79457e0fcaf412bc6345545a2"
+    ],
+    "boundary": "Applies to the exact source commit and recorded runtime; does not establish current PR status, cross-platform workflows, production readiness, or deployment behavior."
+  },
+  "classification": {
+    "source_identity": "Verified",
+    "test_result": "Verified",
+    "current_unmerged_pr_status": "Unknown",
+    "production_readiness": "Unknown"
+  }
+}

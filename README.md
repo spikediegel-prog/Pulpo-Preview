@@ -2,6 +2,11 @@
 
 Pulpo is the governance and evidence plane between AI intelligence and consequential execution. It turns explicit intent into deterministic governance, binds allowed work to narrowly scoped one-use permits, and preserves durable evidence for verification and reconciliation.
 
+The `preview-current-20261030` branch records upstream `main` at exact commit
+`6b3caacbc28a7b40ebf5ea6295bc8058804de6e3`, without unmerged PR changes. See
+the [snapshot record](PREVIEW.md) and [machine-readable manifest](PREVIEW_MANIFEST.json).
+The prior preview is preserved at `preview-original-2026-10-30`.
+
 This repository is the clean canonical Pulpo project. The older `Iron-Ember/pulpo` repository remains historical reference material; its accumulated plans, generated evidence, machine-specific scripts, and CI workarounds are intentionally not imported here.
 
 ## Proven now
