@@ -21,7 +21,9 @@ This is stronger than a locally generated checksum: an independent reviewer
 can verify the GitHub attestation identity and repository/workflow provenance.
 It is **not** an independent implementation or a cold reproduction; the
 workflow still executes the submitted source and relies on GitHub-hosted
-infrastructure. Branch/tag protection, review, and release authorization remain
+infrastructure. The tag-triggered workflow must first be merged to the
+repository's default branch; a tag pushed before that may not trigger it.
+Branch/tag protection, review, and release authorization remain
 repository-owner responsibilities.
 
 ## Independent operator procedure
@@ -48,14 +50,33 @@ tag. Keep the downloaded archive and workflow manifest unchanged.
    sha256sum pulpo-linux-source-<commit>.tar.gz
    ```
 
-3. Extract the archive into a fresh directory, enter the extracted source
-   directory, and run in a clean Python 3.12 environment:
+3. Use a full Git clone of the attested tag for the test run. Several repository
+   tests intentionally inspect Git history, so running directly from the
+   source-only archive is not a valid reproduction. Extract the attested
+   archive and compare its complete source tree against `git archive` of the
+   exact tagged commit before running tests:
 
    ```bash
-   mkdir -p "$HOME/pulpo-cold-reproduction"
-   tar -xzf "pulpo-linux-source-<commit>.tar.gz" \
-     -C "$HOME/pulpo-cold-reproduction"
-   cd "$HOME/pulpo-cold-reproduction/pulpo-<commit>"
+   set -euo pipefail
+   archive="pulpo-linux-source-<commit>.tar.gz"
+   manifest="linux-source-manifest.json"
+   tag="$(python3.12 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["tag"])' "$manifest")"
+   commit="$(python3.12 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["commit"])' "$manifest")"
+   mkdir -p "$HOME/pulpo-cold-reproduction/archive" \
+     "$HOME/pulpo-cold-reproduction/expected"
+   git clone --branch "$tag" \
+     https://github.com/spikediegel-prog/Pulpo-Preview.git \
+     "$HOME/pulpo-cold-reproduction/checkout"
+   repo="$HOME/pulpo-cold-reproduction/checkout"
+   test "$(git -C "$repo" rev-parse HEAD)" = "$commit"
+   tar -xzf "$archive" -C "$HOME/pulpo-cold-reproduction/archive"
+   git -C "$repo" archive --format=tar \
+     --prefix="pulpo-${commit}/" "$commit" \
+     | tar -xf - -C "$HOME/pulpo-cold-reproduction/expected"
+   diff -r \
+     "$HOME/pulpo-cold-reproduction/archive/pulpo-${commit}" \
+     "$HOME/pulpo-cold-reproduction/expected/pulpo-${commit}"
+   cd "$repo"
    python3.12 -m venv "$HOME/pulpo-cold-reproduction/venv"
    source "$HOME/pulpo-cold-reproduction/venv/bin/activate"
    python3.12 -m pip install '.[authority]'
@@ -67,12 +88,14 @@ tag. Keep the downloaded archive and workflow manifest unchanged.
      --output /tmp/pulpo-constitutional-survival.json
    sha256sum pulpo/state.py pulpo/kernel.py > /tmp/pulpo-mutated-files.after
    diff -u /tmp/pulpo-mutated-files.before /tmp/pulpo-mutated-files.after
+   test -z "$(git status --porcelain --untracked-files=all)"
    ```
 
    Require every command to succeed and the mutation report to say `pass`, with
-   zero invalid and zero surviving mutations. The before/after digest check
-   confirms that the mutation harness restored its two mutation targets in the
-   extracted source. Keep all logs and reports outside that source directory.
+   zero invalid and zero surviving mutations. The tree comparison proves the
+   downloaded source archive matches the exact commit; the before/after digest
+   and Git status checks confirm the mutation harness restored its changes.
+   Keep all logs and reports outside the checkout.
 
 4. Return a reproduction record to the assurance owner containing:
    - verifier name/organization and the UTC start/end times;
