@@ -100,6 +100,15 @@ def _same_file_identity(left: os.stat_result, right: os.stat_result) -> bool:
     return left.st_dev == right.st_dev and left.st_ino == right.st_ino
 
 
+def _trusted_posix_snapshot_parent(metadata: os.stat_result) -> bool:
+    """Whether a Linux/POSIX snapshot directory is private to trusted owners."""
+
+    return (
+        metadata.st_uid in {os.geteuid(), 0}
+        and not (stat.S_IMODE(metadata.st_mode) & 0o022)
+    )
+
+
 def export_mcp_snapshot(
     orchestrator: PulpoOrchestrator,
     destination: str | os.PathLike[str],
@@ -107,11 +116,13 @@ def export_mcp_snapshot(
     """Atomically export one capability-free snapshot from trusted Pulpo.
 
     The destination parent must already exist as an absolute, non-symlinked
-    directory. POSIX uses descriptor-relative operations and owner-only mode
-    bits. On Windows, callers must provide a parent directory whose ACL grants
-    access only to trusted identities; the exporter does not inspect or set a
-    Windows DACL. It uses canonical absolute paths, rejects symlink/junction
-    traversal, and verifies parent/file identity around publication.
+    directory. On POSIX, it must be owned by the running user or root and not
+    group/world writable; publication uses descriptor-relative operations and
+    owner-only file mode bits. On Windows, callers must provide a parent whose
+    ACL grants access only to trusted identities; the exporter does not inspect
+    or set a Windows DACL. It uses canonical absolute paths, rejects
+    symlink/junction traversal, and verifies parent/file identity around
+    publication.
     """
 
     return _publish_snapshot(freeze_mcp_snapshot(orchestrator), destination)
@@ -138,6 +149,8 @@ def _publish_snapshot(snapshot, destination):
         or not stat.S_ISDIR(parent_metadata.st_mode)
     ):
         raise MCPBoundaryError("mcp_snapshot_parent_invalid")
+    if os.name == "posix" and not _trusted_posix_snapshot_parent(parent_metadata):
+        raise MCPBoundaryError("mcp_snapshot_parent_permissions_invalid")
 
     payload = json.dumps(asdict(snapshot), sort_keys=True, separators=(",", ":")) + "\n"
 
@@ -281,6 +294,9 @@ def _publish_snapshot(snapshot, destination):
     ):
         os.close(directory_descriptor)
         raise MCPBoundaryError("mcp_snapshot_parent_invalid")
+    if os.name == "posix" and not _trusted_posix_snapshot_parent(opened_parent):
+        os.close(directory_descriptor)
+        raise MCPBoundaryError("mcp_snapshot_parent_permissions_invalid")
 
     try:
         existing = os.stat(

@@ -196,7 +196,6 @@ class MCPBoundaryTests(unittest.TestCase):
         if os.name == "posix":
             self.assertEqual(0o600, mode)
         self.assertEqual(before, self.kernel.audit)
-
         for forbidden in (
             "authority",
             "credential",
@@ -208,6 +207,23 @@ class MCPBoundaryTests(unittest.TestCase):
             "state",
         ):
             self.assertNotIn(forbidden, document)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX directory permissions required")
+    def test_export_rejects_group_or_world_writable_parent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory) / "snapshot-dir"
+            parent.mkdir()
+            destination = parent / "snapshot.json"
+            parent.chmod(0o777)
+            try:
+                with self.assertRaisesRegex(
+                    MCPBoundaryError,
+                    "mcp_snapshot_parent_permissions_invalid",
+                ):
+                    export_mcp_snapshot(self.orchestrator, destination)
+                self.assertFalse(destination.exists())
+            finally:
+                parent.chmod(0o700)
 
     def test_exported_file_remains_frozen_after_canonical_mutation(self):
         with tempfile.TemporaryDirectory() as directory:

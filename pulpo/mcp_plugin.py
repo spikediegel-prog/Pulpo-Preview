@@ -15,7 +15,12 @@ from pathlib import Path
 import stat
 from typing import Any, Sequence
 
-from .mcp_boundary import MCPBoundaryError, MCPReadSnapshot, create_mcp_server
+from .mcp_boundary import (
+    MCPBoundaryError,
+    MCPReadSnapshot,
+    _trusted_posix_snapshot_parent,
+    create_mcp_server,
+)
 
 
 DEFAULT_SNAPSHOT_PATH = Path.home() / ".pulpo" / "mcp-read-snapshot.json"
@@ -152,11 +157,7 @@ def read_snapshot_document(
         # File mode alone does not prevent another local user from replacing
         # the snapshot through a writable parent directory. Require a trusted
         # owner (the running user or root) and no group/world write access.
-        trusted_owners = {os.geteuid(), 0}
-        if (
-            parent_metadata.st_uid not in trusted_owners
-            or stat.S_IMODE(parent_metadata.st_mode) & 0o022
-        ):
+        if not _trusted_posix_snapshot_parent(parent_metadata):
             raise MCPBoundaryError("mcp_plugin_snapshot_parent_permissions_invalid")
 
     if os.name == "nt":
@@ -180,6 +181,8 @@ def read_snapshot_document(
                 or opened_parent.st_ino != parent_metadata.st_ino
             ):
                 raise MCPBoundaryError("mcp_plugin_snapshot_parent_invalid")
+            if not _trusted_posix_snapshot_parent(opened_parent):
+                raise MCPBoundaryError("mcp_plugin_snapshot_parent_permissions_invalid")
 
             file_flags = os.O_RDONLY
             file_flags |= getattr(os, "O_CLOEXEC", 0)

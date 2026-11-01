@@ -44,10 +44,12 @@ writes only the six primitive `pulpo.mcp-read-snapshot.v0` fields. The exporter
 is not registered as an MCP tool.
 
 The destination must be absolute and its immediate parent must already exist
-as a real directory rather than a symlink. A symlink or other non-regular
-destination is rejected. On POSIX, creation, replacement, cleanup, and
-synchronization are bound to one opened parent-directory descriptor, and the
-file is restricted to owner read/write mode. On Windows, the exporter rejects
+as a real directory rather than a symlink. On POSIX, the parent must be owned
+by the running user or root and not group/world writable; the reader enforces
+the same requirement. A symlink or other non-regular destination is rejected.
+On POSIX, creation, replacement, cleanup, and synchronization are bound to one
+opened parent-directory descriptor, and the file is restricted to owner
+read/write mode. On Windows, the exporter rejects
 reparse traversal and rechecks parent/file identity, but does not inspect or set
 the parent directory's DACL. The operator must place the snapshot under a
 directory whose ACL grants access only to trusted identities. The Windows
