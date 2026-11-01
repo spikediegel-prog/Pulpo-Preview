@@ -58,6 +58,9 @@ that exporter or the orchestrator needed to call it.
 
 To seed a local plugin instance, the operator may copy the exact exported file
 to the client-provided `PLUGIN_DATA` directory and preserve owner-only access.
+On Windows, the operator must provision and verify the parent directory's ACL
+so only trusted identities can read or replace the snapshot; the plugin does
+not inspect or set Windows DACLs.
 The reader fails closed for a relative path, symlinked immediate parent, linked
 final file, oversized document, group/world-readable POSIX file, malformed JSON,
 duplicate keys, missing fields, extra fields, or an invalid snapshot schema.

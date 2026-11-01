@@ -197,6 +197,10 @@ class MCPPluginTests(unittest.TestCase):
             manifest["$schema"],
         )
         self.assertEqual("pulpo", manifest["name"])
+        self.assertEqual(
+            "https://github.com/spikediegel-prog/Pulpo-Preview",
+            manifest["repository"],
+        )
         self.assertIn("Read-only", manifest["description"])
         self.assertNotIn("extensions", manifest)
 

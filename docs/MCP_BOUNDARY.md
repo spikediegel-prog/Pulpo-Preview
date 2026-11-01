@@ -9,12 +9,11 @@ consequential MCP tool remain **Proposed**, not verified.
 MCP is a transport and capability-discovery surface. It is not a Pulpo
 authority, policy, permit, directive, execution, memory, or evidence source.
 
-The initial adapter intentionally exposes only:
+`create_mcp_server(snapshot)` intentionally exposes only two projections over
+the supplied frozen `MCPReadSnapshot`:
 
-- `pulpo_propose_intent`: validate and lock one exact target through the
-  canonical `PulpoOrchestrator`; and
-- `pulpo_get_evidence`: read integrity metadata projected from the canonical
-  kernel audit chain.
+- `pulpo_propose_intent`: validate and return one exact candidate intent; and
+- `pulpo_get_evidence`: return integrity metadata copied from that snapshot.
 
 Neither tool accepts an approval flag, authority claim, directive, policy,
 clock, state backend, permit, executor, retrieval score, or model summary.
@@ -23,15 +22,16 @@ reconcile a consequential action.
 
 ## Proven invariant
 
-An MCP client can propose an exact intent and observe canonical evidence, but
-MCP metadata or client assertions cannot raise that intent's authority. An
-unknown action remains denied by the normal kernel even after it has been
-locked as an MCP proposal. Reusing a target version with substituted intent
-content is rejected as an immutable-target violation.
+An MCP client can propose an exact intent and inspect frozen metadata, but MCP
+metadata or client assertions cannot raise that intent's authority. The
+proposal tool does not evaluate policy, lock a canonical target, append an audit
+record, or re-read current evidence. `target_id` and `target_version` label the
+proposal only; callers may submit different content under the same values.
+Pulpo must resolve and re-evaluate any candidate through its canonical governed
+path before treating it as an accepted target or action.
 
-The adapter owns no state and no clock. Proposal evidence is appended to the
-existing kernel audit chain with `authority_effect: none`; the evidence tool is
-a read-only projection and creates no second ledger.
+The adapter owns no state and no clock. Both tools are non-mutating projections;
+neither appends to the canonical kernel audit chain or creates a second ledger.
 
 ## Trusted frozen-snapshot export
 
@@ -43,13 +43,13 @@ is not registered as an MCP tool.
 
 The destination must be absolute and its immediate parent must already exist
 as a real directory rather than a symlink. A symlink or other non-regular
-destination is rejected. Creation, replacement, cleanup, and synchronization
-remain bound to one opened parent-directory descriptor. The file is written
-through a same-directory temporary file, synchronized, atomically replaced,
-and restricted to owner read/write permissions. Before reporting success, the
-exporter rechecks that the requested parent path still names the opened
-directory and that the requested destination names the file published through
-that descriptor.
+destination is rejected. On POSIX, creation, replacement, cleanup, and
+synchronization are bound to one opened parent-directory descriptor, and the
+file is restricted to owner read/write mode. On Windows, the exporter rejects
+reparse traversal and rechecks parent/file identity, but does not inspect or set
+the parent directory's DACL. The operator must place the snapshot under a
+directory whose ACL grants access only to trusted identities. The Windows
+`0o600` creation mode is not an ACL guarantee.
 
 An error before atomic replacement is reported as `mcp_snapshot_export_failed`.
 An error after replacement, including directory synchronization failure or a

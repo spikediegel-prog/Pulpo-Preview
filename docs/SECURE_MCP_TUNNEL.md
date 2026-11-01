@@ -31,10 +31,12 @@ require canonical Pulpo evaluation outside this transport surface.
 The operator must provide:
 
 1. the official `tunnel-client` binary from `openai/tunnel-client`;
-2. one OpenAI Secure MCP Tunnel ID in the exact control-plane format
+2. the binary's lowercase SHA-256 digest, obtained through a trusted channel
+   independent of the executable and `PATH`;
+3. one OpenAI Secure MCP Tunnel ID in the exact control-plane format
    `tunnel_` followed by 32 lowercase hexadecimal characters;
-3. one runtime API key in `CONTROL_PLANE_API_KEY` with Tunnels Read + Use;
-4. one trusted frozen snapshot created by Pulpo's existing
+4. one runtime API key in `CONTROL_PLANE_API_KEY` with Tunnels Read + Use;
+5. one trusted frozen snapshot created by Pulpo's existing
    `export_mcp_snapshot()` function.
 
 Create the tunnel from Platform Tunnels management or the separately authorized
@@ -54,8 +56,19 @@ Export the runtime key and exact tunnel ID only into the process environment:
 ```text
 export CONTROL_PLANE_API_KEY='...'
 export CONTROL_PLANE_TUNNEL_ID='tunnel_0123456789abcdef0123456789abcdef'
+export PULPO_TUNNEL_CLIENT='/absolute/path/to/tunnel-client'
+export PULPO_TUNNEL_CLIENT_SHA256='<trusted lowercase SHA-256 digest>'
 export PULPO_MCP_SNAPSHOT='/absolute/path/to/mcp-read-snapshot.json'
 ```
+
+The launcher fails closed if the resolved executable does not match the
+configured digest. Install the pinned binary in a location that untrusted
+processes cannot replace while the launcher is running; a digest alone cannot
+remove the operating system's path replacement race.
+
+On Windows, store the snapshot in a directory whose NTFS ACL grants read/write
+access only to the trusted Pulpo/tunnel identities and administrators. Pulpo
+checks the path and file type, but does not inspect or set Windows DACLs.
 
 Then validate the complete local binding without starting the long-running poll
 loop:
@@ -118,6 +131,7 @@ The launcher fails closed before starting `tunnel-client` when:
 - the snapshot path is not absolute;
 - the existing Pulpo frozen-snapshot boundary rejects the file;
 - the `tunnel-client` executable cannot be resolved;
+- the pinned tunnel-client SHA-256 is missing, malformed, or mismatched;
 - profile creation or `doctor --explain` fails.
 
 For stdio tunnel bindings, run only one active tunnel-client process for a given

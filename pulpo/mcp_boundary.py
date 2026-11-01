@@ -108,9 +108,10 @@ def export_mcp_snapshot(
 
     The destination parent must already exist as an absolute, non-symlinked
     directory. POSIX uses descriptor-relative operations and owner-only mode
-    bits. Windows uses canonical absolute paths, rejects symlink/junction
-    traversal, verifies parent/file identity around publication, and preserves
-    the same fail-closed boundary without relying on unsupported directory FDs.
+    bits. On Windows, callers must provide a parent directory whose ACL grants
+    access only to trusted identities; the exporter does not inspect or set a
+    Windows DACL. It uses canonical absolute paths, rejects symlink/junction
+    traversal, and verifies parent/file identity around publication.
     """
 
     return _publish_snapshot(freeze_mcp_snapshot(orchestrator), destination)

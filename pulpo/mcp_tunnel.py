@@ -9,8 +9,11 @@ existing capability-stripped ``pulpo.mcp_plugin`` projection over stdio.
 from __future__ import annotations
 
 import argparse
+from hashlib import sha256
+import hmac
 import os
 from pathlib import Path
+import re
 import shlex
 import shutil
 import subprocess
@@ -32,6 +35,7 @@ _RUNTIME_KEY_ENV = "CONTROL_PLANE_API_KEY"
 _TUNNEL_ID_ENV = "CONTROL_PLANE_TUNNEL_ID"
 _SNAPSHOT_ENV = "PULPO_MCP_SNAPSHOT"
 _TUNNEL_CLIENT_ENV = "PULPO_TUNNEL_CLIENT"
+_TUNNEL_CLIENT_SHA256_ENV = "PULPO_TUNNEL_CLIENT_SHA256"
 _TUNNEL_HEX_LENGTH = 32
 
 
@@ -58,8 +62,16 @@ def validate_tunnel_id(value: str | None) -> str:
     return tunnel_id
 
 
-def resolve_tunnel_client(candidate: str | None = None) -> str:
-    """Resolve the operator-installed tunnel-client executable without a shell."""
+def resolve_tunnel_client(
+    candidate: str | None = None,
+    expected_sha256: str | None = None,
+) -> str:
+    """Resolve tunnel-client and require an independently pinned file digest."""
+
+    if not isinstance(expected_sha256, str):
+        raise MCPTunnelBindingError("pulpo_tunnel_client_sha256_missing")
+    if re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None:
+        raise MCPTunnelBindingError("pulpo_tunnel_client_sha256_invalid")
 
     requested = _required_text(
         candidate or "tunnel-client",
@@ -73,12 +85,23 @@ def resolve_tunnel_client(candidate: str | None = None) -> str:
             raise MCPTunnelBindingError("pulpo_tunnel_client_missing") from exc
         if not resolved.is_file() or not os.access(resolved, os.X_OK):
             raise MCPTunnelBindingError("pulpo_tunnel_client_not_executable")
-        return str(resolved)
+    else:
+        found = shutil.which(requested)
+        if found is None:
+            raise MCPTunnelBindingError("pulpo_tunnel_client_missing")
+        resolved = Path(found).resolve(strict=True)
 
-    resolved = shutil.which(requested)
-    if resolved is None:
-        raise MCPTunnelBindingError("pulpo_tunnel_client_missing")
-    return resolved
+    digest_state = sha256()
+    try:
+        with resolved.open("rb") as executable:
+            for chunk in iter(lambda: executable.read(1024 * 1024), b""):
+                digest_state.update(chunk)
+    except OSError as exc:
+        raise MCPTunnelBindingError("pulpo_tunnel_client_unreadable") from exc
+    digest = digest_state.hexdigest()
+    if not hmac.compare_digest(digest, expected_sha256):
+        raise MCPTunnelBindingError("pulpo_tunnel_client_sha256_mismatch")
+    return str(resolved)
 
 
 def build_stdio_command(
@@ -132,6 +155,8 @@ def _runtime_environment(
     for name in (
         "OPENAI_ADMIN_KEY",
         "OPENAI_API_KEY",
+        _TUNNEL_CLIENT_ENV,
+        _TUNNEL_CLIENT_SHA256_ENV,
         "TUNNEL_CLIENT_CONFIG",
         "TUNNEL_CLIENT_PROFILE",
         "TUNNEL_CLIENT_PROFILE_FILE",
@@ -150,6 +175,7 @@ def run_secure_tunnel(
     tunnel_id: str | None,
     snapshot_path: str | os.PathLike[str] = DEFAULT_SNAPSHOT_PATH,
     tunnel_client: str = "tunnel-client",
+    tunnel_client_sha256: str | None = None,
     profile: str = DEFAULT_PROFILE,
     doctor_only: bool = False,
     env: Mapping[str, str] | None = None,
@@ -174,12 +200,16 @@ def run_secure_tunnel(
     if not snapshot.is_absolute():
         raise MCPTunnelBindingError("pulpo_tunnel_snapshot_path_invalid")
 
-    # Reuse the admitted plugin boundary as the trust gate. This proves that the
-    # file is exact-schema, private, non-symlinked, and capability-free before a
-    # transport process is allowed to launch it.
+    # Reuse the admitted plugin boundary as the format/path gate. On Windows,
+    # the operator must ensure the snapshot parent's ACL is trusted.
     load_mcp_snapshot(snapshot)
 
-    client = resolve_tunnel_client(tunnel_client)
+    source_environment = os.environ if env is None else env
+    _required_text(source_environment.get(_RUNTIME_KEY_ENV), "pulpo_tunnel_runtime_key_missing")
+    expected_client_sha256 = tunnel_client_sha256
+    if expected_client_sha256 is None:
+        expected_client_sha256 = source_environment.get(_TUNNEL_CLIENT_SHA256_ENV)
+    client = resolve_tunnel_client(tunnel_client, expected_client_sha256)
     mcp_command = build_stdio_command(snapshot)
 
     with tempfile.TemporaryDirectory(prefix="pulpo-tunnel-profile-") as profile_dir:
@@ -251,7 +281,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--tunnel-client",
         default=os.environ.get(_TUNNEL_CLIENT_ENV, "tunnel-client"),
-        help=f"tunnel-client executable. Defaults to ${_TUNNEL_CLIENT_ENV} or PATH.",
+        help=f"tunnel-client executable. Defaults to ${_TUNNEL_CLIENT_ENV} or PATH; its digest must be pinned separately.",
+    )
+    parser.add_argument(
+        "--tunnel-client-sha256",
+        default=os.environ.get(_TUNNEL_CLIENT_SHA256_ENV),
+        help=f"Trusted lowercase SHA-256 of tunnel-client. Defaults to ${_TUNNEL_CLIENT_SHA256_ENV}.",
     )
     parser.add_argument(
         "--profile",
@@ -270,6 +305,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             tunnel_id=args.tunnel_id,
             snapshot_path=args.snapshot,
             tunnel_client=args.tunnel_client,
+            tunnel_client_sha256=args.tunnel_client_sha256,
             profile=args.profile,
             doctor_only=args.doctor_only,
         )

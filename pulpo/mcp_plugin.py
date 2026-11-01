@@ -129,7 +129,11 @@ def _read_windows_snapshot(target: Path) -> str:
 def read_snapshot_document(
     path: str | os.PathLike[str] = DEFAULT_SNAPSHOT_PATH,
 ) -> dict:
-    """Load one exact owner-private frozen snapshot without write capability."""
+    """Load an exact frozen snapshot without write capability.
+
+    POSIX mode bits are checked here. On Windows, trust depends on the ACLs of
+    the parent directory; the reader does not inspect or set a Windows DACL.
+    """
 
     if not isinstance(path, (str, os.PathLike)) or isinstance(path, bytes):
         raise MCPBoundaryError("mcp_plugin_snapshot_path_invalid")
