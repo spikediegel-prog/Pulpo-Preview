@@ -100,6 +100,15 @@ def _same_file_identity(left: os.stat_result, right: os.stat_result) -> bool:
     return left.st_dev == right.st_dev and left.st_ino == right.st_ino
 
 
+def _trusted_posix_snapshot_parent(metadata: os.stat_result) -> bool:
+    """Whether a Linux/POSIX snapshot directory is private to trusted owners."""
+
+    return (
+        metadata.st_uid in {os.geteuid(), 0}
+        and not (stat.S_IMODE(metadata.st_mode) & 0o022)
+    )
+
+
 def export_mcp_snapshot(
     orchestrator: PulpoOrchestrator,
     destination: str | os.PathLike[str],
@@ -107,10 +116,13 @@ def export_mcp_snapshot(
     """Atomically export one capability-free snapshot from trusted Pulpo.
 
     The destination parent must already exist as an absolute, non-symlinked
-    directory. POSIX uses descriptor-relative operations and owner-only mode
-    bits. Windows uses canonical absolute paths, rejects symlink/junction
-    traversal, verifies parent/file identity around publication, and preserves
-    the same fail-closed boundary without relying on unsupported directory FDs.
+    directory. On POSIX, it must be owned by the running user or root and not
+    group/world writable; publication uses descriptor-relative operations and
+    owner-only file mode bits. On Windows, callers must provide a parent whose
+    ACL grants access only to trusted identities; the exporter does not inspect
+    or set a Windows DACL. It uses canonical absolute paths, rejects
+    symlink/junction traversal, and verifies parent/file identity around
+    publication.
     """
 
     return _publish_snapshot(freeze_mcp_snapshot(orchestrator), destination)
@@ -137,6 +149,8 @@ def _publish_snapshot(snapshot, destination):
         or not stat.S_ISDIR(parent_metadata.st_mode)
     ):
         raise MCPBoundaryError("mcp_snapshot_parent_invalid")
+    if os.name == "posix" and not _trusted_posix_snapshot_parent(parent_metadata):
+        raise MCPBoundaryError("mcp_snapshot_parent_permissions_invalid")
 
     payload = json.dumps(asdict(snapshot), sort_keys=True, separators=(",", ":")) + "\n"
 
@@ -280,6 +294,9 @@ def _publish_snapshot(snapshot, destination):
     ):
         os.close(directory_descriptor)
         raise MCPBoundaryError("mcp_snapshot_parent_invalid")
+    if os.name == "posix" and not _trusted_posix_snapshot_parent(opened_parent):
+        os.close(directory_descriptor)
+        raise MCPBoundaryError("mcp_snapshot_parent_permissions_invalid")
 
     try:
         existing = os.stat(
@@ -391,6 +408,18 @@ class PulpoMCPProjection:
 
     __slots__ = ("_snapshot",)
 
+    _SMALL_TEXT_LIMIT = 256
+    _RESOURCE_TEXT_LIMIT = 4096
+    _MAX_INTENT_TEXT_BYTES = 8192
+    _MAX_INT64 = (1 << 63) - 1
+
+    @staticmethod
+    def _text_size(value: str) -> int | None:
+        try:
+            return len(value.encode("utf-8"))
+        except UnicodeEncodeError:
+            return None
+
     def __init__(self, snapshot: MCPReadSnapshot) -> None:
         if type(snapshot) is not MCPReadSnapshot:
             raise TypeError("MCPReadSnapshot required")
@@ -405,9 +434,29 @@ class PulpoMCPProjection:
         session_id: str,
     ) -> Intent:
         values = (principal, action, resource, session_id)
-        if any(not isinstance(value, str) or not value or value != value.strip() for value in values):
+        limits = (
+            PulpoMCPProjection._SMALL_TEXT_LIMIT,
+            PulpoMCPProjection._SMALL_TEXT_LIMIT,
+            PulpoMCPProjection._RESOURCE_TEXT_LIMIT,
+            PulpoMCPProjection._SMALL_TEXT_LIMIT,
+        )
+        if any(
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            or (size := PulpoMCPProjection._text_size(value)) is None
+            or size > limit
+            for value, limit in zip(values, limits)
+        ) or sum(
+            PulpoMCPProjection._text_size(value) or 0
+            for value in values if isinstance(value, str)
+        ) > PulpoMCPProjection._MAX_INTENT_TEXT_BYTES:
             raise MCPBoundaryError("mcp_intent_invalid")
-        if isinstance(cost, bool) or not isinstance(cost, int) or cost < 0:
+        if (
+            isinstance(cost, bool)
+            or not isinstance(cost, int)
+            or not 0 <= cost <= PulpoMCPProjection._MAX_INT64
+        ):
             raise MCPBoundaryError("mcp_intent_invalid")
         return Intent(
             principal=principal,
@@ -435,9 +484,19 @@ class PulpoMCPProjection:
         is informational only until canonical Pulpo re-evaluates the proposal.
         """
 
-        if not isinstance(target_id, str) or not target_id or target_id != target_id.strip():
+        if (
+            not isinstance(target_id, str)
+            or not target_id
+            or target_id != target_id.strip()
+            or (target_size := self._text_size(target_id)) is None
+            or target_size > self._SMALL_TEXT_LIMIT
+        ):
             raise MCPBoundaryError("mcp_target_invalid")
-        if isinstance(version, bool) or not isinstance(version, int) or version <= 0:
+        if (
+            isinstance(version, bool)
+            or not isinstance(version, int)
+            or not 0 < version <= (1 << 31) - 1
+        ):
             raise MCPBoundaryError("mcp_target_invalid")
         intent = self._intent(principal, action, resource, cost, session_id)
         return {
@@ -448,6 +507,7 @@ class PulpoMCPProjection:
             "intent_hash": GovernanceKernel.intent_hash(intent),
             "policy_hash": self._snapshot.policy_hash,
             "freshness": "frozen",
+            "currentness": "not_asserted",
             "canonical_state_mutation": False,
             "governed_effect": "none",
             "authority_effect": "none",
@@ -465,6 +525,7 @@ class PulpoMCPProjection:
             "audit_records": snapshot.audit_records,
             "audit_tip": snapshot.audit_tip,
             "freshness": "frozen",
+            "currentness": "not_asserted",
             "canonical_state_mutation": False,
             "governed_effect": "none",
             "authority_effect": "none",

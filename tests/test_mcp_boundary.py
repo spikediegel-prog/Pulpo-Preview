@@ -81,6 +81,7 @@ class MCPBoundaryTests(unittest.TestCase):
 
         self.assertEqual("pulpo.mcp-proposal.v2", result["schema"])
         self.assertEqual("frozen", result["freshness"])
+        self.assertEqual("not_asserted", result["currentness"])
         self.assertEqual("none", result["authority_effect"])
         self.assertEqual("none", result["governed_effect"])
         self.assertFalse(result["canonical_state_mutation"])
@@ -137,10 +138,26 @@ class MCPBoundaryTests(unittest.TestCase):
 
         self.assertEqual([], self.kernel.audit)
 
+    def test_mcp_proposal_rejects_oversized_text_and_integer_fields(self):
+        invalid_calls = (
+            ("mcp_intent_invalid", ("target", "p" * 257, "read", "repo:file"), {}),
+            ("mcp_intent_invalid", ("target", "agent\ud800", "read", "repo:file"), {}),
+            ("mcp_intent_invalid", ("target", "agent", "read", "r" * 4097), {}),
+            ("mcp_target_invalid", ("t" * 257, "agent", "read", "repo:file"), {}),
+            ("mcp_intent_invalid", ("target", "agent", "read", "repo:file"), {"cost": 1 << 63}),
+            ("mcp_target_invalid", ("target", "agent", "read", "repo:file"), {"version": 1 << 31}),
+        )
+        for reason, args, kwargs in invalid_calls:
+            with self.subTest(reason=reason, kwargs=kwargs):
+                with self.assertRaisesRegex(MCPBoundaryError, reason):
+                    self.projection.propose_intent(*args, **kwargs)
+        self.assertEqual([], self.kernel.audit)
+
     def test_frozen_evidence_cannot_follow_later_canonical_mutation(self):
         evidence_before = self.projection.evidence_snapshot()
         self.assertEqual("pulpo.mcp-evidence.v1", evidence_before["schema"])
         self.assertEqual("frozen", evidence_before["freshness"])
+        self.assertEqual("not_asserted", evidence_before["currentness"])
         self.assertEqual(0, evidence_before["audit_records"])
         self.assertIsNone(evidence_before["audit_tip"])
 
@@ -190,6 +207,23 @@ class MCPBoundaryTests(unittest.TestCase):
             "state",
         ):
             self.assertNotIn(forbidden, document)
+
+    @unittest.skipUnless(os.name == "posix", "POSIX directory permissions required")
+    def test_export_rejects_group_or_world_writable_parent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory) / "snapshot-dir"
+            parent.mkdir()
+            destination = parent / "snapshot.json"
+            parent.chmod(0o777)
+            try:
+                with self.assertRaisesRegex(
+                    MCPBoundaryError,
+                    "mcp_snapshot_parent_permissions_invalid",
+                ):
+                    export_mcp_snapshot(self.orchestrator, destination)
+                self.assertFalse(destination.exists())
+            finally:
+                parent.chmod(0o700)
 
     def test_exported_file_remains_frozen_after_canonical_mutation(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -266,7 +300,7 @@ class MCPBoundaryTests(unittest.TestCase):
             root = Path(directory)
             parent = root / "trusted"
             moved_parent = root / "trusted-moved"
-            parent.mkdir()
+            parent.mkdir(mode=0o700)
             destination = parent / "snapshot.json"
             real_open = os.open
             swapped = False
@@ -275,7 +309,7 @@ class MCPBoundaryTests(unittest.TestCase):
                 nonlocal swapped
                 if dir_fd is not None and not swapped:
                     parent.rename(moved_parent)
-                    parent.mkdir()
+                    parent.mkdir(mode=0o700)
                     swapped = True
                 return real_open(path, flags, mode, dir_fd=dir_fd)
 
@@ -304,13 +338,13 @@ class MCPBoundaryTests(unittest.TestCase):
             root = Path(directory)
             parent = root / "trusted"
             moved_parent = root / "trusted-moved"
-            parent.mkdir()
+            parent.mkdir(mode=0o700)
             destination = parent / "snapshot.json"
             real_replace = os.replace
 
             def swap_parent_then_replace(source, target, **kwargs):
                 parent.rename(moved_parent)
-                parent.mkdir()
+                parent.mkdir(mode=0o700)
                 return real_replace(source, target, **kwargs)
 
             with patch(

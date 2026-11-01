@@ -15,7 +15,12 @@ from pathlib import Path
 import stat
 from typing import Any, Sequence
 
-from .mcp_boundary import MCPBoundaryError, MCPReadSnapshot, create_mcp_server
+from .mcp_boundary import (
+    MCPBoundaryError,
+    MCPReadSnapshot,
+    _trusted_posix_snapshot_parent,
+    create_mcp_server,
+)
 
 
 DEFAULT_SNAPSHOT_PATH = Path.home() / ".pulpo" / "mcp-read-snapshot.json"
@@ -129,7 +134,11 @@ def _read_windows_snapshot(target: Path) -> str:
 def read_snapshot_document(
     path: str | os.PathLike[str] = DEFAULT_SNAPSHOT_PATH,
 ) -> dict:
-    """Load one exact owner-private frozen snapshot without write capability."""
+    """Load an exact frozen snapshot without write capability.
+
+    POSIX mode bits are checked here. On Windows, trust depends on the ACLs of
+    the parent directory; the reader does not inspect or set a Windows DACL.
+    """
 
     if not isinstance(path, (str, os.PathLike)) or isinstance(path, bytes):
         raise MCPBoundaryError("mcp_plugin_snapshot_path_invalid")
@@ -144,6 +153,12 @@ def read_snapshot_document(
         raise MCPBoundaryError("mcp_plugin_snapshot_parent_invalid") from exc
     if stat.S_ISLNK(parent_metadata.st_mode) or not stat.S_ISDIR(parent_metadata.st_mode):
         raise MCPBoundaryError("mcp_plugin_snapshot_parent_invalid")
+    if os.name == "posix":
+        # File mode alone does not prevent another local user from replacing
+        # the snapshot through a writable parent directory. Require a trusted
+        # owner (the running user or root) and no group/world write access.
+        if not _trusted_posix_snapshot_parent(parent_metadata):
+            raise MCPBoundaryError("mcp_plugin_snapshot_parent_permissions_invalid")
 
     if os.name == "nt":
         raw = _read_windows_snapshot(target)
@@ -166,6 +181,8 @@ def read_snapshot_document(
                 or opened_parent.st_ino != parent_metadata.st_ino
             ):
                 raise MCPBoundaryError("mcp_plugin_snapshot_parent_invalid")
+            if not _trusted_posix_snapshot_parent(opened_parent):
+                raise MCPBoundaryError("mcp_plugin_snapshot_parent_permissions_invalid")
 
             file_flags = os.O_RDONLY
             file_flags |= getattr(os, "O_CLOEXEC", 0)
