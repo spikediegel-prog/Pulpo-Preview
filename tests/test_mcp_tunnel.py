@@ -1,12 +1,15 @@
 import os
 from hashlib import sha256
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 from pulpo.mcp_tunnel import (
     MCPTunnelBindingError,
+    _open_pinned_tunnel_client,
     build_stdio_command,
     resolve_tunnel_client,
     run_secure_tunnel,
@@ -83,6 +86,34 @@ class MCPTunnelBindingTests(unittest.TestCase):
                     "pulpo_tunnel_client_sha256_missing",
                 ):
                     resolve_tunnel_client(str(binary))
+
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux descriptor execution required")
+    def test_tunnel_client_executes_the_verified_inode_after_path_replacement(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "tunnel-client"
+            replacement = Path(directory) / "replacement"
+            original_bytes = b"#!/bin/sh\nprintf original\n"
+            binary.write_bytes(original_bytes)
+            binary.chmod(0o700)
+            replacement.write_text("#!/bin/sh\nprintf replacement\n", encoding="utf-8")
+            replacement.chmod(0o700)
+
+            executable, descriptor = _open_pinned_tunnel_client(
+                str(binary), sha256(original_bytes).hexdigest()
+            )
+            try:
+                os.replace(replacement, binary)
+                completed = subprocess.run(
+                    [executable],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    pass_fds=(descriptor,),
+                )
+            finally:
+                os.close(descriptor)
+
+            self.assertEqual("original", completed.stdout)
 
     def test_binding_fails_closed_without_runtime_key(self):
         with tempfile.TemporaryDirectory() as directory:
