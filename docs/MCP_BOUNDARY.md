@@ -87,7 +87,9 @@ The optional server factory follows the MCP Python SDK 2.x `MCPServer` tool
 registration model documented in the official build-server guide:
 <https://modelcontextprotocol.io/docs/2026-07-28/develop/build-server>.
 
-Install with `pip install -e '.[mcp]'`. The SDK is optional so the canonical
+Install in a dedicated virtual environment after upgrading its installer to
+`pip==26.2.2`; see [the plugin setup instructions](PULPO_AGENT_PLUGIN.md#dependency-and-launch-boundary).
+The SDK is optional so the canonical
 kernel and its standard CI retain zero runtime dependencies. If connected over
 STDIO, operational logging must go to stderr; stdout is reserved for MCP's
 JSON-RPC transport.
