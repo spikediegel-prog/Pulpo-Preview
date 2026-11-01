@@ -1,0 +1,1150 @@
+[
+  {
+    "event": "approval_verified",
+    "hash": "08391bfe301362ee4554156e05e8d1c1b5e518dd6287fa8b03e4eab6f43730f6",
+    "payload": {
+      "algorithm": "hmac-sha256-test-only",
+      "approval_id": "fixture-1",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "18a3844ebb72038ee3315d74150a1a074cc6e47fe9ee92e0b740628d2d80ae72",
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "e13c29a02ce4ffc125089dde0ad81b8174adf55bc104149e5a941b308afad13c",
+      "issued_at_ns": 1000000000000,
+      "key_fingerprint": "c0d4282378c959913c7f62a748798a931c7f45ac18527fb1a0b0ca5ec939cf35",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "signing_payload_hash": "26b9f7c72c81830a8484d6cd7defc6ddb7e697d6559af12bc9cbfc3e000a2486",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verified_at_ns": 1000000000000,
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "f5b393aa74242004f230095a4e591d3217ff5482ff35053fffa5e2964a7b9f81",
+    "payload": {
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "e13c29a02ce4ffc125089dde0ad81b8174adf55bc104149e5a941b308afad13c",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "verified_approval"
+    },
+    "previous_hash": "08391bfe301362ee4554156e05e8d1c1b5e518dd6287fa8b03e4eab6f43730f6",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "ee94e8684c3dda637418249d897cb4c12090bb81ea2d8001281bb494303dd09d",
+    "payload": {
+      "intent_hash": "e13c29a02ce4ffc125089dde0ad81b8174adf55bc104149e5a941b308afad13c"
+    },
+    "previous_hash": "f5b393aa74242004f230095a4e591d3217ff5482ff35053fffa5e2964a7b9f81",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "directive_activated",
+    "hash": "9ddebcff9f095ef6b1bc619f4aad354dbfea515f7f88adfec5c763625fa83425",
+    "payload": {
+      "authority_evidence": {
+        "approval_id": "fixture-1",
+        "authority_id": "authority:test-owner",
+        "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+        "directive_id": "site-clinic-a",
+        "directive_version": 1,
+        "envelope_hash": "18a3844ebb72038ee3315d74150a1a074cc6e47fe9ee92e0b740628d2d80ae72",
+        "intent_hash": "e13c29a02ce4ffc125089dde0ad81b8174adf55bc104149e5a941b308afad13c",
+        "operation": "activate_directive",
+        "parent_directive_hash": null,
+        "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760"
+      },
+      "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+      "directive_id": "site-clinic-a",
+      "version": 1
+    },
+    "previous_hash": "ee94e8684c3dda637418249d897cb4c12090bb81ea2d8001281bb494303dd09d",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "b7ecbea95b3cab1cdb8ddba0485ee6b38f38be32f4d1886bf6c7ae4d12240937",
+    "payload": {
+      "intent_hash": "7071f609f56422da9ecbde8a79bac5844615c208c38c1ced798fed6c51017097",
+      "outcome": "deny",
+      "reason": "agent_resource_not_allowed"
+    },
+    "previous_hash": "9ddebcff9f095ef6b1bc619f4aad354dbfea515f7f88adfec5c763625fa83425",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "14620a1017a375e916530e04e03e190827d4bdb89291c383fc761c6e52dd9079",
+    "payload": {
+      "intent_hash": "f8d4799603a1e1910a35185ad771bcc84aecdb1eb9f91a38290b464f5982a0dd",
+      "outcome": "deny",
+      "reason": "agent_resource_not_allowed"
+    },
+    "previous_hash": "b7ecbea95b3cab1cdb8ddba0485ee6b38f38be32f4d1886bf6c7ae4d12240937",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "167a255f0bd7bc4515b01bbb8069de8237accf75078ea428affe6eaa5acb27b2",
+    "payload": {
+      "intent_hash": "52496f98cc862e49efb877d4f46108e0aac5ead4f75163ba5d82c6d5ab5d7ab9",
+      "outcome": "deny",
+      "reason": "action_not_allowed"
+    },
+    "previous_hash": "14620a1017a375e916530e04e03e190827d4bdb89291c383fc761c6e52dd9079",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "4eda43803aeeff80a0c1b73e54dad192bf6852b8b9cde3caba4c54b008503690",
+    "payload": {
+      "intent_hash": "1d4a1b0a557060ef95cdb1ded7722841174d441fc0c252e94e55e14adff0f39e",
+      "outcome": "deny",
+      "reason": "agent_resource_not_allowed"
+    },
+    "previous_hash": "167a255f0bd7bc4515b01bbb8069de8237accf75078ea428affe6eaa5acb27b2",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "650be30c5b99bb2c25e829519d1be51afb7f2ffa7050b75d9317cd109599a901",
+    "payload": {
+      "intent_hash": "8b7cd76b07ec0d160441c2c237fcf08cabf6cf5ac7c8bf2ef0d8d9fc637a303e"
+    },
+    "previous_hash": "4eda43803aeeff80a0c1b73e54dad192bf6852b8b9cde3caba4c54b008503690",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "d19caba81bc1384db38f51a98b3a6579c62492c12f4b04af7553580ddd47de1e",
+    "payload": {
+      "expires_at_ns": 1300000000000,
+      "intent_hash": "8b7cd76b07ec0d160441c2c237fcf08cabf6cf5ac7c8bf2ef0d8d9fc637a303e",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "650be30c5b99bb2c25e829519d1be51afb7f2ffa7050b75d9317cd109599a901",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "10d1f16e406a960e734646bc60061c69503611be831c96efbfa280ee4b2b1aec",
+    "payload": {
+      "directive_expires_at_ns": 1300000000000,
+      "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+      "directive_id": "site-clinic-a",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_version": 1,
+      "intent_hash": "8b7cd76b07ec0d160441c2c237fcf08cabf6cf5ac7c8bf2ef0d8d9fc637a303e"
+    },
+    "previous_hash": "d19caba81bc1384db38f51a98b3a6579c62492c12f4b04af7553580ddd47de1e",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "1ea087977a97cbb2707fa7347fc94d7714b3e91890624b3c510b25c61a61ed57",
+    "payload": {
+      "directive_expires_at_ns": 1300000000000,
+      "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+      "directive_id": "site-clinic-a",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "5169ae6e89b46ed758dad010bdfc8ba64066d2ae329ab211340896a9b49dd509"
+    },
+    "previous_hash": "10d1f16e406a960e734646bc60061c69503611be831c96efbfa280ee4b2b1aec",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "de2552ba4e0837d1ef722a0dd5fe5201876d9fb868f1bcc34dab4c1a8908e258",
+    "payload": {
+      "directive_expires_at_ns": 1300000000000,
+      "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+      "directive_id": "site-clinic-a",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "8b7cd76b07ec0d160441c2c237fcf08cabf6cf5ac7c8bf2ef0d8d9fc637a303e"
+    },
+    "previous_hash": "1ea087977a97cbb2707fa7347fc94d7714b3e91890624b3c510b25c61a61ed57",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "de69ddd68e81c1fd5051f0522dd88284bdf7089aba74cc4736445821e50a3ece",
+    "payload": {
+      "directive_expires_at_ns": 1300000000000,
+      "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+      "directive_id": "site-clinic-a",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "8b7cd76b07ec0d160441c2c237fcf08cabf6cf5ac7c8bf2ef0d8d9fc637a303e"
+    },
+    "previous_hash": "de2552ba4e0837d1ef722a0dd5fe5201876d9fb868f1bcc34dab4c1a8908e258",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "8d61f6f2f47b1391564c49ef7bc192319eeb8d317b51d587aef9800ebcb1f4b8",
+    "payload": {
+      "approval_id": "fixture-1",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "18a3844ebb72038ee3315d74150a1a074cc6e47fe9ee92e0b740628d2d80ae72",
+      "intent_hash": "e13c29a02ce4ffc125089dde0ad81b8174adf55bc104149e5a941b308afad13c",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "approval_id_replayed",
+      "signing_payload_hash": "26b9f7c72c81830a8484d6cd7defc6ddb7e697d6559af12bc9cbfc3e000a2486",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "de69ddd68e81c1fd5051f0522dd88284bdf7089aba74cc4736445821e50a3ece",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "06071aed68543fc2efcfe2458553168b628485a25ae632a7fd24b81c5389bc4f",
+    "payload": {
+      "intent_hash": "e13c29a02ce4ffc125089dde0ad81b8174adf55bc104149e5a941b308afad13c",
+      "outcome": "deny",
+      "reason": "approval_id_replayed"
+    },
+    "previous_hash": "8d61f6f2f47b1391564c49ef7bc192319eeb8d317b51d587aef9800ebcb1f4b8",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "49936a68751d4e7ad66984d7e246cbda796bf8d0e84c9c4aed92829e08e54935",
+    "payload": {
+      "expires_at_ns": 1300000000000,
+      "intent_hash": "ac2f91db6f1ae9ac037f95dd22b53a4277a54c95a7dddd9fa94d84b7708fbc94",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "06071aed68543fc2efcfe2458553168b628485a25ae632a7fd24b81c5389bc4f",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "ef61d2534c46901a1384bf746e9e301872020f9344611c13e40920a1dd690683",
+    "payload": {
+      "directive_expires_at_ns": 1300000000000,
+      "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+      "directive_id": "site-clinic-a",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_version": 1,
+      "intent_hash": "ac2f91db6f1ae9ac037f95dd22b53a4277a54c95a7dddd9fa94d84b7708fbc94"
+    },
+    "previous_hash": "49936a68751d4e7ad66984d7e246cbda796bf8d0e84c9c4aed92829e08e54935",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "approval_verified",
+    "hash": "952453017b6448a39666fbff520930a8aa893a99e310e26cecf87f59d4724a7c",
+    "payload": {
+      "algorithm": "hmac-sha256-test-only",
+      "approval_id": "fixture-3",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "0d2d66329f5f450c239c77e795df8eddfae54bddc3602c41d512f146372895c9",
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "8b94bb0544d875e86fb90470faa1251be0f1a1c0607fc94aa6bd13a81756d458",
+      "issued_at_ns": 1000000000000,
+      "key_fingerprint": "c0d4282378c959913c7f62a748798a931c7f45ac18527fb1a0b0ca5ec939cf35",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "signing_payload_hash": "1b484219ea491de2956bba76ca1c89757a244409d31756e0621924761300b257",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verified_at_ns": 1000000000000,
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "ef61d2534c46901a1384bf746e9e301872020f9344611c13e40920a1dd690683",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "b28040c74b7dc8d2cd1dc6ea8bc5a871e7952b266a6828c94930142e93710038",
+    "payload": {
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "8b94bb0544d875e86fb90470faa1251be0f1a1c0607fc94aa6bd13a81756d458",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "verified_approval"
+    },
+    "previous_hash": "952453017b6448a39666fbff520930a8aa893a99e310e26cecf87f59d4724a7c",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "51a2152e529d645e599f3f49a80f483a8135eef4830611e7929e4799b0ae44d4",
+    "payload": {
+      "intent_hash": "8b94bb0544d875e86fb90470faa1251be0f1a1c0607fc94aa6bd13a81756d458"
+    },
+    "previous_hash": "b28040c74b7dc8d2cd1dc6ea8bc5a871e7952b266a6828c94930142e93710038",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "directive_revoked",
+    "hash": "1c8f5995e1f0dbd7355e1b9be9df85f06fbbfacf26bef661e493b05297a2a75f",
+    "payload": {
+      "authority_evidence": {
+        "approval_id": "fixture-3",
+        "authority_id": "authority:test-owner",
+        "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+        "directive_id": "site-clinic-a",
+        "directive_version": 1,
+        "envelope_hash": "0d2d66329f5f450c239c77e795df8eddfae54bddc3602c41d512f146372895c9",
+        "intent_hash": "8b94bb0544d875e86fb90470faa1251be0f1a1c0607fc94aa6bd13a81756d458",
+        "operation": "revoke_directive",
+        "parent_directive_hash": null,
+        "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760"
+      },
+      "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+      "directive_id": "site-clinic-a",
+      "version": 1
+    },
+    "previous_hash": "51a2152e529d645e599f3f49a80f483a8135eef4830611e7929e4799b0ae44d4",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "4e7f84d86e8bed0b048ac2a310cde89a442e0087935900f6b871474dc22922a1",
+    "payload": {
+      "directive_expires_at_ns": 1300000000000,
+      "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+      "directive_id": "site-clinic-a",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "directive_revoked",
+      "directive_version": 1,
+      "intent_hash": "ac2f91db6f1ae9ac037f95dd22b53a4277a54c95a7dddd9fa94d84b7708fbc94"
+    },
+    "previous_hash": "1c8f5995e1f0dbd7355e1b9be9df85f06fbbfacf26bef661e493b05297a2a75f",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "approval_verified",
+    "hash": "58ba2834163f054e8b65577d54aa2a78b78727673cf8a46767ad5756c75267a4",
+    "payload": {
+      "algorithm": "hmac-sha256-test-only",
+      "approval_id": "fixture-4",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "a21ee695196c8e3f5840d5bfdd06cc47ae1a5e2256db47a9fa94afe7887599e9",
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "e3d7138a01c578e008b4965cf4aeb2dbe4686a534380e0966ee7ca926946afeb",
+      "issued_at_ns": 1000000000000,
+      "key_fingerprint": "c0d4282378c959913c7f62a748798a931c7f45ac18527fb1a0b0ca5ec939cf35",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "signing_payload_hash": "c9afd92daacc784d32ab7bdb82348c422d7bcf90e518c412a71fb232e1358339",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verified_at_ns": 1000000000000,
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "4e7f84d86e8bed0b048ac2a310cde89a442e0087935900f6b871474dc22922a1",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "1d1bd44451263bc4b4136bbf74ae4aa67462dd85834c4d467bc04b0ad40387e8",
+    "payload": {
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "e3d7138a01c578e008b4965cf4aeb2dbe4686a534380e0966ee7ca926946afeb",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "verified_approval"
+    },
+    "previous_hash": "58ba2834163f054e8b65577d54aa2a78b78727673cf8a46767ad5756c75267a4",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "60ecfc9d55844c186317605a834434bab4cca529ee90f16aa4ae1f99f3551a9a",
+    "payload": {
+      "intent_hash": "e3d7138a01c578e008b4965cf4aeb2dbe4686a534380e0966ee7ca926946afeb"
+    },
+    "previous_hash": "1d1bd44451263bc4b4136bbf74ae4aa67462dd85834c4d467bc04b0ad40387e8",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "directive_activated",
+    "hash": "dfe1afcb076f0ba4a2053e4c51ab6e065564f1048a1497e7504ff2b42d139b8d",
+    "payload": {
+      "authority_evidence": {
+        "approval_id": "fixture-4",
+        "authority_id": "authority:test-owner",
+        "directive_hash": "6ef3242ef44b4c384f2228ef83db096a93e25728e72fe02c1d8112b3246d7cbb",
+        "directive_id": "site-clinic-a-expiry",
+        "directive_version": 1,
+        "envelope_hash": "a21ee695196c8e3f5840d5bfdd06cc47ae1a5e2256db47a9fa94afe7887599e9",
+        "intent_hash": "e3d7138a01c578e008b4965cf4aeb2dbe4686a534380e0966ee7ca926946afeb",
+        "operation": "activate_directive",
+        "parent_directive_hash": null,
+        "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760"
+      },
+      "directive_hash": "6ef3242ef44b4c384f2228ef83db096a93e25728e72fe02c1d8112b3246d7cbb",
+      "directive_id": "site-clinic-a-expiry",
+      "version": 1
+    },
+    "previous_hash": "60ecfc9d55844c186317605a834434bab4cca529ee90f16aa4ae1f99f3551a9a",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "e39c89f1b36889627545172f05ef7333faec0eb45cef3ce7532643fbdda6e09b",
+    "payload": {
+      "expires_at_ns": 1300000000000,
+      "intent_hash": "7eaca8ddfa8c1003a8742804703f6e513a819b6ff6f2fc5f6b513de00164da66",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "dfe1afcb076f0ba4a2053e4c51ab6e065564f1048a1497e7504ff2b42d139b8d",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "54c49609906dca1f2b6fd25061f837f672abb9cc7036bbd78ec5503476544152",
+    "payload": {
+      "directive_expires_at_ns": 1300000000000,
+      "directive_hash": "6ef3242ef44b4c384f2228ef83db096a93e25728e72fe02c1d8112b3246d7cbb",
+      "directive_id": "site-clinic-a-expiry",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_version": 1,
+      "intent_hash": "7eaca8ddfa8c1003a8742804703f6e513a819b6ff6f2fc5f6b513de00164da66"
+    },
+    "previous_hash": "e39c89f1b36889627545172f05ef7333faec0eb45cef3ce7532643fbdda6e09b",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "bbc5b193f4fe0faf4e1724727fa081cc756bbb26021523f652931eb2334e1040",
+    "payload": {
+      "directive_expires_at_ns": 1300000000000,
+      "directive_hash": "6ef3242ef44b4c384f2228ef83db096a93e25728e72fe02c1d8112b3246d7cbb",
+      "directive_id": "site-clinic-a-expiry",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "directive_inactive",
+      "directive_version": 1,
+      "intent_hash": "7eaca8ddfa8c1003a8742804703f6e513a819b6ff6f2fc5f6b513de00164da66"
+    },
+    "previous_hash": "54c49609906dca1f2b6fd25061f837f672abb9cc7036bbd78ec5503476544152",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "approval_verified",
+    "hash": "42a868a05f7639223bcff43c197d7e6555121d5d650f59a920948279a1fef03d",
+    "payload": {
+      "algorithm": "hmac-sha256-test-only",
+      "approval_id": "fixture-5",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "9dd3ed0779c7dfe1c9ed7a710d5be8f853ecfcef98aaf6b66a8cf77f46d4fccd",
+      "expires_at_ns": 1301000000000,
+      "intent_hash": "634ed19ec26d652fbc545b911953be2b8088caa81ff390fd8454d17aa80881cb",
+      "issued_at_ns": 1300000000000,
+      "key_fingerprint": "c0d4282378c959913c7f62a748798a931c7f45ac18527fb1a0b0ca5ec939cf35",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "signing_payload_hash": "e3b87695f17bed23b29e87faced93ef3b6d9c63e1867ee27054eb98e8b3453c7",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verified_at_ns": 1300000000000,
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "bbc5b193f4fe0faf4e1724727fa081cc756bbb26021523f652931eb2334e1040",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "decision",
+    "hash": "5abc034b511230bf12c404f03dc7473137f47c5b01d2e8e8f76bdc4aa249f009",
+    "payload": {
+      "expires_at_ns": 1301000000000,
+      "intent_hash": "634ed19ec26d652fbc545b911953be2b8088caa81ff390fd8454d17aa80881cb",
+      "issued_at_ns": 1300000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "verified_approval"
+    },
+    "previous_hash": "42a868a05f7639223bcff43c197d7e6555121d5d650f59a920948279a1fef03d",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "689c52650b11e44d34778043b9fe36d0f83fbc6f60587d1c5b61a98a09e4aa31",
+    "payload": {
+      "intent_hash": "634ed19ec26d652fbc545b911953be2b8088caa81ff390fd8454d17aa80881cb"
+    },
+    "previous_hash": "5abc034b511230bf12c404f03dc7473137f47c5b01d2e8e8f76bdc4aa249f009",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "directive_activated",
+    "hash": "b30f045a0c92bb4350c5c88aa33bbe76559a291058ee06c76b003706ccb5c063",
+    "payload": {
+      "authority_evidence": {
+        "approval_id": "fixture-5",
+        "authority_id": "authority:test-owner",
+        "directive_hash": "d9bad46967c22880118de5be4cb7629b8ffb884cd6b905a6ee13930d50390ac3",
+        "directive_id": "site-clinic-a-future",
+        "directive_version": 1,
+        "envelope_hash": "9dd3ed0779c7dfe1c9ed7a710d5be8f853ecfcef98aaf6b66a8cf77f46d4fccd",
+        "intent_hash": "634ed19ec26d652fbc545b911953be2b8088caa81ff390fd8454d17aa80881cb",
+        "operation": "activate_directive",
+        "parent_directive_hash": null,
+        "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760"
+      },
+      "directive_hash": "d9bad46967c22880118de5be4cb7629b8ffb884cd6b905a6ee13930d50390ac3",
+      "directive_id": "site-clinic-a-future",
+      "version": 1
+    },
+    "previous_hash": "689c52650b11e44d34778043b9fe36d0f83fbc6f60587d1c5b61a98a09e4aa31",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "6523c416fff6ffe454ecb6af43752bcb456fef061f535173dafa758d88cd32b2",
+    "payload": {
+      "approval_id": "fixture-6",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "0b0da881908adbce30b43d31db90d21c16cc286d4c696a71926affd835131f4a",
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "approval_signature_invalid",
+      "signing_payload_hash": "aff291ef1423c5938ac8ba9aabf5bf8902c7c1e6c78cbc0c2f67275ae1feecfa",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "b30f045a0c92bb4350c5c88aa33bbe76559a291058ee06c76b003706ccb5c063",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "decision",
+    "hash": "0c92b5f53af7c04cd5e6a7836ef1176b811c857c1160b2ff62deefe573e73494",
+    "payload": {
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "outcome": "deny",
+      "reason": "approval_signature_invalid"
+    },
+    "previous_hash": "6523c416fff6ffe454ecb6af43752bcb456fef061f535173dafa758d88cd32b2",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "aae99de057ef3384438451b8c0bd9ee30f5005e1dd91fa8ee8ee1c2d919ec951",
+    "payload": {
+      "approval_id": "fixture-7",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "d549c798937264147f5126ae0ee6c6afa790a2f0f9093ac0d1ea80d89310478d",
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "approval_session_mismatch",
+      "signing_payload_hash": "8f1911ce79b3825b4fcad5f9a32bf7cff18630778686b87ec03e5ca65ab78a37",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "0c92b5f53af7c04cd5e6a7836ef1176b811c857c1160b2ff62deefe573e73494",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "decision",
+    "hash": "93b4ff8a907d52dca99ce5475eee4d3ba7c521ea0e2e1ba46a5acb4aa7e6250d",
+    "payload": {
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "outcome": "deny",
+      "reason": "approval_session_mismatch"
+    },
+    "previous_hash": "aae99de057ef3384438451b8c0bd9ee30f5005e1dd91fa8ee8ee1c2d919ec951",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "5c99e3229318509bc49539a9ce35b13a538c6da2ac740b260af0608b2db9c1d6",
+    "payload": {
+      "approval_id": "fixture-8",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "30a051aa6544ec215b4c489fa9b7a2532f4714c6f4aa0a2ce43999dbb2a34559",
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "approval_principal_mismatch",
+      "signing_payload_hash": "712ef824cf5413fefceffdfbf6ea539505852a07c88947eaa337606a54554f12",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "93b4ff8a907d52dca99ce5475eee4d3ba7c521ea0e2e1ba46a5acb4aa7e6250d",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "decision",
+    "hash": "2e41369a4078489314fc5964477255c86fdcc02361edbffeb8bdd82a70ebc465",
+    "payload": {
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "outcome": "deny",
+      "reason": "approval_principal_mismatch"
+    },
+    "previous_hash": "5c99e3229318509bc49539a9ce35b13a538c6da2ac740b260af0608b2db9c1d6",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "ad6ad83fe239ca2f2d46d9adfac5385587db045feedf77e219f5c5b67e4ab1be",
+    "payload": {
+      "approval_id": "fixture-9",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "other-deployment",
+      "envelope_hash": "88df1cddbee1c9df0effc22ad132ea73015268de7e04d590ae07a1c09efe984d",
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "approval_deployment_mismatch",
+      "signing_payload_hash": "9d6ed5da6198387c8fc9ba9cdeaebc40bfc8cb74ec50917155968b86717934aa",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "2e41369a4078489314fc5964477255c86fdcc02361edbffeb8bdd82a70ebc465",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "decision",
+    "hash": "d56b4e21c60eb802fd91c7277812e01cb674d227939aca9e8cf3a8bbc8ed7534",
+    "payload": {
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "outcome": "deny",
+      "reason": "approval_deployment_mismatch"
+    },
+    "previous_hash": "ad6ad83fe239ca2f2d46d9adfac5385587db045feedf77e219f5c5b67e4ab1be",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "3ca86d637730bb2ffed88aa9223e35153f8124b8e934c2af5afa9dc09ff69e3a",
+    "payload": {
+      "approval_id": "fixture-10",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "d7df1922e48a8c97bcb7a65826cc0c61ca28af1a26a8a05a87b53a18a08ae0a9",
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "approval_policy_mismatch",
+      "signing_payload_hash": "dc59f3229dea9bde1edb3b55aeb783bb92dd60d53fb556eeeaf336520c870dd9",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "d56b4e21c60eb802fd91c7277812e01cb674d227939aca9e8cf3a8bbc8ed7534",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "decision",
+    "hash": "14b89bbf7301c4dcc7d9fb6a08c3367659c35555c4bde2bd7fd6b9524596c4f6",
+    "payload": {
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "outcome": "deny",
+      "reason": "approval_policy_mismatch"
+    },
+    "previous_hash": "3ca86d637730bb2ffed88aa9223e35153f8124b8e934c2af5afa9dc09ff69e3a",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "16810881ed470bdacf124cabcd713a1a7c6ac8ef1bf0c80ff43843f451656aa9",
+    "payload": {
+      "approval_id": "fixture-11",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "3a2067089fca97f876631185fce8e03bb8f70deeb5e19ae4191ffc3400f7cf64",
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "approval_intent_mismatch",
+      "signing_payload_hash": "cb671a1469ce56d414967245ed96618896b37db99b55a3daf64b05e24c39bfcf",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "14b89bbf7301c4dcc7d9fb6a08c3367659c35555c4bde2bd7fd6b9524596c4f6",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "decision",
+    "hash": "4425ee979280dc8a496c25304a2bf654cf25e997b28ded4cfceff3fa32b62467",
+    "payload": {
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "outcome": "deny",
+      "reason": "approval_intent_mismatch"
+    },
+    "previous_hash": "16810881ed470bdacf124cabcd713a1a7c6ac8ef1bf0c80ff43843f451656aa9",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "e9d8129976e281aebe35f271982734aa3027330be33abbb021f1822f7f0852e1",
+    "payload": {
+      "approval_id": "fixture-12",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "91c10066f4c05f6f8f7c141d50dc0d50ff4d4ad34df02a945ea1153ec525ff17",
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "key_id": "key:other",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "approval_key_mismatch",
+      "signing_payload_hash": "1b3834a78004719d643557a8a0e51a3e4e5a8b0ab35a0d5d1b62781081206877",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "4425ee979280dc8a496c25304a2bf654cf25e997b28ded4cfceff3fa32b62467",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "decision",
+    "hash": "e5b31fa250da00bcc5e39657ccb69eb7771c7f28d7caf4399da5424915e1527a",
+    "payload": {
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "outcome": "deny",
+      "reason": "approval_key_mismatch"
+    },
+    "previous_hash": "e9d8129976e281aebe35f271982734aa3027330be33abbb021f1822f7f0852e1",
+    "timestamp_ns": 1300000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "f178631be1aeaa896263e190984d06ac4ce589c17798126deb5dc3c8e481b308",
+    "payload": {
+      "approval_id": "fixture-13",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "22e97b0d6f2268887e72567cedf599daca6a71395fc3faecfd2f55b4b1430f1a",
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "approval_expired",
+      "signing_payload_hash": "906fb1634997754f92570417e7ebfe8f5b553fc95251433e30aedc0937748090",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "e5b31fa250da00bcc5e39657ccb69eb7771c7f28d7caf4399da5424915e1527a",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "decision",
+    "hash": "b81e3b112315c8a4c284dfa36cc5fdd48469c794e77cd99f1fb5beaa8beb82f7",
+    "payload": {
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "outcome": "deny",
+      "reason": "approval_expired"
+    },
+    "previous_hash": "f178631be1aeaa896263e190984d06ac4ce589c17798126deb5dc3c8e481b308",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "f89cf177ac2ea24905dad99bda38d779caa3c9a294e4d556f464aa5b5cb686ab",
+    "payload": {
+      "intent_hash": "8b7cd76b07ec0d160441c2c237fcf08cabf6cf5ac7c8bf2ef0d8d9fc637a303e"
+    },
+    "previous_hash": "b81e3b112315c8a4c284dfa36cc5fdd48469c794e77cd99f1fb5beaa8beb82f7",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "e047f0c48480f6e03aa572ca3495d80bf0e8f17cb9f407e3957a2f0f836fd52e",
+    "payload": {
+      "approval_id": "fixture-14",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "a0464c30a638036c834811bc1bdfde991eaf11af9dd8c717856190536d70182f",
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "approval_verifier_unavailable",
+      "signing_payload_hash": "65c7825ec08d1803097908da8b11f2845164d5c997681c59dad77b72d84958f9",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "f89cf177ac2ea24905dad99bda38d779caa3c9a294e4d556f464aa5b5cb686ab",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "decision",
+    "hash": "d7a01af029856097672d81507d914fb7bc6e81435716d668a9a81d875322d132",
+    "payload": {
+      "intent_hash": "545af8de802766068d0b3ac08386a92959da3b3bc4e137a9cda3e7d267188821",
+      "outcome": "deny",
+      "reason": "approval_verifier_unavailable"
+    },
+    "previous_hash": "e047f0c48480f6e03aa572ca3495d80bf0e8f17cb9f407e3957a2f0f836fd52e",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "approval_verified",
+    "hash": "46ceea653a1fedde3bd2f6bb755d84870dcd8dac48f642c07b9082f6648e651a",
+    "payload": {
+      "algorithm": "hmac-sha256-test-only",
+      "approval_id": "fixture-15",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "b9a4d34f229496b9c26ea0330b621e9289066f2792e9d0023a4d2739efeffcd4",
+      "expires_at_ns": 1302000000000,
+      "intent_hash": "2b88112fd758eb4133dadb6eab12327bbcd21778fb9c98cb944f0f5c67758915",
+      "issued_at_ns": 1301000000000,
+      "key_fingerprint": "c0d4282378c959913c7f62a748798a931c7f45ac18527fb1a0b0ca5ec939cf35",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "signing_payload_hash": "c795376f6ffd43587a9c5a9fbd7012142237195d8983964bbf8518193f5e1d40",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verified_at_ns": 1301000000000,
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "d7a01af029856097672d81507d914fb7bc6e81435716d668a9a81d875322d132",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "decision",
+    "hash": "94a6d5c85a5ea59a0e195f59f43c6f344871436535db1fdb74f5e5d2438378ec",
+    "payload": {
+      "expires_at_ns": 1302000000000,
+      "intent_hash": "2b88112fd758eb4133dadb6eab12327bbcd21778fb9c98cb944f0f5c67758915",
+      "issued_at_ns": 1301000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "verified_approval"
+    },
+    "previous_hash": "46ceea653a1fedde3bd2f6bb755d84870dcd8dac48f642c07b9082f6648e651a",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "215fba1517ef79c20bbb5c95e88d65201878b44ec368665ab3480b66b2c10d60",
+    "payload": {
+      "intent_hash": "2b88112fd758eb4133dadb6eab12327bbcd21778fb9c98cb944f0f5c67758915"
+    },
+    "previous_hash": "94a6d5c85a5ea59a0e195f59f43c6f344871436535db1fdb74f5e5d2438378ec",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "directive_activated",
+    "hash": "840d89240da5147df3d5f4c763e4696d65cef9987191062c79463554b8e8dc9a",
+    "payload": {
+      "authority_evidence": {
+        "approval_id": "fixture-15",
+        "authority_id": "authority:test-owner",
+        "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+        "directive_id": "site-clinic-b-offline-window",
+        "directive_version": 1,
+        "envelope_hash": "b9a4d34f229496b9c26ea0330b621e9289066f2792e9d0023a4d2739efeffcd4",
+        "intent_hash": "2b88112fd758eb4133dadb6eab12327bbcd21778fb9c98cb944f0f5c67758915",
+        "operation": "activate_directive",
+        "parent_directive_hash": null,
+        "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760"
+      },
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "version": 1
+    },
+    "previous_hash": "215fba1517ef79c20bbb5c95e88d65201878b44ec368665ab3480b66b2c10d60",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "decision",
+    "hash": "1f2940cca537d2e53d1eb0f1f203f43564e9f64e7e300ab88aa9e9b45f374340",
+    "payload": {
+      "expires_at_ns": 1601000000000,
+      "intent_hash": "7f736ba60b77df753015dfed363e700c6846b3eeaeb138db33a77e269425c515",
+      "issued_at_ns": 1301000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "840d89240da5147df3d5f4c763e4696d65cef9987191062c79463554b8e8dc9a",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "f4718d3fc9d07169a3209054a09ca1f2e34004249dfd18a5711644b060e69a17",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_version": 1,
+      "intent_hash": "7f736ba60b77df753015dfed363e700c6846b3eeaeb138db33a77e269425c515"
+    },
+    "previous_hash": "1f2940cca537d2e53d1eb0f1f203f43564e9f64e7e300ab88aa9e9b45f374340",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "b9435f5f02e6b4d12ec478faeb2367ebbe3bcf895ef6b07eeda1ad1fa236e01f",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "7f736ba60b77df753015dfed363e700c6846b3eeaeb138db33a77e269425c515"
+    },
+    "previous_hash": "f4718d3fc9d07169a3209054a09ca1f2e34004249dfd18a5711644b060e69a17",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "decision",
+    "hash": "5ed47a964c693e949a7e1230b7416415f20258a6d29011b7f711de11ec296ac6",
+    "payload": {
+      "expires_at_ns": 1601000000000,
+      "intent_hash": "e11e752d3a1593eb146e8717b5bbdf85b375eb678ac5a67c7eddac3ea0e54788",
+      "issued_at_ns": 1301000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "b9435f5f02e6b4d12ec478faeb2367ebbe3bcf895ef6b07eeda1ad1fa236e01f",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "ae075f6d4f72f55d3a63cbfe89ebd89d35b9b39e84e70cfad6e71c23bec6d60b",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_version": 1,
+      "intent_hash": "e11e752d3a1593eb146e8717b5bbdf85b375eb678ac5a67c7eddac3ea0e54788"
+    },
+    "previous_hash": "5ed47a964c693e949a7e1230b7416415f20258a6d29011b7f711de11ec296ac6",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "ee57f062874dd0a412cda81a1b0eab3bfce9bb22645721ef7e9b27d0de508d54",
+    "payload": {
+      "directive_expires_at_ns": 1300000000000,
+      "directive_hash": "33165e2fe4903c695acddb3b562fce64a6a52a39de53170f86c8ae17e7f58a6e",
+      "directive_id": "site-clinic-a",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "directive_revoked",
+      "directive_version": 1,
+      "intent_hash": "8b7cd76b07ec0d160441c2c237fcf08cabf6cf5ac7c8bf2ef0d8d9fc637a303e"
+    },
+    "previous_hash": "ae075f6d4f72f55d3a63cbfe89ebd89d35b9b39e84e70cfad6e71c23bec6d60b",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "71fda8f9a9410336afd1258a7d8f7b6a7d3aa459ecf86e6bd65938b2b8803745",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "e11e752d3a1593eb146e8717b5bbdf85b375eb678ac5a67c7eddac3ea0e54788"
+    },
+    "previous_hash": "ee57f062874dd0a412cda81a1b0eab3bfce9bb22645721ef7e9b27d0de508d54",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "decision",
+    "hash": "51be59435de118badba70d92d977ee87c6613f81567ea9b6c1b19fa44c27c881",
+    "payload": {
+      "expires_at_ns": 1601000000000,
+      "intent_hash": "2925cd99359a780f96bb492af940f11f84d7096c935c2bf84ed58cf9b321e000",
+      "issued_at_ns": 1301000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "71fda8f9a9410336afd1258a7d8f7b6a7d3aa459ecf86e6bd65938b2b8803745",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "af66604d6e4e0e55210bcabbb9a1f880fa6fc9850c8a6e4dbe17f05104b85449",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_version": 1,
+      "intent_hash": "2925cd99359a780f96bb492af940f11f84d7096c935c2bf84ed58cf9b321e000"
+    },
+    "previous_hash": "51be59435de118badba70d92d977ee87c6613f81567ea9b6c1b19fa44c27c881",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "f6875b8bfc6a5315dabac1b91219ba0db8e7ae15487b572d942104d33d1cce94",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "2925cd99359a780f96bb492af940f11f84d7096c935c2bf84ed58cf9b321e000"
+    },
+    "previous_hash": "af66604d6e4e0e55210bcabbb9a1f880fa6fc9850c8a6e4dbe17f05104b85449",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "decision",
+    "hash": "1309e369b5c578ff0a26fa2586f28e8de885e0ade264efae64b3f2992ad6ddbf",
+    "payload": {
+      "expires_at_ns": 1601000000000,
+      "intent_hash": "46ec7b3750264710beaa5bb32b5e22e3cc966d83d7507cc1888576868232a40d",
+      "issued_at_ns": 1301000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "f6875b8bfc6a5315dabac1b91219ba0db8e7ae15487b572d942104d33d1cce94",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "e096dceebf92c015993bf09bbe0b090ce9256a530592d9e5a8ffe83ad6bfed63",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_version": 1,
+      "intent_hash": "46ec7b3750264710beaa5bb32b5e22e3cc966d83d7507cc1888576868232a40d"
+    },
+    "previous_hash": "1309e369b5c578ff0a26fa2586f28e8de885e0ade264efae64b3f2992ad6ddbf",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "4fe2034dc43f0316ed3b9e973705675a8405b87a6bf11d768801bd524ee4c5e4",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "46ec7b3750264710beaa5bb32b5e22e3cc966d83d7507cc1888576868232a40d"
+    },
+    "previous_hash": "e096dceebf92c015993bf09bbe0b090ce9256a530592d9e5a8ffe83ad6bfed63",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "decision",
+    "hash": "1920ea2752247ca665dab98aaf6ff5029f31741e76f08ffc9873fb670f639032",
+    "payload": {
+      "expires_at_ns": 1601000000000,
+      "intent_hash": "4e858037e83b8bdd9c337f1cd25ff1020e98caecc103081692d6edaabf1e4083",
+      "issued_at_ns": 1301000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "4fe2034dc43f0316ed3b9e973705675a8405b87a6bf11d768801bd524ee4c5e4",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "8fdfe62f627bf48aaa94142d196d1ea7d00e1161625c2a8cbca288ba078bd52b",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_version": 1,
+      "intent_hash": "4e858037e83b8bdd9c337f1cd25ff1020e98caecc103081692d6edaabf1e4083"
+    },
+    "previous_hash": "1920ea2752247ca665dab98aaf6ff5029f31741e76f08ffc9873fb670f639032",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "8c1a6da6cbfa231d0ca64aee0747f5aaff30ea391112d9d50ff189aa465f6084",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "4e858037e83b8bdd9c337f1cd25ff1020e98caecc103081692d6edaabf1e4083"
+    },
+    "previous_hash": "8fdfe62f627bf48aaa94142d196d1ea7d00e1161625c2a8cbca288ba078bd52b",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "c290d99e97dc0fb375b104d6b21ec730f33d989a86ef4b0524b3d9e520128070",
+    "payload": {
+      "directive_expires_at_ns": 1601000000000,
+      "directive_hash": "b5dde0857906d436d7635bb50ea466cbdec1105f8474e9a9edfcc921ac013a88",
+      "directive_id": "site-clinic-b-offline-window",
+      "directive_issued_at_ns": 1301000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "4e858037e83b8bdd9c337f1cd25ff1020e98caecc103081692d6edaabf1e4083"
+    },
+    "previous_hash": "8c1a6da6cbfa231d0ca64aee0747f5aaff30ea391112d9d50ff189aa465f6084",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "decision",
+    "hash": "e4b6b6d0b1d4c19192a86a532b0dd54e45d0d1a9ab05603c387fab32e6f739db",
+    "payload": {
+      "expires_at_ns": 1601000000000,
+      "intent_hash": "9fe0c6e4ea594a33df74073fc4d314aa5b03f6d2951b775e58f332f168af09b9",
+      "issued_at_ns": 1301000000000,
+      "issuer_hash": "3911a8627c8aa94a844336bc94703fa42df7012ebce4b0950c4dbab8c0242f9a",
+      "outcome": "allow",
+      "policy_hash": "c28991f7019c2d05851da8f966acde854a2f56898f7e8384c4eaa1f3bdd7a760",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "c290d99e97dc0fb375b104d6b21ec730f33d989a86ef4b0524b3d9e520128070",
+    "timestamp_ns": 1301000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "434fba771c2fb649ae9e1b5aaa2c59c284461107a442e0f85d3497343154b1a9",
+    "payload": {
+      "intent_hash": "9fe0c6e4ea594a33df74073fc4d314aa5b03f6d2951b775e58f332f168af09b9"
+    },
+    "previous_hash": "e4b6b6d0b1d4c19192a86a532b0dd54e45d0d1a9ab05603c387fab32e6f739db",
+    "timestamp_ns": 1602000000000
+  }
+]
