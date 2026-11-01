@@ -16,6 +16,7 @@ from pathlib import Path
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -102,6 +103,55 @@ def resolve_tunnel_client(
     if not hmac.compare_digest(digest, expected_sha256):
         raise MCPTunnelBindingError("pulpo_tunnel_client_sha256_mismatch")
     return str(resolved)
+
+
+def _open_pinned_tunnel_client(
+    candidate: str | None,
+    expected_sha256: str | None,
+) -> tuple[str, int | None]:
+    """Verify a client and, on Linux, retain the exact inode for execution."""
+
+    if not sys.platform.startswith("linux"):
+        return resolve_tunnel_client(candidate, expected_sha256), None
+    if not isinstance(expected_sha256, str):
+        raise MCPTunnelBindingError("pulpo_tunnel_client_sha256_missing")
+    if re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None:
+        raise MCPTunnelBindingError("pulpo_tunnel_client_sha256_invalid")
+
+    requested = _required_text(candidate or "tunnel-client", "pulpo_tunnel_client_invalid")
+    if os.sep in requested or (os.altsep and os.altsep in requested):
+        path = Path(requested).expanduser()
+        try:
+            resolved = path.resolve(strict=True)
+        except OSError as exc:
+            raise MCPTunnelBindingError("pulpo_tunnel_client_missing") from exc
+    else:
+        found = shutil.which(requested)
+        if found is None:
+            raise MCPTunnelBindingError("pulpo_tunnel_client_missing")
+        resolved = Path(found).resolve(strict=True)
+
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(resolved, flags)
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode) or not metadata.st_mode & 0o111:
+            raise MCPTunnelBindingError("pulpo_tunnel_client_not_executable")
+        digest_state = sha256()
+        with os.fdopen(os.dup(descriptor), "rb") as executable:
+            for chunk in iter(lambda: executable.read(1024 * 1024), b""):
+                digest_state.update(chunk)
+        if not hmac.compare_digest(digest_state.hexdigest(), expected_sha256):
+            raise MCPTunnelBindingError("pulpo_tunnel_client_sha256_mismatch")
+        return f"/proc/self/fd/{descriptor}", descriptor
+    except MCPTunnelBindingError:
+        if "descriptor" in locals():
+            os.close(descriptor)
+        raise
+    except OSError as exc:
+        if "descriptor" in locals():
+            os.close(descriptor)
+        raise MCPTunnelBindingError("pulpo_tunnel_client_unreadable") from exc
 
 
 def build_stdio_command(
@@ -209,51 +259,63 @@ def run_secure_tunnel(
     expected_client_sha256 = tunnel_client_sha256
     if expected_client_sha256 is None:
         expected_client_sha256 = source_environment.get(_TUNNEL_CLIENT_SHA256_ENV)
-    client = resolve_tunnel_client(tunnel_client, expected_client_sha256)
     mcp_command = build_stdio_command(snapshot)
+    client, client_descriptor = _open_pinned_tunnel_client(
+        tunnel_client, expected_client_sha256
+    )
+    process_options = (
+        {"pass_fds": (client_descriptor,)}
+        if client_descriptor is not None
+        else {}
+    )
+    try:
+        with tempfile.TemporaryDirectory(prefix="pulpo-tunnel-profile-") as profile_dir:
+            runtime_env = _runtime_environment(
+                env,
+                profile_dir=profile_dir,
+                tunnel_id=tunnel_id,
+            )
+            init_command = [
+                client,
+                "init",
+                "--sample",
+                "sample_mcp_stdio_local",
+                "--profile",
+                profile,
+                "--profile-dir",
+                profile_dir,
+                "--tunnel-id",
+                tunnel_id,
+                "--mcp-command",
+                mcp_command,
+                "--health-listen-addr",
+                "127.0.0.1:0",
+            ]
+            subprocess.run(
+                init_command,
+                check=True,
+                env=runtime_env,
+                **process_options,
+            )
+            subprocess.run(
+                [client, "doctor", "--profile", profile, "--explain"],
+                check=True,
+                env=runtime_env,
+                **process_options,
+            )
+            if doctor_only:
+                return 0
 
-    with tempfile.TemporaryDirectory(prefix="pulpo-tunnel-profile-") as profile_dir:
-        runtime_env = _runtime_environment(
-            env,
-            profile_dir=profile_dir,
-            tunnel_id=tunnel_id,
-        )
-
-        init_command = [
-            client,
-            "init",
-            "--sample",
-            "sample_mcp_stdio_local",
-            "--profile",
-            profile,
-            "--profile-dir",
-            profile_dir,
-            "--tunnel-id",
-            tunnel_id,
-            "--mcp-command",
-            mcp_command,
-            "--health-listen-addr",
-            "127.0.0.1:0",
-        ]
-        subprocess.run(
-            init_command,
-            check=True,
-            env=runtime_env,
-        )
-        subprocess.run(
-            [client, "doctor", "--profile", profile, "--explain"],
-            check=True,
-            env=runtime_env,
-        )
-        if doctor_only:
-            return 0
-
-        completed = subprocess.run(
-            [client, "run", "--profile", profile],
-            check=False,
-            env=runtime_env,
-        )
-        return completed.returncode
+            completed = subprocess.run(
+                [client, "run", "--profile", profile],
+                check=False,
+                env=runtime_env,
+                **process_options,
+            )
+            return completed.returncode
+    finally:
+        if client_descriptor is not None:
+            os.close(client_descriptor)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
