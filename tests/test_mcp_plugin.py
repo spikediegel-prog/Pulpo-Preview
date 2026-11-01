@@ -64,7 +64,7 @@ class MCPPluginTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             real_parent = root / "real"
-            real_parent.mkdir()
+            real_parent.mkdir(mode=0o700)
             path = real_parent / "mcp-read-snapshot.json"
             self.write_snapshot(path)
 

@@ -300,7 +300,7 @@ class MCPBoundaryTests(unittest.TestCase):
             root = Path(directory)
             parent = root / "trusted"
             moved_parent = root / "trusted-moved"
-            parent.mkdir()
+            parent.mkdir(mode=0o700)
             destination = parent / "snapshot.json"
             real_open = os.open
             swapped = False
@@ -309,7 +309,7 @@ class MCPBoundaryTests(unittest.TestCase):
                 nonlocal swapped
                 if dir_fd is not None and not swapped:
                     parent.rename(moved_parent)
-                    parent.mkdir()
+                    parent.mkdir(mode=0o700)
                     swapped = True
                 return real_open(path, flags, mode, dir_fd=dir_fd)
 
@@ -338,13 +338,13 @@ class MCPBoundaryTests(unittest.TestCase):
             root = Path(directory)
             parent = root / "trusted"
             moved_parent = root / "trusted-moved"
-            parent.mkdir()
+            parent.mkdir(mode=0o700)
             destination = parent / "snapshot.json"
             real_replace = os.replace
 
             def swap_parent_then_replace(source, target, **kwargs):
                 parent.rename(moved_parent)
-                parent.mkdir()
+                parent.mkdir(mode=0o700)
                 return real_replace(source, target, **kwargs)
 
             with patch(
