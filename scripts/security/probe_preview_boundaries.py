@@ -5,8 +5,10 @@ from dataclasses import asdict
 import hashlib
 import importlib.metadata
 import json
+import os
 from pathlib import Path
 import sqlite3
+import subprocess
 import sys
 import tempfile
 
@@ -95,8 +97,61 @@ async def sdk_probe():
         finally:
             state.close()
 
+def stdio_probe():
+    """Exercise actual MCP JSON-RPC stdio framing, discovery, and repeated calls."""
+    with tempfile.TemporaryDirectory(prefix='pulpo-mcp-stdio-') as folder:
+        snapshot = freeze_mcp_snapshot(PulpoOrchestrator(
+            GovernanceKernel(Policy(frozenset({'read'}), 0),
+                secret=b'non-authority-stdio-test', clock=lambda:1234)))
+        path = Path(folder) / 'snapshot.json'
+        path.write_text(json.dumps(asdict(snapshot), separators=(',', ':')) + '\n', encoding='utf-8')
+        if os.name == 'posix':
+            path.chmod(0o600)
+        requests = [
+            {'jsonrpc':'2.0','id':1,'method':'initialize','params':{
+                'protocolVersion':'2025-06-18','capabilities':{},
+                'clientInfo':{'name':'pulpo-security-probe','version':'1'}}},
+            {'jsonrpc':'2.0','method':'notifications/initialized','params':{}},
+            {'jsonrpc':'2.0','id':2,'method':'tools/list','params':{}},
+            {'jsonrpc':'2.0','id':3,'method':'tools/call','params':{
+                'name':'pulpo_propose_intent','arguments':{
+                    'target_id':'stdio-probe','principal':'agent:test',
+                    'action':'read','resource':'repo:file'}}},
+            {'jsonrpc':'2.0','id':4,'method':'tools/call','params':{
+                'name':'pulpo_propose_intent','arguments':{
+                    'target_id':'stdio-probe','principal':'agent:test',
+                    'action':'read','resource':'repo:file'}}},
+        ]
+        payload = ''.join(json.dumps(item, separators=(',', ':')) + '\n' for item in requests)
+        completed = subprocess.run(
+            [sys.executable, '-m', 'pulpo.mcp_plugin', '--snapshot', str(path)],
+            input=payload, text=True, capture_output=True, timeout=20,
+            cwd=ROOT, check=False)
+        if completed.returncode != 0:
+            raise AssertionError(f'MCP stdio server failed: {completed.stderr[-2000:]}')
+        messages = [json.loads(line) for line in completed.stdout.splitlines() if line.strip()]
+        by_id = {message.get('id'): message for message in messages if 'id' in message}
+        if set(by_id) != {1, 2, 3, 4}:
+            raise AssertionError(f'MCP stdio response IDs differ: {sorted(by_id)}')
+        if any('error' in message for message in by_id.values()):
+            raise AssertionError(f'MCP stdio returned JSON-RPC errors: {by_id}')
+        tools = by_id[2].get('result', {}).get('tools', [])
+        if {tool.get('name') for tool in tools} != {'pulpo_propose_intent','pulpo_get_evidence'}:
+            raise AssertionError('MCP stdio discovery returned an unexpected tool set')
+        for request_id in (3, 4):
+            result = by_id[request_id].get('result', {})
+            document = result.get('structuredContent')
+            if document is None:
+                content = result.get('content', [])
+                document = json.loads(content[0]['text']) if content else {}
+            if document.get('currentness') != 'not_asserted' or document.get('canonical_state_mutation') is not False:
+                raise AssertionError('MCP stdio proposal lost frozen/non-mutating markers')
+        return {'protocol':'MCP JSON-RPC stdio','tools':sorted(tool['name'] for tool in tools),
+            'pipelined_repeated_calls':2,'provider_calls':0,
+            'stdout_only_protocol_messages':True}
+
 async def main():
-    result = {'repository':str(ROOT),'sdk':await sdk_probe(),
+    result = {'repository':str(ROOT),'sdk':await sdk_probe(), 'stdio':stdio_probe(),
         'custody_admission':[await request_probe(declared=True),await request_probe(declared=False)]}
     if args.expect_limited:
         assert all(item['status'] == 413 and item['stub_service_calls'] == 0

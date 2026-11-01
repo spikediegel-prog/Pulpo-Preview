@@ -64,6 +64,9 @@ not inspect or set Windows DACLs.
 The reader fails closed for a relative path, symlinked immediate parent, linked
 final file, oversized document, group/world-readable POSIX file, malformed JSON,
 duplicate keys, missing fields, extra fields, or an invalid snapshot schema.
+On POSIX it also requires the immediate parent to be owned by the running user
+or root and not group/world writable. Protect ancestor directories as part of
+the operator-managed trusted path.
 
 Copying a frozen derivative into plugin storage does not make it current and
 does not authorize anything. Every consequential action still requires live

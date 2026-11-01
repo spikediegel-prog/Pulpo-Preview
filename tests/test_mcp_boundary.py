@@ -81,6 +81,7 @@ class MCPBoundaryTests(unittest.TestCase):
 
         self.assertEqual("pulpo.mcp-proposal.v2", result["schema"])
         self.assertEqual("frozen", result["freshness"])
+        self.assertEqual("not_asserted", result["currentness"])
         self.assertEqual("none", result["authority_effect"])
         self.assertEqual("none", result["governed_effect"])
         self.assertFalse(result["canonical_state_mutation"])
@@ -137,10 +138,26 @@ class MCPBoundaryTests(unittest.TestCase):
 
         self.assertEqual([], self.kernel.audit)
 
+    def test_mcp_proposal_rejects_oversized_text_and_integer_fields(self):
+        invalid_calls = (
+            ("mcp_intent_invalid", ("target", "p" * 257, "read", "repo:file"), {}),
+            ("mcp_intent_invalid", ("target", "agent\ud800", "read", "repo:file"), {}),
+            ("mcp_intent_invalid", ("target", "agent", "read", "r" * 4097), {}),
+            ("mcp_target_invalid", ("t" * 257, "agent", "read", "repo:file"), {}),
+            ("mcp_intent_invalid", ("target", "agent", "read", "repo:file"), {"cost": 1 << 63}),
+            ("mcp_target_invalid", ("target", "agent", "read", "repo:file"), {"version": 1 << 31}),
+        )
+        for reason, args, kwargs in invalid_calls:
+            with self.subTest(reason=reason, kwargs=kwargs):
+                with self.assertRaisesRegex(MCPBoundaryError, reason):
+                    self.projection.propose_intent(*args, **kwargs)
+        self.assertEqual([], self.kernel.audit)
+
     def test_frozen_evidence_cannot_follow_later_canonical_mutation(self):
         evidence_before = self.projection.evidence_snapshot()
         self.assertEqual("pulpo.mcp-evidence.v1", evidence_before["schema"])
         self.assertEqual("frozen", evidence_before["freshness"])
+        self.assertEqual("not_asserted", evidence_before["currentness"])
         self.assertEqual(0, evidence_before["audit_records"])
         self.assertIsNone(evidence_before["audit_tip"])
 
@@ -179,6 +196,7 @@ class MCPBoundaryTests(unittest.TestCase):
         if os.name == "posix":
             self.assertEqual(0o600, mode)
         self.assertEqual(before, self.kernel.audit)
+
         for forbidden in (
             "authority",
             "credential",

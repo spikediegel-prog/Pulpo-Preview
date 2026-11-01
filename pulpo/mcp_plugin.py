@@ -148,6 +148,16 @@ def read_snapshot_document(
         raise MCPBoundaryError("mcp_plugin_snapshot_parent_invalid") from exc
     if stat.S_ISLNK(parent_metadata.st_mode) or not stat.S_ISDIR(parent_metadata.st_mode):
         raise MCPBoundaryError("mcp_plugin_snapshot_parent_invalid")
+    if os.name == "posix":
+        # File mode alone does not prevent another local user from replacing
+        # the snapshot through a writable parent directory. Require a trusted
+        # owner (the running user or root) and no group/world write access.
+        trusted_owners = {os.geteuid(), 0}
+        if (
+            parent_metadata.st_uid not in trusted_owners
+            or stat.S_IMODE(parent_metadata.st_mode) & 0o022
+        ):
+            raise MCPBoundaryError("mcp_plugin_snapshot_parent_permissions_invalid")
 
     if os.name == "nt":
         raw = _read_windows_snapshot(target)

@@ -392,6 +392,18 @@ class PulpoMCPProjection:
 
     __slots__ = ("_snapshot",)
 
+    _SMALL_TEXT_LIMIT = 256
+    _RESOURCE_TEXT_LIMIT = 4096
+    _MAX_INTENT_TEXT_BYTES = 8192
+    _MAX_INT64 = (1 << 63) - 1
+
+    @staticmethod
+    def _text_size(value: str) -> int | None:
+        try:
+            return len(value.encode("utf-8"))
+        except UnicodeEncodeError:
+            return None
+
     def __init__(self, snapshot: MCPReadSnapshot) -> None:
         if type(snapshot) is not MCPReadSnapshot:
             raise TypeError("MCPReadSnapshot required")
@@ -406,9 +418,29 @@ class PulpoMCPProjection:
         session_id: str,
     ) -> Intent:
         values = (principal, action, resource, session_id)
-        if any(not isinstance(value, str) or not value or value != value.strip() for value in values):
+        limits = (
+            PulpoMCPProjection._SMALL_TEXT_LIMIT,
+            PulpoMCPProjection._SMALL_TEXT_LIMIT,
+            PulpoMCPProjection._RESOURCE_TEXT_LIMIT,
+            PulpoMCPProjection._SMALL_TEXT_LIMIT,
+        )
+        if any(
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            or (size := PulpoMCPProjection._text_size(value)) is None
+            or size > limit
+            for value, limit in zip(values, limits)
+        ) or sum(
+            PulpoMCPProjection._text_size(value) or 0
+            for value in values if isinstance(value, str)
+        ) > PulpoMCPProjection._MAX_INTENT_TEXT_BYTES:
             raise MCPBoundaryError("mcp_intent_invalid")
-        if isinstance(cost, bool) or not isinstance(cost, int) or cost < 0:
+        if (
+            isinstance(cost, bool)
+            or not isinstance(cost, int)
+            or not 0 <= cost <= PulpoMCPProjection._MAX_INT64
+        ):
             raise MCPBoundaryError("mcp_intent_invalid")
         return Intent(
             principal=principal,
@@ -436,9 +468,19 @@ class PulpoMCPProjection:
         is informational only until canonical Pulpo re-evaluates the proposal.
         """
 
-        if not isinstance(target_id, str) or not target_id or target_id != target_id.strip():
+        if (
+            not isinstance(target_id, str)
+            or not target_id
+            or target_id != target_id.strip()
+            or (target_size := self._text_size(target_id)) is None
+            or target_size > self._SMALL_TEXT_LIMIT
+        ):
             raise MCPBoundaryError("mcp_target_invalid")
-        if isinstance(version, bool) or not isinstance(version, int) or version <= 0:
+        if (
+            isinstance(version, bool)
+            or not isinstance(version, int)
+            or not 0 < version <= (1 << 31) - 1
+        ):
             raise MCPBoundaryError("mcp_target_invalid")
         intent = self._intent(principal, action, resource, cost, session_id)
         return {
@@ -449,6 +491,7 @@ class PulpoMCPProjection:
             "intent_hash": GovernanceKernel.intent_hash(intent),
             "policy_hash": self._snapshot.policy_hash,
             "freshness": "frozen",
+            "currentness": "not_asserted",
             "canonical_state_mutation": False,
             "governed_effect": "none",
             "authority_effect": "none",
@@ -466,6 +509,7 @@ class PulpoMCPProjection:
             "audit_records": snapshot.audit_records,
             "audit_tip": snapshot.audit_tip,
             "freshness": "frozen",
+            "currentness": "not_asserted",
             "canonical_state_mutation": False,
             "governed_effect": "none",
             "authority_effect": "none",

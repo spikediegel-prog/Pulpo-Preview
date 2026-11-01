@@ -95,6 +95,23 @@ class MCPPluginTests(unittest.TestCase):
             ):
                 load_mcp_snapshot(path)
 
+    @unittest.skipUnless(os.name == "posix", "POSIX directory permissions required")
+    def test_rejects_snapshot_in_group_or_world_writable_parent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory) / "snapshot-dir"
+            parent.mkdir()
+            path = parent / "mcp-read-snapshot.json"
+            self.write_snapshot(path)
+            parent.chmod(0o777)
+            try:
+                with self.assertRaisesRegex(
+                    MCPBoundaryError,
+                    "mcp_plugin_snapshot_parent_permissions_invalid",
+                ):
+                    load_mcp_snapshot(path)
+            finally:
+                parent.chmod(0o700)
+
     def test_rejects_extra_missing_invalid_or_duplicate_snapshot_fields(self):
         variants = []
 

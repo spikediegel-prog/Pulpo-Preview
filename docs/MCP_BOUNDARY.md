@@ -19,6 +19,8 @@ Neither tool accepts an approval flag, authority claim, directive, policy,
 clock, state backend, permit, executor, retrieval score, or model summary.
 Neither tool can approve, authorize, consume, execute, revoke, supersede, or
 reconcile a consequential action.
+Proposal text is bounded (256 UTF-8 bytes for target/principal/action/session,
+4096 for resource, and 8192 total); cost and version use bounded integer ranges.
 
 ## Proven invariant
 
@@ -62,6 +64,8 @@ Export does not mutate canonical Pulpo state or append a second audit event.
 The resulting file is a frozen derivative: it cannot follow later canonical
 mutations, and its presence does not prove live-current freshness, production
 authentication, independent deployment, or external consequence containment.
+MCP replies set `currentness=not_asserted`; the canonical evidence snapshot
+provides no trusted capture time or generation identifier to establish age.
 
 ## Consequential-tool admission gate
 

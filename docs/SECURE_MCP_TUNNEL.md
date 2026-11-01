@@ -67,8 +67,10 @@ processes cannot replace while the launcher is running; a digest alone cannot
 remove the operating system's path replacement race.
 
 On Windows, store the snapshot in a directory whose NTFS ACL grants read/write
-access only to the trusted Pulpo/tunnel identities and administrators. Pulpo
-checks the path and file type, but does not inspect or set Windows DACLs.
+access only to the trusted Pulpo/tunnel identities and administrators. On
+POSIX, the snapshot parent must be owned by the running user or root and not
+group/world writable; protect ancestor directories as part of the trusted path.
+Pulpo checks the file and immediate parent, but does not inspect Windows DACLs.
 
 Then validate the complete local binding without starting the long-running poll
 loop:
