@@ -120,8 +120,8 @@ class MCPTunnelBindingTests(unittest.TestCase):
             snapshot = Path(directory) / "mcp-read-snapshot.json"
             self.write_snapshot(snapshot)
             with patch(
-                "pulpo.mcp_tunnel._open_pinned_tunnel_client",
-                return_value=("/usr/local/bin/tunnel-client", None),
+                "pulpo.mcp_tunnel.resolve_tunnel_client",
+                return_value="/usr/local/bin/tunnel-client",
             ):
                 with self.assertRaisesRegex(
                     MCPTunnelBindingError,
@@ -149,8 +149,8 @@ class MCPTunnelBindingTests(unittest.TestCase):
                 return Completed()
 
             with patch(
-                "pulpo.mcp_tunnel.resolve_tunnel_client",
-                return_value="/usr/local/bin/tunnel-client",
+                "pulpo.mcp_tunnel._open_pinned_tunnel_client",
+                return_value=("/usr/local/bin/tunnel-client", None),
             ), patch(
                 "pulpo.mcp_tunnel.subprocess.run",
                 side_effect=fake_run,
