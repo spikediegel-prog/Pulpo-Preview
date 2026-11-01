@@ -16,7 +16,7 @@ cffi==2.1.1
 charset-normalizer==3.5.2
 click==8.5.0
 cloud-sql-python-connector==1.22.0
-cryptography==50.0.1
+cryptography==50.0.2
 dnspython==2.9.0
 fastapi==0.141.1
 frozenlist==1.8.0

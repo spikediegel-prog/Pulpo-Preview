@@ -50,7 +50,7 @@ jobs:
       - name: Install reviewed authority verifier dependency
         run: python -m pip install '.[authority]'
       - name: Run asymmetric authority contract tests
-        run: python -W error -m unittest tests.test_authority_crypto -v
+        run: python -W error -m unittest tests.test_authority_crypto tests.test_verifier_external_integrity -v
 
   authority-service:
     runs-on: ubuntu-latest

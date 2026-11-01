@@ -5,7 +5,7 @@ description = "A minimal governed-execution kernel for agentic systems"
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
-authority = ["cryptography==50.0.1"]
+authority = ["cryptography==50.0.2"]
 mcp = ["mcp[cli]>=2,<3"]
 
 [project.scripts]
@@ -14,7 +14,7 @@ pulpo-git-clarity = "pulpo.git_clarity:main"
 pulpo-mcp-tunnel = "pulpo.mcp_tunnel:main"
 
 [tool.setuptools]
-packages = ["pulpo"]
+packages = ["pulpo", "pulpo.verifier"]
 
 [tool.setuptools.package-data]
 pulpo = ["assets/*.png"]

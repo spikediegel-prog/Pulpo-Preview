@@ -1,0 +1,474 @@
+#!/usr/bin/env python3
+"""Disposable systemd service proof; never installs a production unit.
+
+No human signer, real provider credential, live database or outbound provider
+route is used. User mode is a capability probe; --system stages root-owned code
+and uses DynamicUser. Successful runtime checks, not settings, establish proof.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import secrets
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+import urllib.error
+import urllib.request
+
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(ROOT), str(ROOT / "custody-service/src")]
+
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def write_denied(path):
+    try:
+        descriptor = os.open(path, os.O_WRONLY)  # No truncation or write.
+    except PermissionError:
+        return True
+    except OSError as exc:
+        return exc.errno == 30  # EROFS.
+    else:
+        os.close(descriptor)
+        return False
+
+
+def network_interfaces(text):
+    """Read this process's /proc/net/dev without opening an AF_NETLINK socket."""
+    lines = text.splitlines()
+    require(len(lines) >= 3 and "Inter-" in lines[0] and "face" in lines[1],
+            "unrecognized network interface observation")
+    interfaces = set()
+    for line in lines[2:]:
+        name, separator, _counters = line.partition(":")
+        require(separator and name.strip(), "malformed network interface observation")
+        interfaces.add(name.strip())
+    return interfaces
+
+
+def remove_runtime_marker(path):
+    """Remove only our exact dangling systemd marker; never delete its target."""
+    require(re.fullmatch(r"pulpo-e1-[0-9a-f]{10}", path.name), "invalid runtime marker name")
+    if path.is_symlink():
+        require(os.readlink(path) == "private/" + path.name and not path.exists(),
+                "runtime marker is not the expected dangling link")
+        path.unlink()
+    return not os.path.lexists(path)
+
+
+def normalize_staging_permissions(folder):
+    """Staged code/runtime must be readable by DynamicUser, even with umask 077.
+
+    This applies only to disposable source/runtime copies, never live secrets.
+    Root ownership and no group/other writes preserve the privilege boundary.
+    """
+    for staged in folder.rglob("*"):
+        if not staged.is_symlink():
+            readable = 0o555 if staged.is_dir() else 0o444
+            staged.chmod((staged.stat().st_mode | readable) & ~0o022)
+
+
+def require_executable_staging(path):
+    # Native Python extensions require executable mappings. Keep /run noexec;
+    # stage root-owned application copies on an executable application volume.
+    require(not (os.statvfs(path).f_flag & os.ST_NOEXEC), "staging filesystem is mounted noexec")
+
+
+def audit_digest(records):
+    return hashlib.sha256(json.dumps(list(records), sort_keys=True,
+        separators=(",", ":")).encode()).hexdigest()
+
+
+def exercise_restart_fixture(state, secret):
+    """Only this proof's synthetic local-read state; never a provider fixture."""
+    from pulpo import GovernanceKernel, Intent, Policy, SQLiteKernelState
+
+    permit_file = state / "fixture-permit"
+    intent = Intent("agent:e1-fixture", "read", "local:e1-fixture", 0, "e1")
+    checks = {}
+    with SQLiteKernelState(state / "restart-fixture.sqlite3") as backend:
+        kernel = GovernanceKernel(Policy(frozenset({"read"}), 0), secret=secret, state=backend)
+        before = len(kernel.audit)
+        before_digest = audit_digest(kernel.audit)
+        if permit_file.exists():
+            checks["spent_permit_replay_denied"] = not kernel.consume(permit_file.read_text(), intent)
+            phase = "restart"
+        else:
+            permit = kernel.evaluate(intent).permit
+            require(permit is not None, "fixture permit missing")
+            require(kernel.consume(permit, intent), "fixture consume failed")
+            with permit_file.open("x") as stream:
+                stream.write(permit)
+                stream.flush()
+                os.fsync(stream.fileno())
+            directory = os.open(state, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+            phase = "initial"
+        checks["canonical_audit_valid"] = kernel.verify_audit()
+        checks["prior_evidence_preserved"] = len(kernel.audit) > before
+        checks["forbidden_action_denied"] = kernel.evaluate(
+            Intent("agent:e1-fixture", "purchase_domain", "example.invalid")).outcome == "deny"
+        checks["canonical_audit_valid"] = kernel.verify_audit()
+        return {"phase": phase, "checks": checks, "audit_rows": len(kernel.audit),
+                "audit_rows_before": before, "audit_before_sha256": before_digest,
+                "audit_after_sha256": audit_digest(kernel.audit)}
+
+
+def disk_mount_observation(path):
+    observed = json.loads(subprocess.check_output(["findmnt", "--json", "--target", str(path),
+        "--output", "TARGET,SOURCE,FSTYPE"], text=True, timeout=10))["filesystems"]
+    require(len(observed) == 1 and observed[0]["fstype"] not in
+            {"tmpfs", "ramfs", "devtmpfs"}, "disk fixture must not use volatile memory storage")
+    return observed[0]
+
+
+def remove_disk_fixture(parent, name):
+    """Delete only this generated synthetic fixture after all services stopped."""
+    require(re.fullmatch(r"pulpo-e1-[0-9a-f]{10}", name), "invalid disk fixture name")
+    public = parent / name
+    private = parent / "private" / name
+    if public.is_symlink():
+        require(os.readlink(public) in ("private/" + name, str(private)), "unexpected disk fixture link")
+        require(not private.is_symlink(), "unexpected private fixture link")
+        if private.exists():
+            require(private.is_dir(), "private fixture is not a directory")
+            shutil.rmtree(private)
+        public.unlink()
+    elif public.exists():
+        require(public.is_dir() and not private.exists(), "ambiguous disk fixture location")
+        shutil.rmtree(public)
+    elif private.exists():
+        raise RuntimeError("unlinked private fixture retained for inspection")
+    return not os.path.lexists(public) and not os.path.lexists(private)
+
+
+def worker(config_path):
+    config = json.loads(config_path.read_text())
+    state = Path(config["PULPO_CUSTODY_STATE_PATH"]).parent
+    environment = {**os.environ, **config, "PYTHONPATH": os.pathsep.join(sys.path[:2]),
+                   "PYTHONDONTWRITEBYTECODE": "1"}
+    checks = {}
+    checks["code_write_denied"] = write_denied(ROOT / "pyproject.toml")
+    checks["config_write_denied"] = write_denied(config_path)
+    checks["home_credentials_hidden"] = not (Path.home() / ".ssh").exists()
+    status = Path("/proc/self/status").read_text()
+    checks["no_new_privileges"] = "NoNewPrivs:\t1" in status
+    checks["no_effective_capabilities"] = "CapEff:\t0000000000000000" in status
+    checks["non_root"] = os.getuid() != 0
+    if config.get("PULPO_E1_SYSTEM_FIXTURE") == "1":
+        checks["code_root_owned"] = (ROOT / "pyproject.toml").stat().st_uid == 0
+        checks["configuration_root_owned"] = config_path.stat().st_uid == 0
+    with socket.socket() as sock:
+        sock.settimeout(1)
+        try:
+            sock.connect(("192.0.2.1", 443))  # Documentation-only address.
+        except OSError as exc:
+            checks["external_route_denied"] = exc.errno in (101, 100, 13)
+        else:
+            checks["external_route_denied"] = False
+    checks["only_loopback_interface"] = network_interfaces(Path("/proc/net/dev").read_text()) == {"lo"}
+    (state / "write-probe").write_text("synthetic fixture")
+    checks["state_writable"] = True
+
+    # Actual custody entrypoint must fail before creating state if authority is
+    # absent or malformed. No private signing material is constructed.
+    startup_observations = {}
+    for label, value in (("missing", None), ("malformed", "not-hex")):
+        negative = dict(environment)
+        negative["PULPO_CUSTODY_STATE_PATH"] = str(state / (label + ".sqlite3"))
+        if value is None:
+            negative.pop("PULPO_AUTHORITY_PUBLIC_KEY_HEX")
+        else:
+            negative["PULPO_AUTHORITY_PUBLIC_KEY_HEX"] = value
+        result = subprocess.run([sys.executable, "-c", "import pulpo_custody_service.main"],
+                                env=negative, capture_output=True, text=True, timeout=10)
+        checks[label + "_authority_startup_denied"] = (
+            result.returncode != 0 and "RuntimeConfigError" in result.stderr
+            and not Path(negative["PULPO_CUSTODY_STATE_PATH"]).exists())
+        startup_observations[label] = {"returncode": result.returncode,
+            "state_created": Path(negative["PULPO_CUSTODY_STATE_PATH"]).exists(),
+            "stderr": result.stderr[-8000:]}
+        # RuntimeDirectory may disappear as soon as this process exits. The
+        # persistent journal must receive child errors before any assertion.
+        print("pulpo_e1_startup=" + json.dumps({label: startup_observations[label]}), flush=True)
+    # These errors contain only synthetic fixture context. Retain the actual
+    # child failure rather than losing it behind a generic boolean assertion.
+    (state / "startup-observations.json").write_text(json.dumps(startup_observations, indent=2))
+
+    # Separate, explicitly synthetic canonical-kernel fixture. The saved permit
+    # never leaves the disposable state directory or becomes a service API.
+    fixture = exercise_restart_fixture(state, bytes.fromhex(config["PULPO_KERNEL_SECRET_HEX"]))
+    checks.update(fixture.pop("checks"))
+
+    require(all(checks.values()), "service confinement or kernel check failed: " +
+            ",".join(k for k, v in checks.items() if not v))
+    child = subprocess.Popen([sys.executable, "-m", "uvicorn", "pulpo_custody_service.main:app",
+        "--host", "127.0.0.1", "--port", "18081", "--workers", "1", "--no-access-log"],
+        env=environment)
+
+    def stop(_signum, _frame):
+        if child.poll() is None:
+            child.terminate()
+        child.wait(timeout=8)
+        raise SystemExit(0)
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    try:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        deadline = time.monotonic() + 15
+        while True:
+            require(child.poll() is None, "custody app exited before health")
+            try:
+                with opener.open("http://127.0.0.1:18081/health", timeout=1) as response:
+                    checks["actual_custody_health"] = json.load(response) == {
+                        "status": "ok", "authority_effect": "none"}
+                break
+            except OSError:
+                require(time.monotonic() < deadline, "custody readiness timeout")
+                time.sleep(.1)
+        request = urllib.request.Request("http://127.0.0.1:18081/v1/domain-attempts",
+            data=b'{"proposal_commitment_id":"synthetic-unknown"}',
+            headers={"Content-Type": "application/json"}, method="POST")
+        try:
+            opener.open(request, timeout=2).close()
+            checks["unapproved_unknown_commitment_denied"] = False
+        except urllib.error.HTTPError as exc:
+            checks["unapproved_unknown_commitment_denied"] = exc.code == 403
+        require(all(checks.values()), "custody health or rejection check failed")
+        report = {**fixture, "checks": checks,
+                  "pid": os.getpid(), "uid": os.getuid(), "passed": True}
+        pending = state / f"report-{os.getpid()}.pending"
+        pending.write_text(json.dumps(report, indent=2))
+        pending.replace(state / f"report-{os.getpid()}.json")
+        while child.poll() is None:
+            time.sleep(.2)
+        raise RuntimeError("custody child exited unexpectedly")
+    finally:
+        if child.poll() is None:
+            child.terminate()
+            child.wait(timeout=8)
+
+
+def run(output, *, system=False, runtime=None, cleanup_unit=None, disk_state=False):
+    require(sys.platform == "linux", "Linux required")
+    require((os.getuid() == 0) == system, "--system requires root; user proof must run without root")
+    require(not disk_state or system, "disk-backed service proof requires --system")
+    require(not os.path.lexists(output) and output.is_absolute(), "new absolute evidence path required")
+    prior_marker_removed = None
+    if cleanup_unit is not None:
+        require(system and re.fullmatch(r"pulpo-e1-[0-9a-f]{10}", cleanup_unit),
+                "system mode and exact disposable unit name required for marker cleanup")
+        active = subprocess.run(["systemctl", "is-active", cleanup_unit + ".service"],
+                                capture_output=True, text=True, timeout=10)
+        require(active.stdout.strip() in ("inactive", "failed", "unknown"), "prior unit may still be active")
+        prior_marker_removed = remove_runtime_marker(Path("/run") / cleanup_unit)
+        require(prior_marker_removed, "prior runtime directory still exists; refusing deletion")
+    name = "pulpo-e1-" + secrets.token_hex(5)
+    unit = name + ".service"
+    units = [unit]
+    manager = [] if system else ["--user"]
+    result = {"classification": "Recorded", "unit": unit, "runs": [], "passed": False,
+              "base_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+              "boundary": ("Disposable system service with DynamicUser, root-owned staging and no external network."
+                           if system else "Same-UID user-service probe; confinement must be independently checked."),
+              "launcher_uid": os.getuid()}
+    result["storage_mode"] = "disk_stop_and_fresh_service" if disk_state else "volatile_service_restart"
+    if cleanup_unit:
+        result["prior_runtime_marker"] = {"unit": cleanup_unit, "removed": prior_marker_removed}
+    staging_parent = Path("/opt") if system else Path.home()
+    require_executable_staging(staging_parent)
+    scratch = tempfile.TemporaryDirectory(prefix="pulpo-e1-service-", dir=staging_parent)
+    folder = Path(scratch.name)
+    folder.chmod(0o755 if system else 0o700)
+    state = (Path("/var/lib") if disk_state else Path("/run")) / name if system else folder / "state"
+    if disk_state:
+        require(not os.path.lexists(state) and not os.path.lexists(Path("/var/lib/private") / name),
+                "disk fixture path already exists")
+    configuration = folder / "configuration"
+    if not system:
+        state.mkdir(mode=0o700)
+    configuration.mkdir(mode=0o755 if system else 0o700)
+    source = ROOT
+    python = Path(sys.executable)
+    if system:
+        require(runtime is not None and (runtime / "bin/python").exists(), "explicit Python venv runtime required")
+        source = folder / "source"
+        source.mkdir()
+        for relative in ("pulpo", "custody-service/src"):
+            origin = ROOT / relative
+            require(not any(p.is_symlink() for p in origin.rglob("*")), "source symlink staging rejected")
+            shutil.copytree(origin, source / relative)
+        shutil.copyfile(ROOT / "pyproject.toml", source / "pyproject.toml")
+        (source / "scripts").mkdir()
+        shutil.copyfile(Path(__file__), source / "scripts/prove_linux_service_sandbox.py")
+        # Only the explicit Python environment is staged; never the user's home,
+        # SSH material, application preferences, live state, or signing keys.
+        shutil.copytree(runtime, folder / "runtime", symlinks=True)
+        python = folder / "runtime/bin/python"
+        # Source modes from user checkout may be group-writable. Root ownership
+        # and removal of group/other writes make staging immutable to DynamicUser.
+        normalize_staging_permissions(folder)
+    config_path = configuration / "sandbox.json"
+    # Only synthetic non-signing secrets and a public fixture key. No human
+    # signing key or authentic Name.com credential exists in this proof.
+    config = {"PULPO_E1_SYSTEM_FIXTURE": "1" if system else "0",
+        "PULPO_CUSTODY_STATE_PATH": str(state / "custody.sqlite3"),
+        "PULPO_KERNEL_SECRET_HEX": secrets.token_hex(32),
+        "PULPO_CUSTODY_SECRET_HEX": secrets.token_hex(32),
+        "PULPO_AUTHORITY_PUBLIC_KEY_HEX": bytes(range(32)).hex(),
+        "PULPO_AUTHORITY_ID": "authority:e1-fixture", "PULPO_AUTHORITY_VERIFIER_ID": "verifier:e1-fixture",
+        "PULPO_AUTHORITY_KEY_ID": "key:e1-public-fixture", "PULPO_AUTHORITY_DEPLOYMENT_ID": "deployment:e1-disposable",
+        "PULPO_AUTHORITY_MAX_TTL_SECONDS": "300", "PULPO_PILOT_BUDGET_CENTS": "1",
+        "PULPO_OWNER_REF": "owner://e1-disposable", "NAMECOM_SANDBOX_USERNAME": "e1-fixture-test",
+        "NAMECOM_SANDBOX_EXECUTOR_TOKEN": "not-a-credential-executor",
+        "NAMECOM_SANDBOX_OBSERVER_TOKEN": "not-a-credential-observer"}
+    config_path.write_text(json.dumps(config))
+    config_path.chmod(0o644 if system else 0o600)  # Synthetic values only.
+    properties = {"NoNewPrivileges": "yes", "ProtectSystem": "strict", "ProtectHome": "tmpfs",
+        "PrivateTmp": "yes", "PrivateDevices": "yes", "PrivateNetwork": "yes", "UMask": "0077",
+        "RestrictAddressFamilies": "AF_UNIX AF_INET AF_INET6", "CapabilityBoundingSet": "",
+        "KillMode": "control-group", "TimeoutStopSec": "10", "Restart": "no", "TasksMax": "64",
+        "MemoryMax": "512M", "WorkingDirectory": str(source),
+        "BindReadOnlyPaths": " ".join((str(source), str(python.parent.parent), str(configuration))),
+        "BindPaths": str(state)}
+    if system:
+        properties["DynamicUser"] = "yes"
+        if disk_state:
+            properties.update(StateDirectory=name, StateDirectoryMode="0700")
+        else:
+            properties.update(RuntimeDirectory=name, RuntimeDirectoryMode="0700", RuntimeDirectoryPreserve="restart")
+    command = ["systemd-run", *manager, "--collect", "--service-type=exec", "--unit=" + unit]
+    for name, value in properties.items():
+        command.extend(["--property", name + "=" + value])
+    command.extend([str(python), "-B", str(source / "scripts/prove_linux_service_sandbox.py"), "--worker", str(config_path)])
+    try:
+        subprocess.run(command, check=True, capture_output=True, text=True, timeout=20)
+        for iteration in range(2):
+            if iteration:
+                if disk_state:
+                    cgroup = subprocess.check_output(["systemctl", "show", unit, "--property=ControlGroup", "--value"],
+                                                     text=True, timeout=10).strip()
+                    subprocess.run(["systemctl", "stop", unit], check=True, timeout=20)
+                    active = subprocess.run(["systemctl", "is-active", unit], capture_output=True, text=True, timeout=10)
+                    require(active.stdout.strip() in ("inactive", "unknown"), "first service did not stop cleanly")
+                    require(cgroup.startswith("/") and ".." not in Path(cgroup).parts, "unexpected cgroup path")
+                    processes = Path("/sys/fs/cgroup") / cgroup.lstrip("/") / "cgroup.procs"
+                    require(not processes.exists() or not processes.read_text().strip(), "first service still has processes")
+                    database = state / "restart-fixture.sqlite3"
+                    require(database.is_file() and database.stat().st_size > 0, "disk state lost on full stop")
+                    result["stopped_interval"] = {"first_service_stopped": True, "first_cgroup_empty": True,
+                        "database_bytes": database.stat().st_size,
+                        "database_sha256": hashlib.sha256(database.read_bytes()).hexdigest(),
+                        "mount": disk_mount_observation(state)}
+                    unit = units[0].removesuffix(".service") + "-fresh.service"
+                    units.append(unit)
+                    fresh_command = ["--unit=" + unit if arg.startswith("--unit=") else arg for arg in command]
+                    subprocess.run(fresh_command, check=True, capture_output=True, text=True, timeout=20)
+                else:
+                    subprocess.run(["systemctl", *manager, "restart", unit], check=True, timeout=20)
+            deadline = time.monotonic() + 25
+            while len(list(state.glob("report-*.json"))) <= iteration:
+                active = subprocess.run(["systemctl", *manager, "is-active", unit],
+                                        capture_output=True, text=True, timeout=5)
+                require(active.stdout.strip() in ("active", "activating", "reloading"),
+                        "service exited before producing its report")
+                require(time.monotonic() < deadline, "service proof timeout")
+                time.sleep(.2)
+            reports = [json.loads(p.read_text()) for p in state.glob("report-*.json")]
+            result["runs"] = sorted(reports, key=lambda r: r["audit_rows"])
+        result["properties"] = subprocess.check_output(["systemctl", *manager, "show", unit,
+            *["--property=" + key for key in properties]], text=True, timeout=10).splitlines()
+        require(result["runs"][1]["phase"] == "restart", "restart fixture was not reused")
+        require(result["runs"][0]["pid"] != result["runs"][1]["pid"], "service process did not restart")
+        require(result["runs"][1]["audit_before_sha256"] == result["runs"][0]["audit_after_sha256"],
+                "prior audit history changed across process recovery")
+        result["exact_prior_audit_preserved"] = True
+        if system:
+            require(all(r["uid"] != 0 and r["uid"] != int(os.environ.get("SUDO_UID", "0"))
+                        for r in result["runs"]), "dedicated service identity not established")
+        result["passed"] = True
+    except Exception as exc:
+        result["error"] = type(exc).__name__ + ": " + str(exc)
+        if isinstance(exc, subprocess.CalledProcessError):
+            result["command_stderr"] = exc.stderr
+        result["journal"] = subprocess.run(["journalctl", *manager, "-u", unit, "-n", "35", "--no-pager"],
+            capture_output=True, text=True, timeout=10).stdout
+        raise
+    finally:
+        observations = state / "startup-observations.json"
+        try:
+            if observations.is_file():
+                result["startup_observations"] = json.loads(observations.read_text())
+        except (OSError, ValueError) as exc:
+            result["startup_observation_error"] = type(exc).__name__
+        stopped = {}
+        for started in units:
+            subprocess.run(["systemctl", *manager, "stop", started], capture_output=True, timeout=20)
+            active = subprocess.run(["systemctl", *manager, "is-active", started], capture_output=True, text=True, timeout=10)
+            stopped[started] = active.stdout.strip() in ("inactive", "failed", "unknown")
+        result["stopped_units"] = stopped
+        result["unit_stopped"] = all(stopped.values())
+        scratch.cleanup()
+        result["disposable_files_removed"] = not folder.exists()
+        if system:
+            try:
+                removed = result["unit_stopped"] and (remove_disk_fixture(Path("/var/lib"), state.name)
+                                                      if disk_state else remove_runtime_marker(state))
+                result["state_directory_removed"] = removed
+                if not disk_state:
+                    result["runtime_directory_removed"] = removed
+            except (RuntimeError, OSError) as exc:
+                result["state_directory_removed"] = False
+                if not disk_state:
+                    result["runtime_directory_removed"] = False
+                result["cleanup_error"] = type(exc).__name__ + ": " + str(exc)
+            result["passed"] = result["passed"] and result.get("state_directory_removed", False)
+        result["passed"] = result["passed"] and result["unit_stopped"] and result["disposable_files_removed"]
+        output.parent.mkdir(parents=True, exist_ok=True)
+        with output.open("x") as stream:
+            json.dump(result, stream, indent=2)
+        output.chmod(0o600)
+        if system and os.environ.get("SUDO_UID") and os.environ.get("SUDO_GID"):
+            os.chown(output, int(os.environ["SUDO_UID"]), int(os.environ["SUDO_GID"]))
+    require(result["passed"], "sandbox proof or cleanup failed; inspect evidence")
+    print(json.dumps({"passed": result["passed"], "evidence": str(output)}))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--worker", type=Path)
+    evidence_arguments = parser.add_mutually_exclusive_group()
+    evidence_arguments.add_argument("--evidence", type=Path)
+    evidence_arguments.add_argument("--evidence-dir", type=Path, help="Existing directory; create a unique report per invocation")
+    parser.add_argument("--system", action="store_true", help="Root launcher; service uses DynamicUser, never root")
+    parser.add_argument("--runtime", type=Path, help="Explicit existing Python venv to stage for system proof")
+    parser.add_argument("--cleanup-unit", help="Exact stopped disposable unit whose dangling marker should be removed")
+    parser.add_argument("--disk-state", action="store_true", help="Disposable /var/lib fixture; full stop then fresh service")
+    args = parser.parse_args()
+    if args.worker:
+        worker(args.worker)
+    else:
+        if args.evidence_dir is not None:
+            require(args.evidence_dir.is_absolute() and args.evidence_dir.is_dir(),
+                    "existing absolute evidence directory required")
+            args.evidence = args.evidence_dir / ("service-sandbox-" + str(time.time_ns()) + "-" + secrets.token_hex(4) + ".json")
+        require(args.evidence is not None, "--evidence required")
+        print("Service test report: " + str(args.evidence), flush=True)
+        run(args.evidence, system=args.system, runtime=args.runtime, cleanup_unit=args.cleanup_unit, disk_state=args.disk_state)
