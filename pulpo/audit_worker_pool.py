@@ -65,9 +65,10 @@ class _DigestWorker:
             if stream is not None:
                 try:
                     stream.close()
-                except BrokenPipeError:
-                    # A killed child cannot drain buffered input; close still
-                    # releases the descriptor. This is cleanup, not acceptance.
+                except OSError:
+                    # A killed child may invalidate a Windows pipe handle
+                    # before Python closes its wrapper. Continue closing the
+                    # remaining streams; this is cleanup, not acceptance.
                     pass
 
 
@@ -103,6 +104,8 @@ class DigestWorkerPool:
     def shutdown(self, **_kwargs):
         self._closed = True
         self._executor.shutdown(wait=True, cancel_futures=True)
-        for worker in self._workers:
-            worker.close()
-        self._directory.cleanup()
+        try:
+            for worker in self._workers:
+                worker.close()
+        finally:
+            self._directory.cleanup()
