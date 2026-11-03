@@ -215,6 +215,7 @@ class SextantReplayTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "sextant.json"
             path.write_text(json.dumps(document))
+            path.chmod(0o600)
             self.assertEqual(observation, load_sextant_observation(path))
             path.write_text("{malformed")
             with self.assertRaises(ValueError):
