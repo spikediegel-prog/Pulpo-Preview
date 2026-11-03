@@ -12,6 +12,7 @@ from unittest.mock import patch
 from pulpo.control_center import ControlCenter, PAGES, profile_observation
 from pulpo import evidence_tuning as tuning
 from pulpo import tuning_app
+from pulpo.control_center_theme import PALETTE
 from pulpo.local_resources import Metric, ResourceHistory, ResourceSample
 
 
@@ -882,9 +883,175 @@ class ControlCenterTests(unittest.TestCase):
         self.assertLessEqual(monitor.cadence_box.winfo_x() + monitor.cadence_box.winfo_width(),
                              controls.winfo_width())
 
+    def test_sextant_synthetic_demo_is_memory_only_and_clears_to_unknown(self):
+        monitor = self.center.sextant
+        source = self.center.evidence_view
+        self.center.show("Sextant")
+        self.root.update()
+        self.assertIsNone(monitor.demo_observation)
+        self.assertTrue(monitor.clear_demo_button.instate(("disabled",)))
+        self.assertLess(monitor.graphs.winfo_rooty(), monitor.source_summary.winfo_rooty())
+        for canvas in monitor.graph_canvases.values():
+            self.assertTrue(any("Run synthetic demo" in text for text in [
+                canvas.itemcget(item, "text")
+                for item in canvas.find_all()
+                if canvas.type(item) == "text"
+            ]))
+        with patch.object(source, "refresh", side_effect=AssertionError("Synthetic demo must not read sources")):
+            monitor.demo_button.invoke()
+            self.root.update()
+            self.assertFalse(monitor.clear_demo_button.instate(("disabled",)))
+            self.assertEqual(10, len(monitor.events.get_children()))
+            self.assertIn("SIMULATION ONLY", monitor.summary.cget("text"))
+            self.assertEqual("Accuracy", monitor.metric_labels["accuracy"].cget("text"))
+            self.assertNotIn("Synthetic", monitor.metric_labels["drift"].cget("text"))
+            self.assertIn("Investigate", monitor.metric_labels["drift"].cget("text"))
+            self.assertEqual("75%", monitor.metric_values["accuracy"].cget("text"))
+            self.assertEqual("+21.4%", monitor.metric_values["drift"].cget("text"))
+            for key in ("accuracy", "drift"):
+                self.assertEqual("center", str(monitor.metric_labels[key].cget("anchor")))
+                self.assertEqual("center", str(monitor.metric_values[key].cget("anchor")))
+                self.assertEqual("center", str(monitor.metric_details[key].cget("justify")))
+            self.assertEqual("", monitor.metric_details["accuracy"].winfo_manager())
+            self.assertEqual("", monitor.metric_details["drift"].winfo_manager())
+            self.assertIn("41%–93%", monitor.metric_details["accuracy"].cget("text"))
+            self.assertIn("100.0 ms baseline", monitor.metric_details["drift"].cget("text"))
+            self.assertIn("No real workload", monitor.source_summary.cget("text"))
+            self.assertEqual({"latency", "accuracy"}, set(monitor.graph_canvases))
+            for title in monitor.graph_titles.values():
+                self.assertEqual("center", str(title.cget("anchor")))
+            for key, zero_label in (
+                ("latency", "CALIBRATED ZERO"),
+                ("accuracy", "95% TARGET"),
+            ):
+                canvas = monitor.graph_canvases[key]
+                center_x = canvas.winfo_width() / 2
+                rails = []
+                for item in canvas.find_all():
+                    if canvas.type(item) != "line":
+                        continue
+                    x1, y1, x2, y2 = canvas.coords(item)
+                    if x1 == x2 and y1 == 42 and y2 == canvas.winfo_height() - 28:
+                        rails.append(x1)
+                rails.sort()
+                self.assertEqual(3, len(rails), key)
+                self.assertAlmostEqual(center_x, rails[1], delta=2, msg=key)
+                self.assertAlmostEqual(rails[1] - rails[0], rails[2] - rails[1], delta=2, msg=key)
+                self.assertIn(zero_label, [
+                    canvas.itemcget(item, "text")
+                    for item in canvas.find_all()
+                    if canvas.type(item) == "text"
+                ])
+            self.assertIn("All values below are generated", monitor.summary_detail.cget("text"))
+            self.assertIn("+21.4%", monitor.graph_canvases["latency"].itemcget(
+                next(item for item in monitor.graph_canvases["latency"].find_all()
+                     if monitor.graph_canvases["latency"].type(item) == "text"
+                     and "+21.4%" in monitor.graph_canvases["latency"].itemcget(item, "text")),
+                "text",
+            ))
+            self.assertIn("-20 pp", monitor.graph_canvases["accuracy"].itemcget(
+                next(item for item in monitor.graph_canvases["accuracy"].find_all()
+                     if monitor.graph_canvases["accuracy"].type(item) == "text"
+                     and "-20 pp" in monitor.graph_canvases["accuracy"].itemcget(item, "text")),
+                "text",
+            ))
+            monitor.events.selection_set("1")
+            monitor.events.event_generate("<<TreeviewSelect>>")
+            self.assertIn("synthetically labeled", monitor.details.get("1.0", "end"))
+            monitor.events.selection_remove("1")
+            monitor.render_synthetic_demo()
+            self.assertIn("Freshness is not measured", monitor.details.get("1.0", "end"))
+            self.assertNotIn("stale", monitor.details.get("1.0", "end").lower())
+            monitor.select_period("Week")
+            self.assertIn("Synthetic event counts · Week", monitor.histogram.itemcget(
+                monitor.histogram.find_all()[-1], "text"
+            ))
+            histogram_text = [
+                monitor.histogram.itemcget(item, "text")
+                for item in monitor.histogram.find_all()
+                if monitor.histogram.type(item) == "text"
+            ]
+            self.assertIn("Earlier", histogram_text)
+            self.assertIn("Most recent", histogram_text)
+            self.assertIn("1", histogram_text)
+            for item in monitor.histogram.find_all():
+                if monitor.histogram.type(item) == "text" and monitor.histogram.itemcget(item, "text") in (
+                    "Earlier", "Most recent", "1",
+                ):
+                    self.assertEqual(PALETTE["chart_muted"], monitor.histogram.itemcget(item, "fill"))
+            self.assertIsNone(source.snapshot)
+            self.assertIsNone(source.path)
+            monitor.clear_demo_button.invoke()
+
+        self.assertIsNone(monitor.demo_observation)
+        self.assertEqual(0, len(monitor.events.get_children()))
+        self.assertIn("Unknown", monitor.metric_labels["accuracy"].cget("text"))
+        self.assertIn("Unknown", monitor.metric_labels["drift"].cget("text"))
+        self.assertEqual("Unknown", monitor.metric_values["accuracy"].cget("text"))
+        self.assertEqual("Unknown", monitor.metric_values["drift"].cget("text"))
+        self.assertEqual("pack", monitor.metric_details["accuracy"].winfo_manager())
+        self.assertEqual("pack", monitor.metric_details["drift"].winfo_manager())
+        self.assertTrue(monitor.clear_demo_button.instate(("disabled",)))
+        for key in ("latency", "accuracy"):
+            self.assertEqual(0, len([
+                item for item in monitor.graph_canvases[key].find_all()
+                if monitor.graph_canvases[key].type(item) == "line"
+                and len(monitor.graph_canvases[key].coords(item)) == 4
+                and monitor.graph_canvases[key].coords(item)[0]
+                == monitor.graph_canvases[key].coords(item)[2]
+                and monitor.graph_canvases[key].coords(item)[1] == 42
+                and monitor.graph_canvases[key].coords(item)[3]
+                == monitor.graph_canvases[key].winfo_height() - 28
+            ]))
+        self.assertIn("No reviewed", monitor.summary_detail.cget("text"))
+        empty_histogram_text = [
+            monitor.histogram.itemcget(item, "text")
+            for item in monitor.histogram.find_all()
+            if monitor.histogram.type(item) == "text"
+        ]
+        self.assertIn("Earlier", empty_histogram_text)
+        self.assertIn("Most recent", empty_histogram_text)
+        self.assertEqual([], list(Path(self.temporary.name).iterdir()))
+
     def test_small_window_reflows_and_scrolls_and_keyboard_changes_page(self):
         wide = self.center.labels[0].cget("wraplength")
+        self.root.geometry("1000x800")
+        self.root.update()
+        self.center.show("Sextant")
+        self.root.update()
+        metric_columns = self.center.sextant.metric_columns
+        self.assertEqual([0, 0], [int(metric.grid_info()["row"]) for metric in metric_columns])
+        self.assertEqual([0, 2], [int(metric.grid_info()["column"]) for metric in metric_columns])
+        self.assertLessEqual(
+            abs(metric_columns[0].winfo_width() - metric_columns[1].winfo_width()), 16,
+        )
+        self.assertEqual("vertical", str(self.center.sextant.metric_separator.cget("orient")))
+        metric_center = (
+            self.center.sextant.metric_separator.winfo_rootx()
+            + self.center.sextant.metric_separator.winfo_width() / 2
+        )
+        graph_gap_center = (
+            self.center.sextant.graph_cards[0].winfo_rootx()
+            + self.center.sextant.graph_cards[0].winfo_width()
+            + self.center.sextant.graph_cards[1].winfo_rootx()
+        ) / 2
+        self.assertLessEqual(abs(metric_center - graph_gap_center), 3)
+        self.root.update()
+        for metric, key in zip(metric_columns, ("latency", "accuracy")):
+            metric_center = metric.winfo_rootx() + metric.winfo_width() / 2
+            canvas = self.center.sextant.graph_canvases[key]
+            canvas_center = canvas.winfo_rootx() + canvas.winfo_width() / 2
+            self.assertLessEqual(abs(metric_center - canvas_center), 3)
         self.root.geometry("640x600")
+        self.root.update()
+        self.assertEqual([0, 2], [int(metric.grid_info()["row"]) for metric in metric_columns])
+        self.assertEqual([0, 0], [int(metric.grid_info()["column"]) for metric in metric_columns])
+        self.assertEqual("horizontal", str(self.center.sextant.metric_separator.cget("orient")))
+        self.assertLessEqual(
+            metric_columns[0].winfo_x() + metric_columns[0].winfo_width(),
+            metric_columns[0].master.winfo_width(),
+        )
+        self.center.show("Overview")
         self.root.update()
         self.assertLess(self.center.labels[0].cget("wraplength"), wide)
         self.assertEqual(1, int(self.center.monitor.choices.grid_info()["row"]))

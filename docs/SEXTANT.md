@@ -4,15 +4,43 @@ Status: **Recorded implementation; workload metrics Unknown**. The neutral
 Control Center page is named **Sextant**. The name is presentation-only; the
 page remains a read-only workload signal view.
 
+## Synthetic proof of concept
+
+Select **Run synthetic demo** to populate the page with ten deterministic,
+in-memory samples and run them through the same bounded replay calculations as
+the offline contract. The generated sequence includes a baseline-like period
+and a later latency shift, so the drift card can show an investigation signal;
+synthetic outcome labels populate the accuracy example. The shared metrics
+panel centers each value over its matching deviation graph. The graphs use a
+fixed center reference and symmetric outside rails whose distance from center
+represents the absolute deviation. The latency center is its calibrated
+synthetic baseline; the accuracy center is a synthetic 95% target. Annotations
+give signed direction and amount: latency percentage from baseline or accuracy
+percentage-point difference from target. The lower histogram separately counts
+generated events over the selected period. Select a row for its generated metric
+and label.
+**Clear demo** restores the ordinary
+Unknown/empty state and zero-position placeholders.
+
+This is a presentation and calculation demo, not an executed workload:
+no service, model, inference, or external provider is run, and the generated
+latencies, correctness labels, hashes, and checkpoint references are not
+observations or evidence. The demo is explicitly labeled **SIMULATION ONLY**,
+exists only in memory until cleared or the window closes, does not call the
+general evidence reader, and performs no file writes or canonical Pulpo state
+mutations. Freshness is not measured for generated timestamps. It does not
+change the production-source boundary described below.
+
 ## What is shown
 
 The page provides a read-only, at-a-glance place for workload accuracy and
 calibrated drift, an observation list/detail pane, source freshness, refresh
 controls, and a 24-hour/week/month evidence-count navigator. With current
-repository data, the accuracy and drift readings remain **Unknown**, the
-workload observation list remains empty, and the histogram has no bars.
+repository data and no synthetic scenario selected, the accuracy and drift
+readings remain **Unknown**, the workload observation list remains empty, and
+the histogram has no bars.
 
-The existing `pulpo.evidence-observation.v1` snapshot is the only related
+The existing `pulpo.evidence-observation.v1` snapshot is the only production
 observation source currently integrated with this Control Center. It reports
 database/authorization aggregates and up to 24 redacted, general Pulpo event
 references. It does not carry workload identity or version, model version,
@@ -91,9 +119,10 @@ batch, not omitted events before/after that window. A valid-field content
 substitution is not detectable by this contract. There is no signature, MAC,
 transport identity, or `p3_verified` field. Carrying the JSON over P³ (or any
 other transport) does not authenticate it and cannot upgrade a `Recorded`
-report to `Verified`. The model is not connected to the Control Center, a file
-watcher, the owner exporter, a database, service, or transport; all current
-workload UI values remain **Unknown**. `load_sextant_observation(path)` reuses
+report to `Verified`. The model is not connected to a production Control Center
+source, file watcher, owner exporter, database, service, or transport. The
+separately labeled local synthetic scenario uses this model for demonstration
+only. `load_sextant_observation(path)` reuses
 the existing protected frozen-file reader (regular file, size cap, duplicate
 JSON-key rejection, and platform-specific path/permission protections) and
 then applies this strict schema. File protection does not authenticate whoever
@@ -141,14 +170,18 @@ The offline fixture tests exercise a controlled synthetic shift and ensure
 missing/reordered/corrupted batches fail closed, stale/future timestamps are
 distinguished, and the ephemeral cursor rejects replays/overlaps/gaps. These
 tests validate parser and arithmetic behavior only; synthetic events are not
-production evidence.
+production evidence. The UI's opt-in scenario shows those calculations with
+generated values and remains visibly marked **SIMULATION ONLY**.
 
-Accuracy is not computed without reviewed outcomes known to be correct and a
-defined evaluated sample. Drift is not computed without workload/model versions,
-a comparable baseline, and an explicitly calibrated threshold. The page shows
-the missing detail categories as Unknown rather than zero. Correlation or
-statistical change would be a signal to investigate, not proof of cause;
-statistical measures do not establish correctness or cryptographic verification.
+Production accuracy is not computed without reviewed outcomes known to be
+correct and a defined evaluated sample. Production drift is not computed
+without workload/model versions, a comparable baseline, and an explicitly
+calibrated threshold. The demo's generated-label percentage and generated
+baseline comparison are only scenario arithmetic, not production metrics. With
+no demo selected, the page shows missing detail categories as Unknown rather
+than zero. Correlation or statistical change would be a signal to investigate,
+not proof of cause; statistical measures do not establish correctness or
+cryptographic verification.
 
 ## Refresh, timeline, and source boundaries
 
@@ -167,68 +200,80 @@ metrics: workload metrics are unavailable, and workload-source freshness is
 Unknown.
 
 The bottom navigator changes the displayed period among 24 hours, Week, and
-Month. In this increment, all periods show the empty state because no
-workload-scoped event counts are available. If such a source is integrated in a
-future governed change, bars are reserved for evidence counts, not accuracy or
-drift values. The event/detail area is similarly empty instead of displaying
+Month. With no synthetic scenario selected, all periods show the empty state
+because no workload-scoped event counts are available. During the explicitly
+synthetic demo, bars count generated scenario events only, not production
+evidence. The event/detail area is similarly empty instead of displaying
 unrelated general audit references as workload activity.
 
 ## Required change record
 
-1. **Invariant/failure addressed:** workload metrics and investigations must
-   not be fabricated from unrelated evidence. Statistical changes, accuracy,
-   cryptographic verification, and causal explanations remain distinct claims.
+1. **Invariant/failure addressed:** workload metrics must not be fabricated
+   from unrelated evidence. The UI demo labels all generated values and
+   outcomes as simulation and preserves the production Unknown/empty state
+   when it is cleared or unused.
 2. **Authority delta:** unchanged. The page owns no kernel, orchestrator,
    executor, canonical state backend, signer, credential, service client, or
-   mutation method. It adds no route or capability.
-3. **Canonical state:** no canonical state mutation was introduced or exposed.
-   The page reads the immutable `EvidencePage` selection through its existing
-   strict reader; manual and scheduled refresh reuse that existing read path.
-   The existing evidence exporter remains in its trusted owner and is not
-   invoked here.
-4. **Success/adversarial evidence:** `python -W error -m unittest tests.test_sextant_observation tests.test_control_center tests.test_audit_checkpoint tests.test_evidence_observation -v`
-   verifies Unknown accuracy/drift, no fabricated workload rows when a generic
-   decision reference is present, explicit baseline limitations, period
-   selection, disabled cadence, refresh through the existing reader, controlled
-   synthetic drift and baseline-like behavior, uncertainty and sample counts,
-   version and evidence-reference reporting, and rejection of missing,
-   reordered, incomplete, malformed-reference, and non-finite metric events,
-   plus stale timestamps and replay-guard behavior. It also confirms a valid
-   shape-preserving content substitution is not authenticated. The UI test
-   checks the empty state remains empty with a generic reference. Result:
-   **75 tests run; all non-skipped tests passed, with 16 environment-specific
-   skips** on this Windows host.
-5. **Evidence boundary:** tests do not establish a production workload feed,
-   reviewed correctness labels, a valid metric definition, calibrated
+   mutation method. The demo introduces no route or governed capability.
+3. **Canonical state:** no canonical mutation was introduced or exposed.
+   Synthetic observations and replay results remain in memory; the demo does
+   not call the general evidence reader or write files.
+4. **Success/adversarial evidence:** `python -W error -m unittest tests.test_sextant_demo tests.test_sextant_observation tests.test_control_center tests.test_audit_checkpoint tests.test_evidence_observation -v`
+   checks deterministic bounded sample generation, a controlled investigation
+   signal, synthetic outcome arithmetic, explicit empty-state preservation,
+   visible simulation labeling, both top-of-page calibrated-zero graphs,
+   symmetric rails and signed deviation labels, row details, period counts, and
+   clearing back to Unknown
+   without source reads or file writes. Parser tests also cover missing,
+   reordered, incomplete, malformed-reference, non-finite, stale, and replayed
+   inputs, and demonstrate that valid-shape substitution is not authenticated.
+   Result on Windows: **78 tests run, all passed, with 16 environment-specific
+   skips**.
+5. **Evidence boundary:** the scenario is a generated calculation fixture, not
+   a measured workload or production source. Tests do not establish a live
+   workload feed, correctness labels, valid metric definition, calibrated
    thresholds, causality, source authenticity, cryptographic verification,
    deployment enforcement, accessibility qualification, or workload history.
-   The offline replay contract is not wired into the visible metric cards, and
-   no owner-side workload projection exists without an existing governed source.
-6. **Claim classification:** the UI behavior and test assertions are
-   **Verified** at the tested commit; the selected general source's values and
-   timestamps are source-reported **Recorded** values; the absence of a
-   workload-specific feed in the inspected repository contract is **Recorded**;
-   production accuracy, drift, causes, and workload-source freshness are
-   **Unknown**. No inference is presented as a verified outcome.
-7. **Legacy behavior:** reuses the native Control Center navigation, theme,
-   existing Evidence snapshot model, freshness classifier, and Evidence read
-   path. No legacy control path is copied into a new source, router, executor,
-   ledger, audit system, or authority plane.
-8. **Temporal transfer:** no reusable lesson is admitted and no historical
-   replay is claimed or used.
+6. **Claim classification:** UI behavior and tests are **Verified** at the
+   tested commit. Generated scenario inputs and their derived display values
+   are **Proposed** simulation only. The selected general source's values and
+   timestamps remain source-reported **Recorded** values. Production workload
+   identity, accuracy, drift, causes, and freshness remain **Unknown**.
+7. **Legacy behavior:** reuses the native Control Center navigation and theme,
+   plus the existing pure bounded replay calculation. No legacy authority or
+   control path is copied into a source, router, executor, ledger, audit system,
+   or authority plane.
+8. **Temporal transfer:** no reusable lesson is admitted. No relevant
+   historical checkpoint is used for this local synthetic presentation demo;
+   no historical replay or authority change is claimed.
 
 ## Eight-pass adversarial transformation review
 
 | Pass | Result |
 |---|---|
-| Flip | If the parser/UI or source is misleading, it cannot authenticate a workload identity, establish a correctness label, or change canonical state. Source-supplied calibration and evidence references remain Recorded assertions. |
-| Reverse | A false accuracy/drift claim would require reviewed outcomes, identity, and baselines absent from the production source. The offline contract supplies a strict shape only; the UI still leaves both metrics Unknown. |
-| Invert | A threshold crossing is only an investigation signal. Hash-shaped references, a valid parser result, and a useful-looking graph do not establish chain verification, event completeness, or metric correctness. |
-| Inside-Out | The presentation cannot self-validate or create its own evidence. The offline parser has no writer/authority objects and is not connected to the canonical verifier or UI feed. |
-| Darken | Threat case: a transported producer substitutes well-formed values, omits events, or replays plausible evidence references. Shape checks cannot detect a valid-field substitution or omission outside the declared sequence window; no authenticated production feed or Verified label is claimed. |
-| Lighten | No workload feed may simply not have been connected; this is not evidence that workloads failed, drifted, or were correct. The page displays Unknown rather than a failure score. |
-| Amplify | UI refresh remains bounded to the selected existing snapshot. Offline event batches are bounded to 1,024, require contiguous in-window sequences, and reject mixed cohorts; they do not prove completeness beyond that batch. |
-| Negate | No live feed, database reader, scheduler, or authority capability is added. A pure strict contract plus synthetic replay tests establish the next safe semantic increment while production stays Unknown. |
+| Flip | If the demo renderer is misleading or compromised, both graph titles and the scenario banner state that values are synthetic; it has no source reader or canonical writer to exploit. |
+| Reverse | A false production workload claim would require source identity and real reviewed observations, neither of which the fixture supplies. Clearing the demo returns the UI to Unknown. |
+| Invert | A displayed investigation signal or deviation rail is not success evidence for a real workload; graph titles and the banner label them as simulation, and values are Proposed. |
+| Inside-Out | The demo creates scenario inputs and calculates their outputs, but cannot independently attest its generated labels, calibration, references, or any production fact. |
+| Darken | Threat case: a user screenshots or repeats a graph or statistic as a real workload measurement. UI labels reduce confusion but cannot control downstream copying; the values remain non-evidence. |
+| Lighten | The user-invoked local scenario is a benign calculation and presentation demonstration; it performs no model inference, external request, or state mutation. |
+| Amplify | Repeated demo runs replace one bounded ten-event in-memory fixture; no accumulation, persistent replay cursor, or external execution is introduced. |
+| Negate | To demonstrate cards, calibrated-zero deviation graphs, event counts, row details, and replay behavior, fixed synthetic values are sufficient. A live workload, transport, file watcher, or evidence writer is unnecessary and excluded. |
+
+**Purpose:** demonstrate Sextant cards, calibrated-zero deviation graphs, rows,
+and replay behavior locally.
+**Exact outcome:** display a bounded synthetic scenario and calculated outputs
+without presenting them as real workload evidence.
+**Authority boundary:** user-invoked local presentation only; no external
+execution, source reader, file write, credential, or canonical state writer.
+**Claim classifications:** implementation behavior **Verified** by tests;
+scenario and derived display values **Proposed**; production workload facts
+**Unknown**. **Decision:** continue with this bounded demo; stop before adding
+any live workload, source, transport, or persistent evidence path.
+**Smallest next proof:** separately validate a real workload observation source
+and its authority boundary before any integration. **Remaining unknowns:** no
+real workload execution, identity, reviewed labels, calibrated baseline, or
+production source is established by this demo.
 
 This review is analytical only. Adding a workload source, metric semantics,
 baseline approval, or evidence promotion requires its own authorized design,
