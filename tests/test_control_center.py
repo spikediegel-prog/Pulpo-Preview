@@ -831,6 +831,57 @@ class ControlCenterTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.center.show("Injected page")
 
+    def test_sextant_keeps_metrics_unknown_and_reuses_evidence_reader(self):
+        from pulpo.evidence_observation import EvidenceEvent, EvidenceObservation
+
+        monitor = self.center.sextant
+        self.assertIn("Unknown", monitor.metric_labels["accuracy"].cget("text"))
+        self.assertIn("Unknown", monitor.metric_labels["drift"].cget("text"))
+        self.assertIn("No workload events", monitor.empty.cget("text"))
+        self.assertEqual(0, len(monitor.events.get_children()))
+
+        source = self.center.evidence_view
+        source.snapshot = EvidenceObservation(
+            "a" * 32, time.time_ns(), True, 1,
+            events=(EvidenceEvent(time.time_ns(), "decision", "allowed", "b" * 64),),
+        )
+        monitor.render()
+        self.assertIn("has no workload/model identity", monitor.source_summary.cget("text"))
+        self.assertIn("1 source-reported audit records", monitor.source_summary.cget("text"))
+        self.assertEqual(0, len(monitor.events.get_children()))
+        self.assertIn("baseline", monitor.details.get("1.0", "end").lower())
+        monitor.select_period("Week")
+        self.assertEqual("Week", monitor.period)
+        source.snapshot = EvidenceObservation("a" * 32, time.time_ns() - 20_000_000_000, True, 1)
+        monitor.render()
+        self.assertIn("stale", monitor.source_summary.cget("text"))
+
+        monitor.cadence.set("Off")
+        monitor.set_cadence()
+        monitor.set_active(True)
+        self.assertIsNone(monitor.timer)
+        source.path = Path(self.temporary.name) / "observation.json"
+        with patch.object(source, "refresh") as source_refresh:
+            monitor.refresh()
+            source_refresh.assert_called_once_with()
+        self.assertIn("Display last refreshed locally", monitor.updated.cget("text"))
+        monitor.cadence.set("30 seconds")
+        monitor.set_cadence()
+        monitor.set_active(True)
+        self.assertIsNotNone(monitor.timer)
+        monitor.toggle_pause()
+        self.assertIsNone(monitor.timer)
+        monitor.toggle_pause()
+        self.assertIsNotNone(monitor.timer)
+        monitor.set_active(False)
+        source.path = None
+        self.center.show("Sextant")
+        self.root.geometry("640x600")
+        self.root.update()
+        controls = monitor.cadence_box.master
+        self.assertLessEqual(monitor.cadence_box.winfo_x() + monitor.cadence_box.winfo_width(),
+                             controls.winfo_width())
+
     def test_small_window_reflows_and_scrolls_and_keyboard_changes_page(self):
         wide = self.center.labels[0].cget("wraplength")
         self.root.geometry("640x600")
