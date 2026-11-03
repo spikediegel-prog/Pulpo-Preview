@@ -385,8 +385,11 @@ does not prove the running process or host is uncompromised. See the
 ### Local Control Center
 
 Run `pulpo tune` (or `python -m pulpo.cli tune`) to open the existing native
-window with Overview, Connections, Governance, Activity, Evidence and System
-navigation. On an Ubuntu graphical desktop, install `python3-tk` for the Python
+window with Overview, Connections, Governance, Activity, Evidence, Sextant and
+System navigation. Sextant can read a separately selected bounded workload
+observation JSON; its source-reported metrics and references are not independently
+authenticated. The synthetic demo remains in-memory only. On an Ubuntu graphical
+desktop, install `python3-tk` for the Python
 interpreter used by your environment if Tk is missing.
 
 The window opens with real local CPU, memory and storage graphs above expandable

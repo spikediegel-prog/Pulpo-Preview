@@ -1,8 +1,9 @@
 """Read-only Sextant workload status presentation."""
+from pathlib import Path
 import time
 
 from .control_center_theme import PALETTE, surface
-from .sextant_observation import replay
+from .sextant_observation import freshness as observation_freshness, load_sextant_observation, replay
 
 
 REFRESH_INTERVALS = {
@@ -28,6 +29,9 @@ class SextantPage:
         self.period = PERIODS[0]
         self.last_display_refresh_ns = time.time_ns()
         self.demo_observation = None
+        self.observation = None
+        self.path = None
+        self.source_error = None
         page = center.pages["Sextant"]
 
         center.text(
@@ -66,6 +70,20 @@ class SextantPage:
             demo_controls, text="Clear demo", command=self.clear_synthetic_demo, state="disabled",
         )
         self.clear_demo_button.pack(side="left")
+        source_controls = ttk.Frame(page)
+        source_controls.pack(fill="x", pady=(0, 10))
+        self.source_button = ttk.Button(
+            source_controls, text="Select workload observation…", command=self.select_source,
+        )
+        self.source_button.pack(side="left", padx=(0, 8))
+        self.source_refresh_button = ttk.Button(
+            source_controls, text="Re-read", command=self.refresh_source, state="disabled",
+        )
+        self.source_refresh_button.pack(side="left", padx=(0, 8))
+        self.source_clear_button = ttk.Button(
+            source_controls, text="Clear source", command=self.clear_source, state="disabled",
+        )
+        self.source_clear_button.pack(side="left")
 
         metric_shadow, metric_border = surface(page)
         metric_shadow.pack(fill="x", pady=(0, 10))
@@ -110,7 +128,8 @@ class SextantPage:
         center.text(page, "Deviation from reference", "Heading.TLabel")
         center.text(
             page,
-            "The outer rails move symmetrically with deviation; the signed value shows direction. Synthetic scenario only.",
+            "The outer rails move symmetrically with deviation; the signed value shows direction. "
+            "The demo uses an illustrative target; recorded accuracy is shown without a target because the source contract supplies none.",
             "Muted.TLabel",
         )
         self.graphs = ttk.Frame(page)
@@ -119,7 +138,7 @@ class SextantPage:
         self.graph_canvases = {}
         self.graph_titles = {}
         for key, title in (
-            ("latency", "Latency drift from calibrated zero"),
+            ("latency", "Metric drift from calibrated zero"),
             ("accuracy", "Accuracy deviation from target"),
         ):
             graph_shadow, graph_border = surface(self.graphs)
@@ -191,7 +210,7 @@ class SextantPage:
             ("workload", "Workload version", 150),
             ("model", "Model version", 150),
             ("observation", "Metric / value", 190),
-            ("outcome", "Generated label", 120),
+            ("outcome", "Reviewed outcome", 120),
         ):
             self.events.heading(key, text=title)
             self.events.column(key, width=width, minwidth=70, stretch=True)
@@ -240,7 +259,8 @@ class SextantPage:
 
         center.text(
             page,
-            "Without the synthetic scenario, no workload event counts are available. Demo bars count generated events only—not production evidence, accuracy or drift.",
+            "Counts come from the selected workload observation or the clearly labeled synthetic demo. "
+            "Event counts do not establish accuracy, drift, correctness or production evidence.",
             "Muted.TLabel",
         )
         self.root.bind("<Destroy>", self.destroy, add="+")
@@ -278,12 +298,52 @@ class SextantPage:
     def refresh(self):
         if self.closed:
             return
-        evidence = self.center.evidence_view
-        if evidence.path is not None:
-            evidence.refresh()
+        if self.path is not None:
+            self.refresh_source()
         self.last_display_refresh_ns = time.time_ns()
         self.render()
         self.schedule()
+
+    def select_source(self):
+        from tkinter import filedialog
+
+        selected = filedialog.askopenfilename(
+            parent=self.root, title="Select Sextant workload observation",
+            filetypes=(("JSON workload observation", "*.json"),),
+        )
+        if selected:
+            self.path = Path(selected)
+            self.demo_observation = None
+            self.clear_demo_button.configure(state="disabled")
+            self.source_refresh_button.configure(state="normal")
+            self.source_clear_button.configure(state="normal")
+            self.refresh_source()
+
+    def refresh_source(self):
+        if self.closed or self.path is None:
+            return
+        try:
+            import stat
+            if not self.path.is_absolute() or not stat.S_ISREG(self.path.lstat().st_mode):
+                raise ValueError("not_regular_file")
+            observation = load_sextant_observation(self.path)
+            if observation_freshness(observation) == "clock mismatch":
+                raise ValueError("source_clock_mismatch")
+            self.observation, self.source_error = observation, None
+        except (OSError, ValueError, TypeError, RecursionError):
+            self.observation = None
+            self.source_error = (
+                "Workload observation unavailable or invalid. Previous values cleared. "
+                "Check the selected file, format, permissions and source clock."
+            )
+        self.last_display_refresh_ns = time.time_ns()
+        self.render()
+
+    def clear_source(self):
+        self.path, self.observation, self.source_error = None, None, None
+        self.source_refresh_button.configure(state="disabled")
+        self.source_clear_button.configure(state="disabled")
+        self.render()
 
     def schedule(self):
         if self.timer is not None:
@@ -351,7 +411,8 @@ class SextantPage:
         latency_canvas.delete("all")
         accuracy_canvas = self.graph_canvases["accuracy"]
         accuracy_canvas.delete("all")
-        if self.demo_observation is None:
+        observation = self.demo_observation or self.observation
+        if observation is None:
             for canvas in (latency_canvas, accuracy_canvas):
                 canvas.create_text(
                     max(1, canvas.winfo_width()) / 2,
@@ -362,8 +423,12 @@ class SextantPage:
                 )
             return
 
-        result = replay(self.demo_observation)
+        result = replay(observation)
         drift = result.drift
+        self.graph_titles["latency"].configure(
+            text=("Latency drift from calibrated zero" if self.demo_observation is not None
+                  else "Metric drift from calibrated zero")
+        )
         drift_percent = (
             0.0 if drift.observed_mean is None or drift.baseline_mean == 0
             else (drift.observed_mean - drift.baseline_mean) / abs(drift.baseline_mean) * 100
@@ -374,29 +439,24 @@ class SextantPage:
             scale=50,
             unit="%",
             zero_label="CALIBRATED ZERO",
-            annotation=f"Synthetic latency is {drift_percent:+.1f}% vs calibrated baseline",
+            annotation=f"Latency is {drift_percent:+.1f}% vs calibrated baseline",
         )
 
         accuracy = result.accuracy
-        accuracy_target_percent = 95.0
-        accuracy_delta = (
-            accuracy.accuracy * 100 - accuracy_target_percent
-            if accuracy.accuracy is not None
-            else 0.0
-        )
-        self._draw_deviation_gauge(
-            accuracy_canvas,
-            accuracy_delta,
-            scale=50,
-            unit=" pp",
-            zero_label=f"{accuracy_target_percent:.0f}% TARGET",
-            annotation=(
-                f"Synthetic accuracy is {accuracy_delta:+.0f} pp vs "
-                f"{accuracy_target_percent:.0f}% target"
-                if accuracy.accuracy is not None
-                else "Synthetic accuracy unavailable · no reviewed labels"
-            ),
-        )
+        if self.demo_observation is not None:
+            accuracy_target_percent = 95.0
+            accuracy_delta = (
+                accuracy.accuracy * 100 - accuracy_target_percent
+                if accuracy.accuracy is not None else 0.0
+            )
+            self._draw_deviation_gauge(
+                accuracy_canvas, accuracy_delta, scale=50, unit=" pp",
+                zero_label=f"{accuracy_target_percent:.0f}% TARGET",
+                annotation=(f"Synthetic accuracy is {accuracy_delta:+.0f} pp vs {accuracy_target_percent:.0f}% target"
+                            if accuracy.accuracy is not None else "Synthetic accuracy unavailable · no reviewed labels"),
+            )
+        else:
+            self._draw_accuracy_value(accuracy_canvas, accuracy.accuracy)
 
     @staticmethod
     def _draw_deviation_gauge(canvas, deviation, *, scale, unit, zero_label, annotation):
@@ -434,13 +494,33 @@ class SextantPage:
                 font=("TkDefaultFont", 8, "bold"),
             )
 
+    @staticmethod
+    def _draw_accuracy_value(canvas, accuracy):
+        width, height = max(1, canvas.winfo_width()), max(1, canvas.winfo_height())
+        left, right = 42, max(43, width - 42)
+        center_y = height / 2 + 5
+        canvas.create_text(width / 2, 13, text="Reviewed accuracy · no target supplied",
+                           fill=PALETTE["text"], font=("TkDefaultFont", 9, "bold"))
+        canvas.create_line(left, center_y, right, center_y, fill=PALETTE["border"], width=2)
+        canvas.create_text(left, center_y + 17, anchor="w", text="0%", fill=PALETTE["muted"])
+        canvas.create_text(right, center_y + 17, anchor="e", text="100%", fill=PALETTE["muted"])
+        if accuracy is None:
+            canvas.create_text(width / 2, center_y - 15, text="Unknown · no reviewed outcomes",
+                               fill=PALETTE["muted"], font=("TkDefaultFont", 9))
+            return
+        x = left + accuracy * (right - left)
+        canvas.create_line(x, center_y - 22, x, center_y + 8, fill=PALETTE["accent"], width=3)
+        canvas.create_text(x, center_y - 30, text=f"{accuracy:.0%}", fill=PALETTE["accent"],
+                           font=("TkDefaultFont", 9, "bold"))
+
     def draw_histogram(self):
         canvas = self.histogram
         canvas.delete("all")
         width, height = max(1, canvas.winfo_width()), max(1, canvas.winfo_height())
         axis_y = height - 23
         canvas.create_line(12, axis_y, width - 12, axis_y, fill=PALETTE["chart_muted"])
-        if self.demo_observation is None:
+        observation = self.demo_observation or self.observation
+        if observation is None:
             for fraction in (0, .25, .5, .75, 1):
                 x = 12 + fraction * max(1, width - 24)
                 canvas.create_line(x, axis_y - 4, x, axis_y + 4, fill=PALETTE["chart_muted"])
@@ -467,8 +547,8 @@ class SextantPage:
         }[self.period]
         bucket_ns = window_ns // bucket_count
         counts = [0] * bucket_count
-        observed_at = self.demo_observation.observed_at_ns
-        for event in self.demo_observation.events:
+        observed_at = observation.observed_at_ns
+        for event in observation.events:
             age = observed_at - event.timestamp_ns
             if 0 <= age < window_ns:
                 index = bucket_count - 1 - age // bucket_ns
@@ -500,17 +580,19 @@ class SextantPage:
         )
         canvas.create_text(
             width / 2, 14,
-            text=f"Synthetic event counts · {self.period} · {sum(counts)} events",
+            text=f"Workload event counts · {self.period} · {sum(counts)} events",
             fill=PALETTE["header_text"], font=("TkDefaultFont", 10),
         )
 
     def render(self):
         if self.closed:
             return
-        if self.demo_observation is None:
-            self.render_empty()
-        else:
+        if self.demo_observation is not None:
             self.render_synthetic_demo()
+        elif self.observation is not None:
+            self.render_observation()
+        else:
+            self.render_empty()
         self.draw_synthetic_graphs()
         updated = time.strftime(
             "%Y-%m-%d %H:%M:%S %Z", time.localtime(self.last_display_refresh_ns / 1e9),
@@ -520,28 +602,9 @@ class SextantPage:
         self.draw_histogram()
 
     def render_empty(self):
-        evidence = self.center.evidence_view
-        snapshot = evidence.snapshot
-        if evidence.error:
-            source = (
-                "Attention · The selected general evidence observation could not be read. "
-                "Workload accuracy, drift, versions, baselines and sample counts remain Unknown."
-            )
-        elif snapshot is None:
-            source = (
-                "Unknown · No general evidence observation selected. No workload-specific source or "
-                "workload outcome observations are integrated."
-            )
-        else:
-            from .evidence_observation import freshness
-            age = freshness(snapshot)
-            stamp = time.strftime("%Y-%m-%d %H:%M:%S %Z", time.localtime(snapshot.observed_at_ns / 1e9))
-            source = (
-                f"Recorded · General Pulpo evidence snapshot: {age}; source timestamp {stamp}; "
-                f"{snapshot.audit_records:,} source-reported audit records and {len(snapshot.events)} "
-                "redacted event references (maximum 24). This schema has no workload/model identity, "
-                "known-correct outcomes or workload baseline; these counts do not populate the monitor."
-            )
+        source = self.source_error or (
+            f"Unknown · {self.path if self.path else 'No workload observation selected. Select a Sextant JSON observation.'}"
+        )
         self.summary.configure(text="Unknown · Workload source unavailable")
         self.summary_detail.configure(
             text="No reviewed, known-correct workload outcomes or comparable workload baseline are present."
@@ -573,6 +636,69 @@ class SextantPage:
         self.details.configure(state="normal")
         self.details.delete("1.0", "end")
         self.details.insert("1.0", detail)
+        self.details.configure(state="disabled")
+
+    def render_observation(self):
+        observation = self.observation
+        result = replay(observation)
+        age = observation_freshness(observation)
+        calibration = observation.calibration
+        self.summary.configure(text=f"Recorded · Workload observation · {age}")
+        self.summary_detail.configure(
+            text=f"{calibration.workload_id} · {result.drift.sample_count} samples · "
+                 f"source timestamp {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(observation.observed_at_ns / 1e9))}. "
+                 "Source timestamps and evidence references are not authenticated by this viewer."
+        )
+        self.source_summary.configure(
+            text=f"Recorded · {self.path} · source {observation.source_id} · "
+                 f"sequence {observation.first_sequence}–{result.last_sequence} · {age}."
+        )
+        accuracy = result.accuracy
+        self.metric_labels["accuracy"].configure(text="Reviewed accuracy · Recorded" if accuracy.accuracy is not None else "Accuracy · Unknown")
+        self.metric_values["accuracy"].configure(text=f"{accuracy.accuracy:.0%}" if accuracy.accuracy is not None else "Unknown")
+        self.metric_details["accuracy"].configure(
+            text=(f"{accuracy.correct_count} / {accuracy.reviewed_sample_count} reviewed outcomes · "
+                  f"Wilson 95% CI {accuracy.wilson_95_low:.0%}–{accuracy.wilson_95_high:.0%}"
+                  if accuracy.accuracy is not None else "No reviewed, known-correct outcomes in this batch.")
+        )
+        for details in self.metric_details.values():
+            details.pack(anchor="w", fill="x", pady=(2, 0))
+        drift = result.drift
+        self.metric_labels["drift"].configure(text=f"Calibrated drift · {drift.status}")
+        self.metric_values["drift"].configure(
+            text=("Unknown" if drift.observed_mean is None or drift.baseline_mean == 0 else
+                  f"{(drift.observed_mean - drift.baseline_mean) / abs(drift.baseline_mean):+.1%}"),
+            foreground=PALETTE["warning"] if drift.status == "Investigate" else PALETTE["accent"],
+        )
+        self.metric_details["drift"].configure(
+            text=(f"{drift.observed_mean:.3g} mean vs {drift.baseline_mean:.3g} baseline · "
+                  f"z = {drift.standardized_delta if drift.standardized_delta is not None else 'Unknown'} · "
+                  f"{drift.sample_count} samples · baseline n={drift.baseline_sample_count}"
+                  if drift.observed_mean is not None else "Insufficient workload samples to calculate drift.")
+        )
+        for item in self.events.get_children():
+            self.events.delete(item)
+        for event in observation.events:
+            outcome = "Unknown / unreviewed" if event.reviewed_correct is None else (
+                "Correct" if event.reviewed_correct else "Incorrect"
+            )
+            self.events.insert("", "end", iid=str(event.sequence), values=(
+                time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(event.timestamp_ns / 1e9)),
+                event.workload_version, event.model_version,
+                f"{event.metric_id}: {event.metric_value:.4g}", outcome,
+            ))
+        self.empty.configure(text=f"{len(observation.events)} recorded workload observations.")
+        self.details.configure(state="normal")
+        self.details.delete("1.0", "end")
+        self.details.insert("1.0", (
+            f"Recorded observation · {calibration.workload_id} · {calibration.metric_id}\n"
+            f"Baseline: {calibration.baseline_mean:.4g} ± {calibration.baseline_stddev:.4g} "
+            f"({calibration.baseline_sample_count} samples) · investigate threshold z≥{calibration.investigate_z_threshold:g}\n"
+            f"Calibration: {calibration.calibration_id} v{calibration.version} · "
+            f"checkpoint {calibration.checkpoint_ref} · evidence ref {calibration.evidence_ref}\n\n"
+            "Recorded references are identifiers supplied by the source. This display does not verify "
+            "their contents, producer identity, correctness labels, or deployment enforcement."
+        ))
         self.details.configure(state="disabled")
 
     def render_synthetic_demo(self):
@@ -661,28 +787,32 @@ class SextantPage:
         self.details.configure(state="disabled")
 
     def show_selected_event(self, _event=None):
-        if self.demo_observation is None:
+        observation = self.demo_observation or self.observation
+        if observation is None:
             return
         selected = self.events.selection()
         if not selected:
             return
         sequence = int(selected[0])
-        event = self.demo_observation.events[sequence - self.demo_observation.first_sequence]
+        event = observation.events[sequence - observation.first_sequence]
         outcome = (
             "unreviewed"
             if event.reviewed_correct is None
-            else "synthetically labeled correct"
+            else "labeled correct"
             if event.reviewed_correct
-            else "synthetically labeled incorrect"
+            else "labeled incorrect"
         )
         detail = (
-            f"SIMULATION ONLY · Generated sample {event.sequence}\n"
+            f"{'SIMULATION ONLY · ' if self.demo_observation is not None else 'Recorded · '}Sample {event.sequence}\n"
             f"Workload: {event.workload_id} ({event.workload_version})\n"
             f"Model: {event.model_version}\n"
-            f"Synthetic metric: {event.metric_id} = {event.metric_value:.1f}\n"
-            f"Generated outcome label: {outcome}\n"
+            f"Metric: {event.metric_id} = {event.metric_value:.4g}\n"
+            f"Outcome label: {outcome}\n"
+            f"Checkpoint reference: {event.checkpoint_ref}\nEvidence reference: {event.evidence_ref}\n"
             f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(event.timestamp_ns / 1e9))}\n\n"
-            "No real workload ran; these generated values, labels, and references are not evidence."
+            ("No real workload ran; these generated values, labels, and references are not evidence."
+             if self.demo_observation is not None else
+             "Source-reported values and labels are not independently verified by this viewer.")
         )
         self.details.configure(state="normal")
         self.details.delete("1.0", "end")
