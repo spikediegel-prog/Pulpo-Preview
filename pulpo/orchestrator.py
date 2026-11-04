@@ -168,6 +168,7 @@ class PulpoOrchestrator:
             handle.target_hash,
             poll.envelope,
             version=handle.version,
+            ceremony_evidence=poll.ceremony_evidence,
         )
         return AuthorizationAttempt(
             handle=handle,

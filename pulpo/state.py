@@ -65,6 +65,7 @@ class ApprovalUse:
     approval_id: str
     nonce: str
     audit_payload: dict[str, Any]
+    ceremony_evidence_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -93,6 +94,7 @@ class KernelState(Protocol):
     @property
     def audit(self) -> list[dict[str, Any]]: ...
     def approval_replay_reason(self, approval_id: str, nonce: str) -> str | None: ...
+    def ceremony_replay_reason(self, evidence_id: str) -> str | None: ...
     def issue_permit(self, permit: str, intent_hash: str, decision_reason: str, timestamp_ns: int, approval: ApprovalUse | None = None, *, policy_hash: str | None = None, issuer_hash: str | None = None, expires_at_ns: int | None = None) -> str | None: ...
     def bind_permit_to_directive(self, permit: str, intent_hash: str, binding: DirectivePermitBinding, timestamp_ns: int) -> None: ...
     def consume_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> bool: ...
@@ -123,11 +125,26 @@ class InMemoryKernelState:
             if nonce in self._approval_nonces: return "approval_nonce_replayed"
             return None
 
+    def ceremony_replay_reason(self, evidence_id: str) -> str | None:
+        with self._audit_lock:
+            for record in self._audit:
+                if record.get("event") != "approval_verified":
+                    continue
+                payload = record.get("payload")
+                if not isinstance(payload, dict):
+                    raise ValueError("approval audit payload invalid")
+                if payload.get("ceremony_evidence_id") == evidence_id:
+                    return "ceremony_evidence_replayed"
+            return None
+
     def issue_permit(self, permit: str, intent_hash: str, decision_reason: str, timestamp_ns: int, approval: ApprovalUse | None = None, *, policy_hash: str | None = None, issuer_hash: str | None = None, expires_at_ns: int | None = None) -> str | None:
         with self._audit_lock:
             if approval is not None:
                 replay = self.approval_replay_reason(approval.approval_id, approval.nonce)
                 if replay: return replay
+                if approval.ceremony_evidence_id is not None:
+                    replay = self.ceremony_replay_reason(approval.ceremony_evidence_id)
+                    if replay: return replay
                 self._approval_ids.add(approval.approval_id); self._approval_nonces.add(approval.nonce)
                 self.append("approval_verified", approval.audit_payload, timestamp_ns)
             self._issued[permit] = intent_hash
@@ -545,6 +562,18 @@ class SQLiteKernelState:
             return True
 
     def approval_replay_reason(self, approval_id: str, nonce: str) -> str | None: return self._approval_replay_reason(approval_id, nonce)
+    def ceremony_replay_reason(self, evidence_id: str) -> str | None:
+        rows = self._connection.execute(
+            "SELECT payload_json FROM audit WHERE event = 'approval_verified' ORDER BY sequence"
+        )
+        for (encoded,) in rows:
+            payload = json.loads(str(encoded))
+            if not isinstance(payload, dict):
+                raise ValueError("approval audit payload invalid")
+            if payload.get("ceremony_evidence_id") == evidence_id:
+                return "ceremony_evidence_replayed"
+        return None
+
     def _approval_replay_reason(self, approval_id: str, nonce: str) -> str | None:
         row = self._connection.execute(
             """
@@ -564,6 +593,9 @@ class SQLiteKernelState:
             if approval is not None:
                 replay = self._approval_replay_reason(approval.approval_id, approval.nonce)
                 if replay: return replay
+                if approval.ceremony_evidence_id is not None:
+                    replay = self.ceremony_replay_reason(approval.ceremony_evidence_id)
+                    if replay: return replay
                 self._connection.execute("INSERT INTO approvals (approval_id, nonce) VALUES (?, ?)", (approval.approval_id, approval.nonce))
             self._connection.execute("INSERT INTO permits (permit, intent_hash, policy_hash, issued_at_ns, expires_at_ns, issuer_hash) VALUES (?, ?, ?, ?, ?, ?)", (permit, intent_hash, policy_hash, timestamp_ns, expires_at_ns, issuer_hash))
             events = []

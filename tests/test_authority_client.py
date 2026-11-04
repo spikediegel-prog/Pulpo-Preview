@@ -2,7 +2,12 @@ from dataclasses import asdict
 import inspect
 import unittest
 
-from pulpo import ApprovalEnvelope, AuthorityApprovalRequest, AuthorityClient
+from pulpo import (
+    ApprovalEnvelope,
+    AuthorityApprovalRequest,
+    AuthorityClient,
+    CeremonyEvidence,
+)
 
 
 class AuthorityClientTests(unittest.TestCase):
@@ -74,6 +79,83 @@ class AuthorityClientTests(unittest.TestCase):
             transport=lambda *_: {"status": "approved", "envelope": asdict(envelope)},
         )
         self.assertEqual(envelope, client.poll_approval("request:1").envelope)
+
+    def test_approved_poll_parses_ceremony_evidence(self):
+        envelope = ApprovalEnvelope(
+            approval_id="approval:1",
+            authority_id="authority:founder",
+            verifier_id="verifier:ed25519",
+            key_id="key:service:v1",
+            deployment_id="deployment:production",
+            trust_hash="c" * 64,
+            session_id="session:1",
+            principal="agent:publisher",
+            intent_hash="a" * 64,
+            policy_hash="b" * 64,
+            nonce="nonce:1",
+            issued_at_ns=1,
+            expires_at_ns=2,
+            signature="00" * 64,
+        )
+        evidence = CeremonyEvidence(
+            evidence_id="ceremony-evidence:1",
+            authority_id="ceremony:webauthn",
+            verifier_id="ceremony-verifier:1",
+            key_id="ceremony-key:1",
+            method="webauthn-uv",
+            trust_hash="d" * 64,
+            approval_id="approval:1",
+            envelope_hash="e" * 64,
+            intent_hash="a" * 64,
+            policy_hash="b" * 64,
+            principal="agent:publisher",
+            session_id="session:1",
+            approval_nonce="nonce:1",
+            issued_at_ns=1,
+            expires_at_ns=2,
+            signature="00",
+        )
+        client = AuthorityClient(
+            "https://authority.example.com",
+            transport=lambda *_: {
+                "status": "approved",
+                "envelope": asdict(envelope),
+                "ceremony_evidence": asdict(evidence),
+            },
+        )
+        poll = client.poll_approval("request:1")
+        self.assertEqual(envelope, poll.envelope)
+        self.assertEqual(evidence, poll.ceremony_evidence)
+
+    def test_malformed_ceremony_evidence_is_not_silently_discarded(self):
+        envelope = ApprovalEnvelope(
+            approval_id="approval:1",
+            authority_id="authority:founder",
+            verifier_id="verifier:ed25519",
+            key_id="key:service:v1",
+            deployment_id="deployment:production",
+            trust_hash="c" * 64,
+            session_id="session:1",
+            principal="agent:publisher",
+            intent_hash="a" * 64,
+            policy_hash="b" * 64,
+            nonce="nonce:1",
+            issued_at_ns=1,
+            expires_at_ns=2,
+            signature="00" * 64,
+        )
+        for value in ("untrusted", []):
+            with self.subTest(value=value):
+                client = AuthorityClient(
+                    "https://authority.example.com",
+                    transport=lambda *_: {
+                        "status": "approved",
+                        "envelope": asdict(envelope),
+                        "ceremony_evidence": value,
+                    },
+                )
+                with self.assertRaisesRegex(ValueError, "ceremony evidence"):
+                    client.poll_approval("request:1")
 
     def test_non_https_and_cross_origin_human_urls_fail_closed(self):
         with self.assertRaises(ValueError):
