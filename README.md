@@ -528,9 +528,9 @@ The objective is to ensure that increasing intelligence does not automatically p
 Pulpo exists to keep those concerns separate.
 
 ```text
-Intelligence proposes.
+Intent proposes.
 
-Governance disposes.
+Authority decides.
 
 Execution obeys.
 
