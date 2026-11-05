@@ -1,0 +1,88 @@
+CONFIGURATION AND EVALUATION
+
+The configuration is a small JSON document. Start with config/clinical.example.json,
+or the ESXi, Hyper-V and WSL examples. Configuration contains no real site names,
+server addresses, people, patients or credentials. Use synthetic labels only.
+
+Fields
+schema                 Exactly pulpo.clinical-config.v0.1
+synthetic_only         Must be the boolean true
+deployment             Synthetic lowercase identifier, at most 32 characters
+platform               esxi, hyper-v, wsl or local; presentation/setup metadata
+sites                  central first, plus 2–11 distinct synthetic clinic labels
+patch_ring             pilot or broad; independent run configurations
+window_seconds         Integer 30–3600, controlled simulated clock, not wall time
+optional_simulations   Boolean; generate FHIR-like and DICOM metadata fixtures
+
+The first two satellites are used for the cross-site/expiry/revocation proof.
+Additional sites receive policy grants and inventory entries but are not all
+exercised. Site count is not distributed-node or fleet-scale validation.
+Changing the ring requires a new configuration/run. Broad rollout prerequisites,
+pilot-to-broad promotion and clinical maintenance scheduling are Proposed.
+
+Example commands
+  python3 evaluate.py --engine canonical --config config/clinical.esxi.json --out runs/esxi-01
+  python3 evaluate.py --engine preview --config config/clinical.hyper-v.json --out runs/hyperv-01
+  python3 evaluate.py --engine preview --config config/clinical.wsl.json --out runs/wsl-01
+  python3 control_center_clinical.py --report runs/esxi-01/report.json
+
+WSUS-style scenario
+Inventory is generated in memory: each site has one fixture device and the fake
+update KB-SYNTH-001. No Windows Update API, WSUS console, PowerShell command or
+real installation is involved. Proposed action becomes an Intent. A canonical
+Directive narrows that action to a site/ring/update namespace and time window.
+Fixture approval authorizes directive activation through the existing controller.
+The existing projection issues and binds a permit. The kernel consumes it against
+the exact intent; only then does the TEST FIXTURE record installed-simulated.
+The sink is test instrumentation, not a reusable executor or new governance engine.
+
+Authority roles
+operator:central can request fixture-authorized activation/revocation for all
+synthetic site directives. Each local operator has only its site's directive
+namespace. Each site worker has only the synthetic actions and site namespace.
+The public test signer represents a fixture authority, not a real person, identity
+provider, independent signer or organizational delegation. No approver agent or
+production signing service is introduced. Every run uses separate ephemeral
+kernel MAC material that is neither persisted nor exported.
+
+Check the negative cases
+Unactivated/revoked/future/expired directive; wrong site/unknown worker; prefix
+sibling; wrong ring/update; excessive cost; missing or unknown permit; live action
+or resource; exact-intent substitution; replayed approval/permit; forged/expired
+approval; substituted session, principal, deployment, policy, intent or key;
+offline authority; restart; and a consumed permit with a missing consequence
+receipt. No failed check authorizes a retry or changes the fake inventory.
+
+Offline and expiry interpretations
+New activation without a verifier is denied. Existing local directive state and
+preissued permits can remain valid while disconnected. This is an explicit tested
+limit, not an offline safety guarantee. Bound window expiry and revocation work
+against the same local canonical state. Delivery of a remote revocation is Unknown.
+Canonical bare permits lack a general TTL at the pinned commit. Preview bare
+permits have a default 300-second TTL. Both are tested rather than assumed equal.
+
+Evidence
+report.json                 Checks and synthetic observations (no raw permits)
+canonical-audit.json         Export of the existing kernel's canonical audit
+config.json                 Exact non-secret topology input
+simulate_fhir.json           Generated Bundle-shaped fixture, if enabled
+simulate_dicom.json          Generated metadata-only fixture, if enabled
+Clinical-Control-Center.html Offline report view, no external dependencies/scripts
+SHA256.json                 Checksums for that run, excluding itself
+
+The scenario report and fixture receipts are observations, not independent audit
+truth. Canonical state remains in the unchanged Pulpo backend. The temporary
+database closes and is discarded; no authority database or kernel secret is
+packaged. The observer only reads a bounded report projection and cannot call
+the runner. Source timestamps are recorded wall time; simulated governance time
+is explicit fixture time. Neither is an authenticated timestamp.
+
+Operator acceptance
+Verify package checksums. Run both engines and the selected regressions in the
+disposable guest. Require each expected assertion to pass and inspect the negative
+cases and limits. Review canonical audit integrity, the policy/source hashes,
+the one simulated patch observation, and the lost-receipt Unknown consequence.
+Compare actual results with TEST-REPORT.txt; keep changes and failures as evidence.
+Record a separate guest-specific assessment before calling an ESXi or Hyper-V
+setup evaluated. No PASS establishes HIPAA compliance, clinical safety, patch
+compatibility, real WSUS execution or production readiness.

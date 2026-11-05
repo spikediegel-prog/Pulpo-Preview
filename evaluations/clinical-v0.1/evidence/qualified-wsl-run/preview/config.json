@@ -1,0 +1,14 @@
+{
+  "deployment": "clinical-lab",
+  "optional_simulations": true,
+  "patch_ring": "pilot",
+  "platform": "esxi",
+  "schema": "pulpo.clinical-config.v0.1",
+  "sites": [
+    "central",
+    "clinic-a",
+    "clinic-b"
+  ],
+  "synthetic_only": true,
+  "window_seconds": 300
+}

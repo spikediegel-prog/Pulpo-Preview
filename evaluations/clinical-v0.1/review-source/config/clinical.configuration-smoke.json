@@ -1,0 +1,15 @@
+{
+  "schema": "pulpo.clinical-config.v0.1",
+  "synthetic_only": true,
+  "deployment": "clinical-lab",
+  "platform": "hyper-v",
+  "sites": [
+    "central",
+    "east",
+    "west",
+    "mobile"
+  ],
+  "patch_ring": "broad",
+  "window_seconds": 30,
+  "optional_simulations": false
+}
