@@ -1076,6 +1076,70 @@ class ControlCenterTests(unittest.TestCase):
         self.root.update()
         self.assertEqual("Overview", self.center.current)
 
+    def test_recorded_metric_explanations_reflow_at_narrow_width(self):
+        from pulpo.sextant_observation import (
+            SextantCalibration,
+            SextantEvent,
+            SextantObservation,
+        )
+
+        monitor = self.center.sextant
+        now = time.time_ns()
+        calibration = SextantCalibration(
+            calibration_id="fixture-calibration",
+            version="1",
+            workload_id="fixture-workload",
+            metric_id="latency-ms",
+            baseline_workload_version="workload-1",
+            baseline_model_version="model-1",
+            baseline_sample_count=100,
+            baseline_mean=100.0,
+            baseline_stddev=8.0,
+            investigate_z_threshold=2.0,
+            checkpoint_ref="fixture-checkpoint",
+            evidence_ref="a" * 64,
+        )
+        events = tuple(
+            SextantEvent(
+                sequence=index,
+                timestamp_ns=now - (3 - index) * 1_000_000_000,
+                workload_id="fixture-workload",
+                workload_version="workload-2",
+                model_version="model-2",
+                metric_id="latency-ms",
+                metric_value=value,
+                checkpoint_ref="fixture-checkpoint",
+                evidence_ref=hex(index)[2:].rjust(64, "0"),
+                reviewed_correct=reviewed,
+            )
+            for index, value, reviewed in ((1, 120.0, True), (2, 122.0, False))
+        )
+        monitor.observation = SextantObservation(
+            source_id="b" * 32,
+            observed_at_ns=now,
+            first_sequence=1,
+            event_count=len(events),
+            calibration=calibration,
+            events=events,
+        )
+        monitor.path = Path(self.temporary.name) / "recorded-observation.json"
+        monitor.last_display_refresh_ns = now
+        self.root.geometry("640x600")
+        self.center.show("Sextant")
+        monitor.render()
+        self.root.update()
+
+        self.assertIn("Recorded", monitor.metric_labels["accuracy"].cget("text"))
+        self.assertIn("Investigate", monitor.metric_labels["drift"].cget("text"))
+        self.assertIn("95% CI", monitor.metric_details["accuracy"].cget("text"))
+        self.assertIn("z =", monitor.metric_details["drift"].cget("text"))
+        self.assertIn("sampling uncertainty", monitor.metric_notes["accuracy"].cget("text"))
+        self.assertIn("not a p-value", monitor.metric_notes["drift"].cget("text"))
+        self.assertEqual([0, 2], [int(metric.grid_info()["row"]) for metric in monitor.metric_columns])
+        for metric, note in zip(monitor.metric_columns, monitor.metric_notes.values()):
+            self.assertLessEqual(note.winfo_width(), metric.winfo_width())
+            self.assertLessEqual(int(note.cget("wraplength")), metric.winfo_width())
+
     def test_session_activity_is_bounded_and_not_persisted(self):
         for index in range(600):
             self.assertIsNone(self.center.append(f"Recorded: local message {index}"))
