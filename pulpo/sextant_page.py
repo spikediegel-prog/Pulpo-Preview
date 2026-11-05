@@ -725,8 +725,8 @@ class SextantPage:
         else:
             self.metric_values["accuracy"].configure(text=f"{accuracy.accuracy:.0%}")
             accuracy_detail = (
-                f"{accuracy.correct_count} / {accuracy.reviewed_sample_count} generated labels · "
-                f"Wilson 95% CI {accuracy.wilson_95_low:.0%}–{accuracy.wilson_95_high:.0%}"
+                f"{accuracy.correct_count}/{accuracy.reviewed_sample_count} generated labels correct · "
+                f"Wilson 95% CI: {accuracy.wilson_95_low:.0%}–{accuracy.wilson_95_high:.0%}"
             )
         self.metric_details["accuracy"].configure(text=accuracy_detail)
         for details in self.metric_details.values():
@@ -748,9 +748,10 @@ class SextantPage:
         self.metric_values["drift"].configure(text=f"{drift_percent:+.1f}%")
         self.metric_details["drift"].configure(
             text=(
-                f"{drift.observed_mean:.1f} ms mean vs {drift.baseline_mean:.1f} ms baseline · "
-                f"z = {score} ({drift.investigate_z_threshold:.1f} threshold) · "
-                f"{drift.sample_count} samples"
+                f"Mean: {drift.observed_mean:.1f} ms · "
+                f"Baseline: {drift.baseline_mean:.1f} ms · "
+                f"z-score: {score} (threshold: {drift.investigate_z_threshold:.1f}) · "
+                f"n={drift.sample_count}"
             )
         )
         for item in self.events.get_children():
@@ -810,9 +811,11 @@ class SextantPage:
             f"Outcome label: {outcome}\n"
             f"Checkpoint reference: {event.checkpoint_ref}\nEvidence reference: {event.evidence_ref}\n"
             f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(event.timestamp_ns / 1e9))}\n\n"
-            ("No real workload ran; these generated values, labels, and references are not evidence."
-             if self.demo_observation is not None else
-             "Source-reported values and labels are not independently verified by this viewer.")
+            + (
+                "No real workload ran; these generated values, labels, and references are not evidence."
+                if self.demo_observation is not None
+                else "Source-reported values and labels are not independently verified by this viewer."
+            )
         )
         self.details.configure(state="normal")
         self.details.delete("1.0", "end")

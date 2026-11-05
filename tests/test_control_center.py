@@ -832,7 +832,7 @@ class ControlCenterTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.center.show("Injected page")
 
-    def test_sextant_keeps_metrics_unknown_and_reuses_evidence_reader(self):
+    def test_sextant_keeps_audit_evidence_separate_from_workload_metrics(self):
         from pulpo.evidence_observation import EvidenceEvent, EvidenceObservation
 
         monitor = self.center.sextant
@@ -847,24 +847,24 @@ class ControlCenterTests(unittest.TestCase):
             events=(EvidenceEvent(time.time_ns(), "decision", "allowed", "b" * 64),),
         )
         monitor.render()
-        self.assertIn("has no workload/model identity", monitor.source_summary.cget("text"))
-        self.assertIn("1 source-reported audit records", monitor.source_summary.cget("text"))
+        self.assertIn("No workload observation selected", monitor.source_summary.cget("text"))
         self.assertEqual(0, len(monitor.events.get_children()))
         self.assertIn("baseline", monitor.details.get("1.0", "end").lower())
         monitor.select_period("Week")
         self.assertEqual("Week", monitor.period)
         source.snapshot = EvidenceObservation("a" * 32, time.time_ns() - 20_000_000_000, True, 1)
         monitor.render()
-        self.assertIn("stale", monitor.source_summary.cget("text"))
+        self.assertIn("No workload observation selected", monitor.source_summary.cget("text"))
+        self.assertEqual(0, len(monitor.events.get_children()))
 
         monitor.cadence.set("Off")
         monitor.set_cadence()
         monitor.set_active(True)
         self.assertIsNone(monitor.timer)
-        source.path = Path(self.temporary.name) / "observation.json"
-        with patch.object(source, "refresh") as source_refresh:
+        monitor.path = Path(self.temporary.name) / "observation.json"
+        with patch.object(monitor, "refresh_source") as workload_refresh:
             monitor.refresh()
-            source_refresh.assert_called_once_with()
+            workload_refresh.assert_called_once_with()
         self.assertIn("Display last refreshed locally", monitor.updated.cget("text"))
         monitor.cadence.set("30 seconds")
         monitor.set_cadence()
@@ -875,7 +875,7 @@ class ControlCenterTests(unittest.TestCase):
         monitor.toggle_pause()
         self.assertIsNotNone(monitor.timer)
         monitor.set_active(False)
-        source.path = None
+        monitor.path = None
         self.center.show("Sextant")
         self.root.geometry("640x600")
         self.root.update()
@@ -914,8 +914,15 @@ class ControlCenterTests(unittest.TestCase):
                 self.assertEqual("center", str(monitor.metric_details[key].cget("justify")))
             self.assertEqual("", monitor.metric_details["accuracy"].winfo_manager())
             self.assertEqual("", monitor.metric_details["drift"].winfo_manager())
-            self.assertIn("41%–93%", monitor.metric_details["accuracy"].cget("text"))
-            self.assertIn("100.0 ms baseline", monitor.metric_details["drift"].cget("text"))
+            self.assertEqual(
+                "6/8 generated labels correct · Wilson 95% CI: 41%–93%",
+                monitor.metric_details["accuracy"].cget("text"),
+            )
+            self.assertEqual(
+                "Mean: 121.4 ms · Baseline: 100.0 ms · "
+                "z-score: 2.96 (threshold: 2.0) · n=10",
+                monitor.metric_details["drift"].cget("text"),
+            )
             self.assertIn("No real workload", monitor.source_summary.cget("text"))
             self.assertEqual({"latency", "accuracy"}, set(monitor.graph_canvases))
             for title in monitor.graph_titles.values():
@@ -957,13 +964,16 @@ class ControlCenterTests(unittest.TestCase):
             ))
             monitor.events.selection_set("1")
             monitor.events.event_generate("<<TreeviewSelect>>")
-            self.assertIn("synthetically labeled", monitor.details.get("1.0", "end"))
+            selected_detail = monitor.details.get("1.0", "end")
+            self.assertIn("SIMULATION ONLY · Sample 1", selected_detail)
+            self.assertIn("Outcome label: labeled correct", selected_detail)
+            self.assertIn("these generated values, labels, and references are not evidence", selected_detail)
             monitor.events.selection_remove("1")
             monitor.render_synthetic_demo()
             self.assertIn("Freshness is not measured", monitor.details.get("1.0", "end"))
             self.assertNotIn("stale", monitor.details.get("1.0", "end").lower())
             monitor.select_period("Week")
-            self.assertIn("Synthetic event counts · Week", monitor.histogram.itemcget(
+            self.assertIn("Workload event counts · Week", monitor.histogram.itemcget(
                 monitor.histogram.find_all()[-1], "text"
             ))
             histogram_text = [
