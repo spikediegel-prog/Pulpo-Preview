@@ -94,6 +94,7 @@ class SextantPage:
         self.metric_labels = {}
         self.metric_values = {}
         self.metric_details = {}
+        self.metric_notes = {}
         for column, (key, title, explanation) in enumerate((
             ("drift", "Calibrated drift", "Unknown · No workload/model series, comparable baseline or calibrated threshold."),
             ("accuracy", "Accuracy", "Unknown · No reviewed, known-correct outcomes or eligible sample count."),
@@ -118,6 +119,18 @@ class SextantPage:
                 justify="center", anchor="center", wraplength=380,
             )
             self.metric_details[key].pack(fill="x", pady=(2, 0))
+            note = (
+                "A z-score measures the difference from baseline in combined standard-error units. "
+                "Crossing the threshold is an investigation signal, not a p-value or automatic action."
+                if key == "drift"
+                else "The 95% confidence interval summarizes sampling uncertainty; it does not verify labels "
+                "or guarantee population accuracy."
+            )
+            self.metric_notes[key] = ttk.Label(
+                metric, text=note, style="Muted.TLabel",
+                justify="center", anchor="center", wraplength=380,
+            )
+            self.metric_notes[key].pack(fill="x", pady=(4, 0))
         self.metric_separator = ttk.Separator(metrics, orient="vertical")
         self.metric_separator.grid(row=0, column=1, sticky="ns")
         metrics.columnconfigure(0, weight=1, uniform="metric")
@@ -391,17 +404,28 @@ class SextantPage:
 
     def reflow_metric_cards(self, event):
         stacked = event.width < 700
+        note_wraplength = max(
+            180,
+            event.width - 28 if stacked else (event.width - 56) // 2,
+        )
         for index, metric in enumerate(self.metric_columns):
             metric.grid_configure(
                 row=index * 2 if stacked else 0,
                 column=0 if stacked else index * 2,
+                columnspan=3 if stacked else 1,
                 padx=(0, 0) if stacked else ((0, 14) if index == 0 else (14, 0)),
                 pady=(0, 10) if stacked and index == 0 else (0, 0),
             )
+        self.metrics.columnconfigure(2, weight=0 if stacked else 1)
+        for detail in self.metric_details.values():
+            detail.configure(wraplength=note_wraplength)
+        for note in self.metric_notes.values():
+            note.configure(wraplength=note_wraplength)
         self.metric_separator.configure(orient="horizontal" if stacked else "vertical")
         self.metric_separator.grid_configure(
             row=1 if stacked else 0,
             column=0 if stacked else 1,
+            columnspan=3 if stacked else 1,
             sticky="ew" if stacked else "ns",
             pady=(0, 10) if stacked else (0, 0),
         )
