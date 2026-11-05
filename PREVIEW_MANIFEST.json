@@ -5,9 +5,9 @@
   "official_release": false,
   "upstream": "Ironnember/Pulpo1.0",
   "fork": "spikediegel-prog/Pulpo-Preview",
-  "date": "2026-10-03",
+  "date": "2026-11-05",
   "selection_rule": "Open, ready-for-review PR; no explicit hold; current head matches retrieved check revision; every reported check/status is completed/success; no incomplete pagination. Historical individual-head checks do not prove combined or production safety.",
-  "upstream_main_sha": "d674dbb7a00b471d69bcca84d2f034cf74705e1a",
+  "upstream_main_sha": "f08486305736346750aba1c8c6ad1e3c16e061ca",
   "combined_code_sha": "60f73fb0fa04703e711a94d89662237cf93b403e",
   "combined_validation": {
     "claim": "Verified local execution",
@@ -17,7 +17,8 @@
     "elapsed_seconds": 20.146,
     "python": "3.14.4",
     "environment": "Ubuntu under WSL; separate full-history Linux clone on this workstation",
-    "boundary": "Does not verify all Docker/authority-service/provider containment workflows on this combined head; hosted preview validation pending."
+    "boundary": "Does not verify all Docker/authority-service/provider containment workflows on this combined head; hosted preview validation pending.",
+    "date": "2026-10-03"
   },
   "prs": [
     {
@@ -33,7 +34,14 @@
       "individual_testing_branch": "preview-pr-219",
       "conflicts": [
         "pulpo/mcp_boundary.py"
-      ]
+      ],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "8246fa0ea0fe910e5107b18c343e472c7f35f9e1",
+        "head_changed": true,
+        "reported_checks": 11,
+        "reported_result": "success"
+      }
     },
     {
       "number": 230,
@@ -46,7 +54,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-230",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "1677b11f8db939a501802f659ea896224b2f7e4b",
+        "head_changed": true,
+        "reported_checks": 11,
+        "reported_result": "success"
+      }
     },
     {
       "number": 235,
@@ -59,7 +74,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-235",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "4c5305de5bc7e6fdbe20ee39dc2c3a10345eb528",
+        "head_changed": false,
+        "reported_checks": 13,
+        "reported_result": "success"
+      }
     },
     {
       "number": 236,
@@ -74,7 +96,14 @@
       "individual_testing_branch": "preview-pr-236",
       "conflicts": [
         "README.md"
-      ]
+      ],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "24a1d16a925b86376ff03f0dcf75b3b9b46a1ac6",
+        "head_changed": false,
+        "reported_checks": 12,
+        "reported_result": "success"
+      }
     },
     {
       "number": 237,
@@ -87,7 +116,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-237",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "2542bf37ec9c92dfb5b8f427330cafbcc4b46776",
+        "head_changed": true,
+        "reported_checks": 12,
+        "reported_result": "success"
+      }
     },
     {
       "number": 238,
@@ -100,7 +136,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-238",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "b7b3eac5447b46b9614b799d4cb76d8c6e2415eb",
+        "head_changed": false,
+        "reported_checks": 9,
+        "reported_result": "success"
+      }
     },
     {
       "number": 239,
@@ -115,7 +158,14 @@
       "individual_testing_branch": "preview-pr-239",
       "conflicts": [
         "pulpo/__init__.py"
-      ]
+      ],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "b15a81f76c5e634d0523831fa54683f342dc34f4",
+        "head_changed": true,
+        "reported_checks": 11,
+        "reported_result": "success"
+      }
     },
     {
       "number": 249,
@@ -128,7 +178,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-249",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "74dc36d0076591c66a4913b339927e71461b94e3",
+        "head_changed": false,
+        "reported_checks": 8,
+        "reported_result": "success"
+      }
     },
     {
       "number": 250,
@@ -149,7 +206,14 @@
         "pulpo/state.py",
         "tests/test_mcp_boundary.py",
         "tests/test_persistence.py"
-      ]
+      ],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "962033d51c7d2756471aa004bfc0554021d74fa5",
+        "head_changed": false,
+        "reported_checks": 10,
+        "reported_result": "success"
+      }
     },
     {
       "number": 258,
@@ -167,7 +231,14 @@
         "pulpo/kernel.py",
         "pulpo/state.py",
         "tests/test_persistence.py"
-      ]
+      ],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "5c258b332c414cfa22af10cf6f959e57aabaaf17",
+        "head_changed": false,
+        "reported_checks": 13,
+        "reported_result": "success"
+      }
     },
     {
       "number": 267,
@@ -185,7 +256,14 @@
         "pulpo/kernel.py",
         "pulpo/state.py",
         "tests/test_persistence.py"
-      ]
+      ],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "ebc72e02d35b97428754e61edf4cc534b6cf9e89",
+        "head_changed": false,
+        "reported_checks": 12,
+        "reported_result": "success"
+      }
     },
     {
       "number": 275,
@@ -198,7 +276,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-275",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "9902d17c7c39b9a30b20b1fc6fb73e96eefe73d5",
+        "head_changed": false,
+        "reported_checks": 11,
+        "reported_result": "success"
+      }
     },
     {
       "number": 276,
@@ -211,7 +296,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-276",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "298e9b24d885a442dc4e0b95336b38bda74a0ea2",
+        "head_changed": false,
+        "reported_checks": 11,
+        "reported_result": "success"
+      }
     },
     {
       "number": 277,
@@ -224,7 +316,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-277",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "21742d3d2f9340074533b36d97844b17effa1830",
+        "head_changed": false,
+        "reported_checks": 12,
+        "reported_result": "success"
+      }
     },
     {
       "number": 289,
@@ -237,7 +336,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-289",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "CLOSED",
+        "head_sha": "fb849cb0794bf0c9834c31f349139db98228abb0",
+        "head_changed": true,
+        "reported_checks": 12,
+        "reported_result": "success"
+      }
     },
     {
       "number": 293,
@@ -250,7 +356,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-293",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "CLOSED",
+        "head_sha": "36a7789c4cfbd16b5f4e9b497eba29a9588b362f",
+        "head_changed": true,
+        "reported_checks": 12,
+        "reported_result": "success"
+      }
     },
     {
       "number": 294,
@@ -263,7 +376,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-294",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "OPEN",
+        "head_sha": "ea73035f44ac07c313a2330b74d653efb3aef02d",
+        "head_changed": false,
+        "reported_checks": 11,
+        "reported_result": "success"
+      }
     },
     {
       "number": 295,
@@ -276,7 +396,14 @@
       "reported_result": "success",
       "combined_preview": true,
       "individual_testing_branch": "preview-pr-295",
-      "conflicts": []
+      "conflicts": [],
+      "status_2026_11_05": {
+        "state": "CLOSED",
+        "head_sha": "d95a2ef3180a2d5186ddeebce108ae6b49ea7274",
+        "head_changed": false,
+        "reported_checks": 10,
+        "reported_result": "success"
+      }
     }
   ],
   "excluded": [
@@ -284,175 +411,233 @@
       "number": 292,
       "title": "docs: add Pulpo user guide PDF",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 278,
       "title": "Split #258: enforce temporal validity of permits",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 253,
       "title": "Proof: bind registrar auto-renew to exact commerce object v2",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "CLOSED",
+      "draft_2026_11_05": false
     },
     {
       "number": 280,
       "title": "Proof: expose ceremony provenance gap",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "CLOSED",
+      "draft_2026_11_05": false
     },
     {
       "number": 281,
       "title": "Split #258: establish explicit outbound transport trust",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "CLOSED",
+      "draft_2026_11_05": false
     },
     {
       "number": 282,
       "title": "Split #258: add bounded JSON resource limits",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 284,
       "title": "Split #258: harden custody evidence SQLite durability",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 285,
       "title": "Split #258: bound effect-reconciliation snapshots",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 286,
       "title": "Split #258: make proposal commitment durability explicit",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 287,
       "title": "Split #258: harden local intelligence containment",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "CLOSED",
+      "draft_2026_11_05": false
     },
     {
       "number": 291,
       "title": "Experiment: HELM v0.8.4 G5 alternate-route custody",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "CLOSED",
+      "draft_2026_11_05": true
     },
     {
       "number": 288,
       "title": "Repair: require independent ceremony proof for opted-in approvals",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "CLOSED",
+      "draft_2026_11_05": false
     },
     {
       "number": 279,
       "title": "Split #258: bound custody HTTP request admission",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": true
     },
     {
       "number": 270,
       "title": "Experiment: Pulpo x Amazon Bedrock AgentCore custody proof v0",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": true
     },
     {
       "number": 271,
       "title": "Adversarial proof: forked-state one-use permit replay",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": true
     },
     {
       "number": 266,
       "title": "Proof: bind registrar auto-renew as governed effect on current main",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "CLOSED",
+      "draft_2026_11_05": false
     },
     {
       "number": 251,
       "title": "Perf: synthesize delta audit and integrity fast path",
       "draft": false,
-      "reason": "not all current reported checks pass"
+      "reason": "not all current reported checks pass",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 241,
       "title": "Security: contain prompt injection in local intelligence execution",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 242,
       "title": "Security: bound untrusted input and memory growth",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 243,
       "title": "Harden stale session permits with bounded expiry",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 244,
       "title": "Narrow custody container package surface",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 245,
       "title": "Security: harden HTTP probing admission",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 247,
       "title": "Fix Windows MCP snapshot loading",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 232,
       "title": "Proof: conversation-derived directives cannot create or broaden authority",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "CLOSED",
+      "draft_2026_11_05": false
     },
     {
       "number": 221,
       "title": "Proof: live Telegram external consequence ceremony v0",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "CLOSED",
+      "draft_2026_11_05": false
     },
     {
       "number": 225,
       "title": "Draft proof: package read-only Cloud SQL connectivity probe",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": false
     },
     {
       "number": 228,
       "title": "Proof: bind remote effect authority and rolling consequence custody v0",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": true
     },
     {
       "number": 212,
       "title": "Proof: reconcile Name.com completion controls onto current main v0",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "CLOSED",
+      "draft_2026_11_05": false
     },
     {
       "number": 165,
       "title": "Experiment: Supabase consequence-custody Stage C v1",
       "draft": true,
-      "reason": "draft excluded"
+      "reason": "draft excluded",
+      "state_2026_11_05": "OPEN",
+      "draft_2026_11_05": true
     }
   ],
   "local_copy_audit": {
@@ -517,5 +702,69 @@
     "authority_effect": "none",
     "hosted_build": "Unknown until matching workflow completes",
     "boundary": "Not MSI, full Windows suite success, independent deployment or production proof"
+  },
+  "refresh_note": "2026-11-05 refresh: upstream main and the 18 listed PRs were re-checked against Ironnember/Pulpo1.0 on 2026-11-05 (states, heads, check counts); the Oct 3 combined-preview record below is preserved as history. This refresh does NOT re-run the Oct 3 selection: the 3 closed PRs (#289, #293, #295) are no longer open candidates, 6 PRs have new heads, and the Oct 3 combined-preview list no longer stands as a combined set. New upstream PRs since Oct 3 were listed, not evaluated. The new validation is fork main as-is, not a fresh combined preview.",
+  "fork_main_sha": "dc38bf2c935168d70090ac24cdeec0fbd10b5e87",
+  "fork_main_validation": {
+    "claim": "Verified local execution",
+    "date": "2026-11-05",
+    "command": "python3 -W error -m unittest discover -s tests",
+    "tests": 1086,
+    "result": "OK",
+    "skipped": 66,
+    "elapsed_seconds": 123.767,
+    "python": "3.12.3",
+    "environment": "Pulpo-OS-Dev VM (pulpo-os), Ubuntu 24.04, 4 CPUs / 3.8 GiB RAM",
+    "log": "perf-results/preview-full-tests-20261105.log",
+    "boundary": "Fork main as-is at dc38bf2 (merge PR #78), not a fresh combined-preview selection. Does not verify all Docker/authority-service/provider containment workflows; Windows full suite not re-run (Oct 3 Windows result stands as historical, still failing); hosted validation of this head pending."
+  },
+  "open_upstream_prs_2026_11_05": {
+    "count": 74,
+    "drafts": 7,
+    "new_since_2026_10_03": [
+      341,
+      333,
+      330,
+      327,
+      316,
+      315,
+      314,
+      311,
+      309,
+      307,
+      306,
+      305,
+      301,
+      299
+    ],
+    "open_not_in_october_lists": [
+      262,
+      248,
+      246,
+      213,
+      202,
+      198,
+      130,
+      107,
+      106,
+      105,
+      77,
+      75,
+      74,
+      73,
+      72,
+      71,
+      68,
+      64,
+      50,
+      49,
+      48,
+      47,
+      46,
+      38,
+      35,
+      31
+    ],
+    "note": "Listed, not evaluated under the selection rule in this refresh. Notably #246 and #248 (Phase II audit-optimization pair) and #262 remain open. The Oct 3 excluded list was status-checked only; check status was not re-verified, so no excluded PR was re-decided here — notably #241–#245 and #247 (Phase II admission-train items) are still open and non-draft."
   }
 }
