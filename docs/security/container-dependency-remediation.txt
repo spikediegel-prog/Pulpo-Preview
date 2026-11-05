@@ -1,0 +1,59 @@
+Container dependency remediation candidate
+
+Invariant: patch image dependencies without changing Pulpo's authority,
+canonical state, provider routes, signing custody or service runtime shape.
+All four images now pin the verified official multi-architecture
+python:3.11.17-slim-trixie manifest digest:
+sha256:cce12316475d7d56d605f76e1d811d0dc4e7227f2d4afd29951521264f504ff8.
+Three previously pinned images contained Python 3.11.16 and older OS packages;
+custody previously followed an unpinned floating image. The candidate preserves
+the same Python minor and Debian major release. Registry bytes were checked
+against the Docker-Content-Digest header before selecting the pin.
+
+The image bootstrap also pins setuptools 84.2.1 and wheel 0.48.0 alongside pip
+26.2.2, rather than leaving the base image's older setuptools vendor tree.
+Previous scanner evidence located jaraco.context 5.3.0 and wheel 0.45.1 inside
+/usr/local/lib/python3.11/site-packages/setuptools/_vendor. Application installs
+now run pip check before final ownership changes. No security thresholds,
+advisory suppressions, permissions, ports, commands or runtime users change.
+
+Sources:
+https://raw.githubusercontent.com/docker-library/official-images/master/library/python
+https://github.com/advisories/GHSA-58pv-8j8x-9vj2
+https://security-tracker.debian.org/tracker/CVE-2026-19445
+The latter interpreter issue is conditional on an SSL server callback/context
+pattern; a scanner match alone is not evidence that Preview exposed that path.
+
+Verified before change: the first complete scan rejected authority/KMS/Cloud SQL
+images with 94 high/critical package-advisory pairs each (43 unique IDs) and
+eight critical pairs; custody had 57 high pairs (16 IDs), zero critical.
+Expected improvement is Proposed until exact candidate hosted scans complete.
+Full build/isolation/regression and scanner results must be read at the candidate
+head, not inferred from earlier runs. Local Docker access is unavailable.
+
+Known boundary: Debian stable has no published fix for some remaining matches.
+Examples include util-linux local mount cases, glibc diagnostic/format functions
+and disputed zlib affected ranges. None are blanket-waived here. A later
+applicability/VEX decision needs package-, version-, image- and code-path-specific
+evidence; no fix availability does not mean no vulnerability. Main's required
+dependency gate remains enforced and this PR remains a draft.
+
+Eight-pass review:
+Flip: a hostile dependency cannot approve or issue a permit.
+Reverse: pin selection and scan gate precede release admission.
+Invert: a build succeeding does not make vulnerable contents acceptable.
+Inside-Out: image maintenance adds no human credential or canonical writer.
+Darken: affected packages may be exploitable under the advisory's prerequisites;
+this is a threat case, not a recorded compromise.
+Lighten: findings describe package/database matches until reachability is proven.
+Amplify: rebuild and rescan all four images plus existing isolation/replay tests.
+Negate: refresh within the existing runtime family; no new execution mechanism
+or weaker scanner policy is introduced. Continue decision: validate as a draft.
+
+Claims: base-digest identity and previous findings Verified; scanner locations
+Recorded; candidate remediation outcome Unknown until hosted checks finish.
+Temporal scope: exact preceding source 95b3b5b4a4fc8530afde8dc5d086941c9c69e01b
+and remote be14d83f2cb55c7d109c9b8de7dfb8988e0ed5c9 have identical trees;
+apply only this image/tooling diff. No historical authority/policy expansion,
+legacy control-path copy or reusable authority lesson is asserted.
+No merge, deployment, local installed-app update or system upgrade is performed.

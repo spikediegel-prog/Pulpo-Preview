@@ -1,0 +1,18 @@
+{
+  "base": "2140a528d82b600b801982eb2c8c188d43649631",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "changed_files": [
+    "pyproject.toml",
+    "authority-service/pyproject.toml",
+    "authority-service/Dockerfile.kms-probe",
+    "constraints/security-audit-ubuntu-py314.txt"
+  ],
+  "bootstrap": 0,
+  "install": 0,
+  "pip-check": 0,
+  "freeze": 0,
+  "authority": 0,
+  "custody": 0,
+  "core-authority": 0,
+  "boundaries": 0
+}

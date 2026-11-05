@@ -37,8 +37,15 @@ The host must provide Python 3.11+ and the optional MCP dependency before the
 server can start:
 
 ```text
-python3 -m pip install -e '.[mcp]'
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install --upgrade 'pip==26.2.2'
+python -m pip install -e '.[mcp]'
+python -m pip check
 ```
+
+Launch the plugin host with this virtual environment on its `PATH`, so its
+`python3` command uses the environment where the optional SDK was installed.
 
 The plugin does not install dependencies, fetch code, or modify Pulpo during
 launch. `mcp.json` starts:

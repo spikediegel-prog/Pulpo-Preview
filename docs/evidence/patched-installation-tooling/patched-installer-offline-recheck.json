@@ -1,0 +1,17 @@
+{
+  "311": {
+    "venv": 0,
+    "bootstrap": 0,
+    "install": 0,
+    "check": 0,
+    "offline": 0
+  },
+  "314": {
+    "venv": 0,
+    "bootstrap": 0,
+    "install": 0,
+    "check": 0,
+    "offline": 0
+  },
+  "pip_advisory_scan": 0
+}
