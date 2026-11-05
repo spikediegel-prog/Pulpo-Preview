@@ -6,6 +6,22 @@ Explore upcoming features, share experiments, and help shape what comes next. Th
 
 This branch in **spikediegel-prog/Pulpo-Preview** is an unofficial preview for testers. It contains unreleased upstream PRs awaiting review. It is not an official Pulpo release or a production-readiness claim. Source PRs remain open upstream, and their review/admission status is unchanged.
 
+## Snapshot: 2026-11-05
+
+This is the current snapshot. The 2026-10-03 snapshot below is preserved as history.
+
+**Fork main recorded:** `dc38bf2c935168d70090ac24cdeec0fbd10b5e87` (merge of PR #78, installation-observation fixture fix). Upstream main re-verified at `f08486305736346750aba1c8c6ad1e3c16e061ca` on 2026-11-05.
+
+**Verified fork-main execution:** fork main at `dc38bf2` passed **1086 tests**, result **OK**, 66 skipped, in 123.767s using Python 3.12.3 on the Pulpo-OS-Dev VM (Ubuntu 24.04, 4 CPUs / 3.8 GiB RAM), warnings treated as errors. [Captured log](perf-results/preview-full-tests-20261105.log).
+
+**Upstream PR status, re-checked 2026-11-05:** of the 18 PRs in the Oct 3 selection, 15 are still open and 3 are closed unmerged (#289, #293, #295, all closed 2026-11-03). Six have new heads since Oct 3 (#219, #230, #237, #239, #289, #293); all reported checks pass at their current heads. The Oct 3 combined-preview list (#230, #235, #237, #238, #249, #275, #276, #277, #289, #293, #294, #295) no longer stands as a combined set, because three of its members are closed — this snapshot records fork main as-is and does not claim a fresh combined preview.
+
+**Not re-evaluated in this refresh:** 74 upstream PRs are open (7 drafts). Fourteen numbered above 295 are new since Oct 3 (#341, #333, #330, #327, #316, #315, #314, #311, #309, #307, #306, #305, #301, #299); they were listed in the manifest, not evaluated. The Oct 3 excluded list was status-checked only, not re-decided — notably #241–#245 and #247 (Phase II admission-train items) are still open and non-draft, and their check status was not re-verified here.
+
+**Boundaries:** the Windows full suite was not re-run; the Oct 3 Windows result (446 tests, 9 failures, 54 errors, 5 skips) stands as historical and still failing. Hosted validation of the new head is pending. Passing individual-head checks do not prove interactions between PRs; unit tests do not replace all workflow proofs. Physical hardware performance, independent tester reproduction, and production containment remain **Unknown**.
+
+**What changed in fork main since Oct 3:** Sextant workload-monitor work, the kernel ceremony evidence gate, Control Center drift monitoring, and the installation-observation fixture fix (PR #78); see the fork's merge history. The [machine-readable manifest](PREVIEW_MANIFEST.json) records the per-PR status as of 2026-11-05.
+
 ## Snapshot: 2026-10-03
 
 This document and `PREVIEW_MANIFEST.json` preserve the 2026-10-03 snapshot.
