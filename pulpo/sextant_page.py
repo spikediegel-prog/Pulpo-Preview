@@ -3,7 +3,10 @@ from pathlib import Path
 import time
 
 from .control_center_theme import PALETTE, surface
-from .sextant_observation import freshness as observation_freshness, load_sextant_observation, replay
+from .sextant_observation import (
+    freshness as observation_freshness, load_sextant_observation,
+    load_sextant_synthetic_scenario, replay,
+)
 
 
 REFRESH_INTERVALS = {
@@ -29,6 +32,9 @@ class SextantPage:
         self.period = PERIODS[0]
         self.last_display_refresh_ns = time.time_ns()
         self.demo_observation = None
+        self.synthetic_scenario_name = None
+        self.synthetic_target_percent = None
+        self.synthetic_scenario_file = False
         self.observation = None
         self.path = None
         self.source_error = None
@@ -152,7 +158,7 @@ class SextantPage:
         self.graph_titles = {}
         for key, title in (
             ("latency", "Metric drift from calibrated zero"),
-            ("accuracy", "Accuracy deviation from target"),
+            ("accuracy", "Reviewed accuracy"),
         ):
             graph_shadow, graph_border = surface(self.graphs)
             graph_shadow.grid(row=0, column=len(self.graph_cards), sticky="nsew",
@@ -327,6 +333,9 @@ class SextantPage:
         if selected:
             self.path = Path(selected)
             self.demo_observation = None
+            self.synthetic_scenario_name = None
+            self.synthetic_target_percent = None
+            self.synthetic_scenario_file = False
             self.clear_demo_button.configure(state="disabled")
             self.source_refresh_button.configure(state="normal")
             self.source_clear_button.configure(state="normal")
@@ -339,12 +348,36 @@ class SextantPage:
             import stat
             if not self.path.is_absolute() or not stat.S_ISREG(self.path.lstat().st_mode):
                 raise ValueError("not_regular_file")
-            observation = load_sextant_observation(self.path)
-            if observation_freshness(observation) == "clock mismatch":
-                raise ValueError("source_clock_mismatch")
-            self.observation, self.source_error = observation, None
+            scenario = load_sextant_synthetic_scenario(self.path)
+            if scenario is not None:
+                observation = scenario.observation
+                if observation_freshness(observation) == "clock mismatch":
+                    raise ValueError("source_clock_mismatch")
+                self.demo_observation = observation
+                self.synthetic_scenario_name = scenario.name
+                self.synthetic_target_percent = scenario.accuracy_target_percent
+                self.synthetic_scenario_file = True
+                self.observation = None
+            else:
+                observation = load_sextant_observation(self.path)
+                if observation_freshness(observation) == "clock mismatch":
+                    raise ValueError("source_clock_mismatch")
+                if self.synthetic_scenario_file or self.demo_observation is None:
+                    self.demo_observation = None
+                    self.synthetic_scenario_name = None
+                    self.synthetic_target_percent = None
+                    self.synthetic_scenario_file = False
+                self.observation = observation
+            self.source_error = None
+            self.clear_demo_button.configure(state="normal" if scenario is not None else "disabled")
         except (OSError, ValueError, TypeError, RecursionError):
             self.observation = None
+            if self.synthetic_scenario_file or self.demo_observation is None:
+                self.demo_observation = None
+                self.synthetic_scenario_name = None
+                self.synthetic_target_percent = None
+                self.synthetic_scenario_file = False
+                self.clear_demo_button.configure(state="disabled")
             self.source_error = (
                 "Workload observation unavailable or invalid. Previous values cleared. "
                 "Check the selected file, format, permissions and source clock."
@@ -353,6 +386,12 @@ class SextantPage:
         self.render()
 
     def clear_source(self):
+        if self.synthetic_scenario_file:
+            self.demo_observation = None
+            self.synthetic_scenario_name = None
+            self.synthetic_target_percent = None
+            self.synthetic_scenario_file = False
+            self.clear_demo_button.configure(state="disabled")
         self.path, self.observation, self.source_error = None, None, None
         self.source_refresh_button.configure(state="disabled")
         self.source_clear_button.configure(state="disabled")
@@ -381,13 +420,29 @@ class SextantPage:
     def run_synthetic_demo(self):
         from .sextant_demo import build_synthetic_observation
 
+        if self.synthetic_scenario_file:
+            self.path = None
+            self.observation = None
+            self.source_refresh_button.configure(state="disabled")
+            self.source_clear_button.configure(state="disabled")
+        self.synthetic_scenario_file = False
+        self.synthetic_scenario_name = "Built-in synthetic demo"
+        self.synthetic_target_percent = 95.0
         self.demo_observation = build_synthetic_observation()
         self.clear_demo_button.configure(state="normal")
         self.last_display_refresh_ns = time.time_ns()
         self.render()
 
     def clear_synthetic_demo(self):
+        if self.synthetic_scenario_file:
+            self.path = None
+            self.observation = None
+            self.source_refresh_button.configure(state="disabled")
+            self.source_clear_button.configure(state="disabled")
         self.demo_observation = None
+        self.synthetic_scenario_name = None
+        self.synthetic_target_percent = None
+        self.synthetic_scenario_file = False
         self.clear_demo_button.configure(state="disabled")
         self.render()
 
@@ -467,8 +522,13 @@ class SextantPage:
         )
 
         accuracy = result.accuracy
+        self.graph_titles["accuracy"].configure(
+            text=("Accuracy deviation from target" if self.demo_observation is not None
+                  else "Reviewed accuracy")
+        )
         if self.demo_observation is not None:
-            accuracy_target_percent = 95.0
+            accuracy_target_percent = (95.0 if self.synthetic_target_percent is None
+                                       else self.synthetic_target_percent)
             accuracy_delta = (
                 accuracy.accuracy * 100 - accuracy_target_percent
                 if accuracy.accuracy is not None else 0.0
@@ -734,13 +794,19 @@ class SextantPage:
         self.summary_detail.configure(
             text="All values below are generated for demonstration; no real workload or correctness review occurred."
         )
-        self.source_summary.configure(
-            text=(
-                "Proposed · Deterministic synthetic values held in memory. No real workload, model, "
-                "service, or inference ran; generated labels and references are not evidence. "
-                "No canonical Pulpo state was read or changed by this demo."
+        if self.synthetic_scenario_file:
+            self.source_summary.configure(
+                text=(f"SIMULATION ONLY · Loaded synthetic scenario: {self.synthetic_scenario_name} · {self.path}. "
+                      "No real workload ran; generated labels and references are not evidence.")
             )
-        )
+        else:
+            self.source_summary.configure(
+                text=(
+                    "SIMULATION ONLY · Deterministic synthetic values held in memory. No real workload, model, "
+                    "service, or inference ran; generated labels and references are not evidence. "
+                    "No canonical Pulpo state was read or changed by this demo."
+                )
+            )
         accuracy = result.accuracy
         self.metric_labels["accuracy"].configure(text="Accuracy")
         if accuracy.accuracy is None:
@@ -801,7 +867,7 @@ class SextantPage:
         self.empty.configure(text="SIMULATION ONLY · Generated scenario events; no real workload ran.")
         detail = (
             "SIMULATION ONLY · Select a row to inspect one generated sample.\n\n"
-            f"Synthetic scenario: {observation.calibration.workload_id}; "
+            f"Synthetic scenario: {self.synthetic_scenario_name or observation.calibration.workload_id}; "
             f"{len(observation.events)} generated samples. Freshness is not measured: "
             "timestamps belong to the generated demo, not a workload source. "
             "Synthetic checkpoint/evidence references are placeholders, not evidence or attestations."

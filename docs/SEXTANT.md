@@ -31,6 +31,19 @@ general evidence reader, and performs no file writes or canonical Pulpo state
 mutations. Freshness is not measured for generated timestamps. It does not
 change the production-source boundary described below.
 
+## Synthetic scenarios loaded from JSON
+
+The Select workload observation control also accepts the separately versioned
+`pulpo.sextant-synthetic-scenario.v1` envelope for replayable demonstrations.
+It contains a scenario name, an illustrative accuracy target from 0 to 100
+percent, and one ordinary `pulpo.sextant-observation.v1` document. Sextant
+validates both layers through its protected frozen-file reader, labels the
+scenario **SIMULATION ONLY**, and shows the supplied target on the accuracy
+deviation graph. The target is demonstration metadata; it does not change the
+ordinary observation schema, represent a production target, or establish that
+any workload ran. Ordinary observation JSON still has no accuracy-target
+field, so its accuracy remains an absolute 0–100 percent reading.
+
 ## What is shown
 
 The page provides a read-only, at-a-glance place for workload accuracy and
