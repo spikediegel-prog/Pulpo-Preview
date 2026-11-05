@@ -847,14 +847,14 @@ class ControlCenterTests(unittest.TestCase):
             events=(EvidenceEvent(time.time_ns(), "decision", "allowed", "b" * 64),),
         )
         monitor.render()
-        self.assertIn("No workload observation selected", monitor.source_summary.cget("text"))
+        self.assertIn("No workload data selected", monitor.source_summary.cget("text"))
         self.assertEqual(0, len(monitor.events.get_children()))
         self.assertIn("baseline", monitor.details.get("1.0", "end").lower())
         monitor.select_period("Week")
         self.assertEqual("Week", monitor.period)
         source.snapshot = EvidenceObservation("a" * 32, time.time_ns() - 20_000_000_000, True, 1)
         monitor.render()
-        self.assertIn("No workload observation selected", monitor.source_summary.cget("text"))
+        self.assertIn("No workload data selected", monitor.source_summary.cget("text"))
         self.assertEqual(0, len(monitor.events.get_children()))
 
         monitor.cadence.set("Off")
@@ -1689,6 +1689,123 @@ class ControlCenterTests(unittest.TestCase):
         finally:
             if not destroyed:
                 root.destroy()
+
+
+    def test_sextant_synthetic_scenario_file_sets_target_display_and_ordinary_file_clears_it(self):
+        import json
+        from dataclasses import asdict
+
+        from pulpo.sextant_observation import (
+            SCHEMA,
+            SYNTHETIC_SCENARIO_SCHEMA,
+            SextantCalibration,
+            SextantEvent,
+            SextantObservation,
+        )
+
+        monitor = self.center.sextant
+        now = time.time_ns()
+        calibration = SextantCalibration(
+            calibration_id="fixture-calibration",
+            version="1",
+            workload_id="fixture-workload",
+            metric_id="latency-ms",
+            baseline_workload_version="workload-1",
+            baseline_model_version="model-1",
+            baseline_sample_count=100,
+            baseline_mean=100.0,
+            baseline_stddev=8.0,
+            investigate_z_threshold=2.0,
+            checkpoint_ref="fixture-checkpoint",
+            evidence_ref="a" * 64,
+        )
+        # 6 correct / 8 reviewed = 75% accuracy, 20 pp below the 95% target.
+        events = tuple(
+            SextantEvent(
+                sequence=index,
+                timestamp_ns=now - (10 - index) * 1_000_000_000,
+                workload_id="fixture-workload",
+                workload_version="workload-2",
+                model_version="model-2",
+                metric_id="latency-ms",
+                metric_value=value,
+                checkpoint_ref="fixture-checkpoint",
+                evidence_ref=hex(index)[2:].rjust(64, "0"),
+                reviewed_correct=reviewed,
+            )
+            for index, value, reviewed in (
+                (1, 120.0, True), (2, 121.0, True), (3, 122.0, True),
+                (4, 120.0, True), (5, 121.0, True), (6, 122.0, True),
+                (7, 120.0, False), (8, 121.0, False),
+                (9, 122.0, None), (10, 120.0, None),
+            )
+        )
+        observation = SextantObservation(
+            source_id="b" * 32,
+            observed_at_ns=now,
+            first_sequence=1,
+            event_count=len(events),
+            calibration=calibration,
+            events=events,
+        )
+        scenario_document = {
+            "schema": SYNTHETIC_SCENARIO_SCHEMA,
+            "scenario_name": "Fixture scenario",
+            "accuracy_target_percent": 95.0,
+            "observation": {
+                "schema": SCHEMA,
+                "source_id": observation.source_id,
+                "observed_at_ns": observation.observed_at_ns,
+                "first_sequence": observation.first_sequence,
+                "event_count": observation.event_count,
+                "calibration": asdict(calibration),
+                "events": [asdict(event) for event in events],
+            },
+        }
+        scenario_path = Path(self.temporary.name) / "scenario.json"
+        scenario_path.write_text(json.dumps(scenario_document))
+        scenario_path.chmod(0o600)
+        observation_path = Path(self.temporary.name) / "observation.json"
+        observation_path.write_text(json.dumps(scenario_document["observation"]))
+        observation_path.chmod(0o600)
+
+        self.root.geometry("640x600")
+        self.center.show("Sextant")
+        monitor.path = scenario_path
+        monitor.refresh_source()
+        self.root.update()
+
+        self.assertEqual("Fixture scenario", monitor.synthetic_scenario_name)
+        self.assertEqual(95.0, monitor.synthetic_target_percent)
+        self.assertTrue(monitor.synthetic_scenario_file)
+        self.assertIsNotNone(monitor.demo_observation)
+        self.assertEqual("75%", monitor.metric_values["accuracy"].cget("text"))
+        self.assertEqual(
+            "Accuracy deviation from target", monitor.graph_titles["accuracy"].cget("text")
+        )
+        accuracy_texts = [
+            monitor.graph_canvases["accuracy"].itemcget(item, "text")
+            for item in monitor.graph_canvases["accuracy"].find_all()
+            if monitor.graph_canvases["accuracy"].type(item) == "text"
+        ]
+        self.assertIn("95% TARGET", accuracy_texts)
+        self.assertTrue(any("-20 pp" in text for text in accuracy_texts))
+        self.assertIn("SIMULATION ONLY", monitor.source_summary.cget("text"))
+        self.assertIn("Fixture scenario", monitor.source_summary.cget("text"))
+
+        monitor.path = observation_path
+        monitor.refresh_source()
+        self.root.update()
+
+        self.assertFalse(monitor.synthetic_scenario_file)
+        self.assertIsNone(monitor.synthetic_scenario_name)
+        self.assertIsNone(monitor.synthetic_target_percent)
+        self.assertIsNone(monitor.demo_observation)
+        self.assertIsNotNone(monitor.observation)
+        self.assertEqual("Reviewed accuracy", monitor.graph_titles["accuracy"].cget("text"))
+        self.assertIn("Reviewed accuracy", monitor.metric_labels["accuracy"].cget("text"))
+        self.assertIn("Recorded", monitor.source_summary.cget("text"))
+        self.assertNotIn("SIMULATION ONLY", monitor.source_summary.cget("text"))
 
 
 if __name__ == "__main__":
