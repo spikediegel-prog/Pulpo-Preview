@@ -6,6 +6,7 @@ import time
 
 
 SCHEMA = "pulpo.sextant-observation.v1"
+SYNTHETIC_SCENARIO_SCHEMA = "pulpo.sextant-synthetic-scenario.v1"
 MAX_EVENTS = 16
 MAX_METRIC_MAGNITUDE = 1e100
 MAX_SEQUENCE = 2**63 - 1
@@ -169,6 +170,36 @@ class SextantObservation:
             events=tuple(SextantEvent(**event) for event in events),
             schema=value["schema"],
         )
+
+
+@dataclass(frozen=True, slots=True)
+class SextantSyntheticScenario:
+    name: str
+    accuracy_target_percent: float
+    observation: SextantObservation
+
+    @classmethod
+    def from_dict(cls, value):
+        fields = {"schema", "scenario_name", "accuracy_target_percent", "observation"}
+        if type(value) is not dict or set(value) != fields:
+            raise ValueError("sextant_synthetic_scenario_fields_invalid")
+        if value["schema"] != SYNTHETIC_SCENARIO_SCHEMA:
+            raise ValueError("unsupported_sextant_synthetic_scenario_schema")
+        name = _text(value["scenario_name"], 128, "scenario_name")
+        target = _number(value["accuracy_target_percent"], "accuracy_target_percent", minimum=0)
+        if target > 100:
+            raise ValueError("invalid_accuracy_target_percent")
+        return cls(name, target, SextantObservation.from_dict(value["observation"]))
+
+
+def load_sextant_synthetic_scenario(path):
+    """Load an explicitly synthetic, private demo envelope; ordinary observations return None."""
+    from .mcp_plugin import read_snapshot_document
+
+    document = read_snapshot_document(path)
+    if type(document) is dict and document.get("schema") == SYNTHETIC_SCENARIO_SCHEMA:
+        return SextantSyntheticScenario.from_dict(document)
+    return None
 
 
 def load_sextant_observation(path):
