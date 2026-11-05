@@ -79,7 +79,7 @@ class SextantPage:
         source_controls = ttk.Frame(page)
         source_controls.pack(fill="x", pady=(0, 10))
         self.source_button = ttk.Button(
-            source_controls, text="Select workload observation…", command=self.select_source,
+            source_controls, text="Load observation or scenario…", command=self.select_source,
         )
         self.source_button.pack(side="left", padx=(0, 8))
         self.source_refresh_button = ttk.Button(
@@ -185,7 +185,7 @@ class SextantPage:
         source_shadow.pack(fill="x", pady=(0, 10))
         source = ttk.Frame(source_border, style="Card.TFrame", padding=(12, 10))
         source.pack(fill="both", expand=True)
-        ttk.Label(source, text="Available evidence source · separate from workload outcomes",
+        ttk.Label(source, text="Selected data source",
                   style="CardHeading.TLabel").pack(anchor="w")
         self.source_summary = ttk.Label(source, text="", style="Card.TLabel", justify="left", wraplength=760)
         self.source_summary.pack(anchor="w", fill="x", pady=(5, 0))
@@ -326,9 +326,12 @@ class SextantPage:
     def select_source(self):
         from tkinter import filedialog
 
+        demo_folder = Path.home() / "Sextant-Demos" / "Synthetic Scenarios"
+        initial_dir = demo_folder if demo_folder.is_dir() else Path.home()
         selected = filedialog.askopenfilename(
-            parent=self.root, title="Select Sextant workload observation",
-            filetypes=(("JSON workload observation", "*.json"),),
+            parent=self.root, title="Select a Sextant observation or synthetic scenario",
+            initialdir=str(initial_dir),
+            filetypes=(("Sextant JSON observation or scenario", "*.json"),),
         )
         if selected:
             self.path = Path(selected)
@@ -568,15 +571,14 @@ class SextantPage:
         )
 
         extent = min(abs(deviation), scale) / scale * (right - center)
-        for x, label in (
-            (center - extent, f"−{abs(deviation):.1f}{unit}"),
-            (center + extent, f"+{abs(deviation):.1f}{unit}"),
-        ):
+        positions = (center,) if extent == 0 else (center - extent, center + extent)
+        for x in positions:
             canvas.create_line(x, top, x, bottom, fill=PALETTE["accent"], width=3)
-            canvas.create_text(
-                x, top - 8, text=label, fill=PALETTE["accent"],
-                font=("TkDefaultFont", 8, "bold"),
-            )
+        signal_x = center - extent if deviation < 0 else center + extent
+        canvas.create_text(
+            signal_x, top - 8, text=f"{deviation:+.1f}{unit}",
+            fill=PALETTE["accent"], font=("TkDefaultFont", 8, "bold"),
+        )
 
     @staticmethod
     def _draw_accuracy_value(canvas, accuracy):
@@ -687,7 +689,7 @@ class SextantPage:
 
     def render_empty(self):
         source = self.source_error or (
-            f"Unknown · {self.path if self.path else 'No workload observation selected. Select a Sextant JSON observation.'}"
+            f"Unknown · {self.path if self.path else 'No workload data selected. Load a Sextant observation or synthetic scenario JSON.'}"
         )
         self.summary.configure(text="Unknown · Workload source unavailable")
         self.summary_detail.configure(
