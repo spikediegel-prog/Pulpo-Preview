@@ -96,6 +96,70 @@ def benchmark_threads(workers: int, surfaces=8, files=8, file_bytes=65536, repea
             "fixture_bytes": fixture_bytes, "process_cpu_seconds": cpu_seconds}
 
 
+def _confirm_close(root, center, is_busy):
+    """Show the close dialog for a Control Center window.
+
+    Returns the dialog, or None when a busy operation must finish first.
+    Behaviour-preserving extraction from launch(): the dialog, its three
+    actions, and the busy guard are unchanged. No authority change.
+    """
+    import tkinter as tk
+    from tkinter import ttk, messagebox, simpledialog
+
+    if is_busy():
+        messagebox.showinfo("Operation in progress", "Wait for the operation to finish before closing.")
+        return None
+
+    dialog = tk.Toplevel(root)
+    dialog.title("Close Pulpo Control Center")
+    dialog.transient(root)
+    dialog.resizable(False, False)
+    body = ttk.Frame(dialog, padding=18)
+    body.pack(fill="both", expand=True)
+    ttk.Label(
+        body, text="What would you like Control Center to do?",
+        wraplength=340, justify="left",
+    ).pack(anchor="w", pady=(0, 14))
+    actions = ttk.Frame(body)
+    actions.pack(fill="x")
+
+    def keep_open():
+        dialog.destroy()
+
+    def keep_closed():
+        dialog.destroy()
+        root.destroy()
+
+    def reopen_later():
+        minutes = simpledialog.askinteger(
+            "Open Control Center later",
+            "How many minutes should it stay closed?",
+            parent=dialog, initialvalue=15, minvalue=1, maxvalue=1440,
+        )
+        if minutes is None:
+            return
+        dialog.destroy()
+        root.withdraw()
+
+        def show_again():
+            try:
+                root.deiconify()
+                root.lift()
+            except tk.TclError:
+                return
+            center.refresh_profile()
+
+        root.after(minutes * 60 * 1000, show_again)
+
+    ttk.Button(actions, text="Keep open", command=keep_open).pack(side="left", padx=(0, 6))
+    ttk.Button(actions, text="Keep closed", command=keep_closed).pack(side="left", padx=6)
+    ttk.Button(actions, text="Open again later…", command=reopen_later).pack(side="right")
+    dialog.protocol("WM_DELETE_WINDOW", keep_open)
+    dialog.grab_set()
+    dialog.focus_set()
+    return dialog
+
+
 def launch(profile=None):
     _prepare_tk_libraries()
     import tkinter as tk
@@ -316,57 +380,10 @@ def launch(profile=None):
     root.bind("<Destroy>", cancel_poll, add="+")
 
     def close():
-        if active or center.system_view.busy or center.system_view.cleanup_blocked:
-            messagebox.showinfo("Operation in progress", "Wait for the operation to finish before closing.")
-            return
-
-        dialog = tk.Toplevel(root)
-        dialog.title("Close Pulpo Control Center")
-        dialog.transient(root)
-        dialog.resizable(False, False)
-        body = ttk.Frame(dialog, padding=18)
-        body.pack(fill="both", expand=True)
-        ttk.Label(
-            body, text="What would you like Control Center to do?",
-            wraplength=340, justify="left",
-        ).pack(anchor="w", pady=(0, 14))
-        actions = ttk.Frame(body)
-        actions.pack(fill="x")
-
-        def keep_open():
-            dialog.destroy()
-
-        def keep_closed():
-            dialog.destroy()
-            root.destroy()
-
-        def reopen_later():
-            minutes = simpledialog.askinteger(
-                "Open Control Center later",
-                "How many minutes should it stay closed?",
-                parent=dialog, initialvalue=15, minvalue=1, maxvalue=1440,
-            )
-            if minutes is None:
-                return
-            dialog.destroy()
-            root.withdraw()
-
-            def show_again():
-                try:
-                    root.deiconify()
-                    root.lift()
-                except tk.TclError:
-                    return
-                center.refresh_profile()
-
-            root.after(minutes * 60 * 1000, show_again)
-
-        ttk.Button(actions, text="Keep open", command=keep_open).pack(side="left", padx=(0, 6))
-        ttk.Button(actions, text="Keep closed", command=keep_closed).pack(side="left", padx=6)
-        ttk.Button(actions, text="Open again later…", command=reopen_later).pack(side="right")
-        dialog.protocol("WM_DELETE_WINDOW", keep_open)
-        dialog.grab_set()
-        dialog.focus_set()
+        _confirm_close(
+            root, center,
+            lambda: active or center.system_view.busy or center.system_view.cleanup_blocked,
+        )
     root.protocol("WM_DELETE_WINDOW", close)
     poll()
     root.mainloop()

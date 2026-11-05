@@ -8,12 +8,15 @@ import time
 
 from pulpo.sextant_observation import (
     SCHEMA,
+    SYNTHETIC_SCENARIO_SCHEMA,
     SextantCalibration,
     SextantEvent,
     SextantObservation,
     SextantReplayGuard,
+    SextantSyntheticScenario,
     freshness,
     load_sextant_observation,
+    load_sextant_synthetic_scenario,
     replay,
 )
 
@@ -232,6 +235,102 @@ class SextantReplayTests(unittest.TestCase):
             path.write_text(json.dumps(substituted))
             # A private transport file and valid shape do not authenticate content.
             self.assertEqual(9999.0, load_sextant_observation(path).events[0].metric_value)
+
+
+class SyntheticScenarioTests(unittest.TestCase):
+    """Synthetic scenario envelopes: loading, strict validation, and replay."""
+
+    def setUp(self):
+        # Reuse the replay fixture observation rather than duplicating it.
+        replay_tests = SextantReplayTests()
+        replay_tests.setUp()
+        self.observation = replay_tests.observation()
+
+    def scenario_document(self, observation=None, *, name="Fixture scenario", target=95.0):
+        from dataclasses import asdict
+
+        observation = self.observation if observation is None else observation
+        return {
+            "schema": SYNTHETIC_SCENARIO_SCHEMA,
+            "scenario_name": name,
+            "accuracy_target_percent": target,
+            "observation": {
+                "schema": SCHEMA,
+                "source_id": observation.source_id,
+                "observed_at_ns": observation.observed_at_ns,
+                "first_sequence": observation.first_sequence,
+                "event_count": observation.event_count,
+                "calibration": asdict(observation.calibration),
+                "events": [asdict(event) for event in observation.events],
+            },
+        }
+
+    def observation_document(self, observation=None):
+        return self.scenario_document(observation)["observation"]
+
+    def write_document(self, directory, document, name="scenario.json"):
+        path = Path(directory) / name
+        path.write_text(json.dumps(document))
+        path.chmod(0o600)
+        return path
+
+    def test_valid_synthetic_envelope_loads_with_name_target_and_replayable_observation(self):
+        document = self.scenario_document()
+        scenario = SextantSyntheticScenario.from_dict(document)
+        self.assertEqual("Fixture scenario", scenario.name)
+        self.assertEqual(95.0, scenario.accuracy_target_percent)
+        self.assertEqual(self.observation, scenario.observation)
+        result = replay(scenario.observation)
+        self.assertEqual(3, result.accuracy.reviewed_sample_count)
+        self.assertEqual(2, result.accuracy.correct_count)
+        self.assertAlmostEqual(2 / 3, result.accuracy.accuracy)
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_document(directory, document)
+            loaded = load_sextant_synthetic_scenario(path)
+            self.assertEqual(scenario, loaded)
+            self.assertEqual(95.0, loaded.accuracy_target_percent)
+
+    def test_ordinary_observation_file_returns_none(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_document(
+                directory, self.observation_document(), name="observation.json"
+            )
+            self.assertIsNone(load_sextant_synthetic_scenario(path))
+            self.assertEqual(self.observation, load_sextant_observation(path))
+
+    def test_synthetic_envelope_with_invalid_fields_is_rejected(self):
+        document = self.scenario_document()
+        del document["scenario_name"]
+        with self.assertRaisesRegex(
+            ValueError, "sextant_synthetic_scenario_fields_invalid"
+        ):
+            SextantSyntheticScenario.from_dict(document)
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_document(directory, document)
+            with self.assertRaisesRegex(
+                ValueError, "sextant_synthetic_scenario_fields_invalid"
+            ):
+                load_sextant_synthetic_scenario(path)
+
+    def test_synthetic_envelope_with_wrong_schema_is_rejected(self):
+        document = self.scenario_document()
+        document["schema"] = "pulpo.sextant-synthetic-scenario.v0"
+        with self.assertRaisesRegex(
+            ValueError, "unsupported_sextant_synthetic_scenario_schema"
+        ):
+            SextantSyntheticScenario.from_dict(document)
+
+    def test_accuracy_target_above_100_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "invalid_accuracy_target_percent"):
+            SextantSyntheticScenario.from_dict(self.scenario_document(target=100.5))
+        with tempfile.TemporaryDirectory() as directory:
+            path = self.write_document(directory, self.scenario_document(target=101))
+            with self.assertRaisesRegex(ValueError, "invalid_accuracy_target_percent"):
+                load_sextant_synthetic_scenario(path)
+
+    def test_negative_accuracy_target_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "invalid_accuracy_target_percent"):
+            SextantSyntheticScenario.from_dict(self.scenario_document(target=-1))
 
 
 if __name__ == "__main__":
