@@ -7,6 +7,7 @@ not another router, policy engine, or evidence ledger.
 
 from __future__ import annotations
 
+from contextlib import closing
 from dataclasses import dataclass
 from hashlib import sha256
 import hmac
@@ -15,7 +16,7 @@ from os import PathLike
 from pathlib import Path
 import sqlite3
 from threading import RLock
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Iterator, Protocol
 
 from .audit_parallel import audit_row_has_valid_types
 from .database_activity import ObservedConnection
@@ -476,6 +477,32 @@ class SQLiteKernelState:
             if type(sequence) is not int or not audit_row_has_valid_types(body):
                 raise ValueError("audit row types invalid")
 
+    def iter_audit(
+        self,
+        *,
+        event: str | None = None,
+        reverse: bool = False,
+    ) -> Iterator[dict[str, Any]]:
+        """Stream audit records without materializing the whole chain.
+
+        Preview adaptation of upstream #250: Preview's audit table has no
+        delta columns (delta-audit projection not adopted), so only the
+        canonical columns are selected. The chain is NOT verified here.
+        """
+        order = "DESC" if reverse else "ASC"
+        columns = "event, payload_json, previous_hash, timestamp_ns, hash"
+        if event is None:
+            cursor = self._connection.execute(
+                f"SELECT {columns} FROM audit ORDER BY sequence {order}"
+            )
+        else:
+            cursor = self._connection.execute(
+                f"SELECT {columns} FROM audit WHERE event = ? ORDER BY sequence {order}",
+                (event,),
+            )
+        for e, p, ph, ts, h in cursor:
+            yield {"event": e, "payload": json.loads(p), "previous_hash": ph, "timestamp_ns": ts, "hash": h}
+
     @property
     def audit(self) -> list[dict[str, Any]]:
         rows = self._checked_audit_rows()
@@ -695,17 +722,18 @@ class SQLiteKernelState:
             raise ValueError("unique audit identity invalid")
         with self._connection:
             self._connection.execute("BEGIN IMMEDIATE")
-            rows = self._connection.execute(
+            with closing(self._connection.execute(
                 "SELECT payload_json FROM audit WHERE event = ? ORDER BY sequence",
                 (event,),
-            )
-            # Stream raw rows within the same locked transaction. Still scan
-            # every row: later duplicates or malformed JSON must not be hidden.
-            matches: list[dict[str, Any]] = []
-            for (encoded,) in rows:
-                candidate = json.loads(str(encoded))
-                if isinstance(candidate, dict) and candidate.get(identity_field) == identity_value:
-                    matches.append(candidate)
+            )) as rows:
+                # Stream raw rows within the same locked transaction. Still scan
+                # every row: later duplicates or malformed JSON must not be hidden.
+                # Close even on failure: a retained traceback must not hold a read lock.
+                matches: list[dict[str, Any]] = []
+                for (encoded,) in rows:
+                    candidate = json.loads(str(encoded))
+                    if isinstance(candidate, dict) and candidate.get(identity_field) == identity_value:
+                        matches.append(candidate)
             if len(matches) > 1:
                 raise ValueError("unique audit identity ambiguous")
             if matches:

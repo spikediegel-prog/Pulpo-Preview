@@ -39,6 +39,7 @@ from .performance_tuning import (
     PerformanceProfile,
     SystemFingerprint,
 )
+from .provenance import SemanticProvenance, artifact_hash
 from .orchestrator import (
     ApprovalHandle,
     AuthorizationAttempt,
@@ -98,9 +99,11 @@ __all__ = [
     "PulpoOrchestrator",
     "SQLiteBudgetAccount",
     "SQLiteKernelState",
+    "SemanticProvenance",
     "StateIntegrityError",
     "SystemFingerprint",
     "TargetObligationStatus",
     "TargetResolution",
+    "artifact_hash",
     "evaluate_locked_target_with_approval",
 ]
