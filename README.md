@@ -293,6 +293,29 @@ Pulpo provides capabilities across several governance domains.
 - Restart-safe recovery
 - Transactional state management
 
+## SQLite reconciliation scans
+
+**Verified:** `SQLiteKernelState.append_unique()` streams the complete ordered
+audit scan and deterministically closes its SELECT cursor, including when
+malformed JSON raises and the caller retains the exception traceback. It keeps
+`BEGIN IMMEDIATE`, original replay payloads without writes, ambiguity rejection,
+and the existing canonical append and commit/rollback path.
+
+**Verified in local tests:** The malformed-nonfinal-row regression checks
+rollback and a successful second-connection COMMIT while the traceback remains
+retained. WSL2 Linux with Python 3.12.14 / SQLite 3.53.1 passes 34 focused and
+381 core tests with warnings treated as errors. Native Windows with Python
+3.12.10 / SQLite 3.49.1 passes all eight unique-scan tests; its broader suite
+has the same failing tests on the original and revised PR head.
+
+**Verified in the local allocation benchmark:** At 10,000 same-event rows,
+Python allocation peak is 7,640 bytes with cursor cleanup, compared with
+7,504 bytes for the original streaming scan and 11,354,317 bytes for `fetchall()`.
+This measures Python allocations; general throughput and physical power-loss
+durability remain **Unknown**. See the [unique-scan tests](tests/test_unique_audit_scan.py),
+[benchmark](scripts/benchmark_unique_audit_scan.py), and
+[original streaming change record](docs/UNIQUE_AUDIT_SCAN_STREAMING.md).
+
 ## Verification
 
 - Verifier-backed approvals
@@ -302,6 +325,10 @@ Pulpo provides capabilities across several governance domains.
 - Signature verification
 - Audit validation
 - Governance verification tooling
+
+## Learning library
+
+[Source-linked learning library](docs/learning/README.md): 18 annotated book sources, Python and financial-literacy curriculum, and a runnable **offline synthetic** input-verification lab. This material is educational and does not grant a permit, spending authority, access to production systems, or independent runtime custody. Books not available as authorized full text are linked by publisher excerpt or table of contents, not mirrored.
 
 ---
 
@@ -414,6 +441,12 @@ They do not automatically establish:
 - hostile code isolation
 - production readiness
 - deployment authenticity
+
+## Host bound and Pulpo bound
+
+Pulpo is only as secure as the host it is running on. The kernel, permit store, and evidence journal assume that host is still the host that was installed and that it is still enforcing process, file, and boot policy. Pulpo does not own the boot chain, firmware, NVRAM, unused or hidden partitions, storage-controller firmware, the management controller, service-account privileges, or the decision to keep operating a machine that can no longer be measured. An OS reimage, snapshot, or rollback does not restore those layers. A compromised host can skip the process, replace local state, or omit a record. That is an operator incident, not a Pulpo control failure.
+
+Pulpo is accountable for the contract it states, on a host that is still enforcing it: unknown, incomplete, and over-budget intents fail closed; a permit is bound to one exact intent and cannot be replayed; loss of contact does not widen a grant; uncertain execution remains unknown and does not become retry authority; a visible broken audit chain fails closed. A defect in that contract is a Pulpo failure. Survival of host compromise, rollback-proof storage, trusted verifier bootstrap, network isolation, and hostile-code sandboxing are not part of that contract.
 
 Three principles guide the project:
 
