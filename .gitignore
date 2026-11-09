@@ -7,3 +7,5 @@ build/
 *.egg-info/
 
 perf-results/
+pulpo_ed25519.key
+custody-service/tests/conftest.py.bak
