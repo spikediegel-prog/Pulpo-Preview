@@ -35,6 +35,13 @@ class Mutation:
 
 MUTATIONS: tuple[Mutation, ...] = (
     Mutation(
+        "accelerated_kernel_verification_bypassed",
+        "pulpo/kernel.py",
+        'return engine.verify_rows(raw_reader())',
+        'return True',
+        ("tests.test_audit_acceleration_boundary.AccelerationBoundaryTests.test_kernel_checks_accelerated_sqlite_hash_on_every_pass",),
+    ),
+    Mutation(
         "audit_trigger_definition_check_removed",
         "pulpo/state.py",
         'if not isinstance(actual, str) or _normalized_trigger_sql(actual) != _normalized_trigger_sql(expected):',
