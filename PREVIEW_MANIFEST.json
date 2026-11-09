@@ -6,7 +6,7 @@
   "upstream": "Ironnember/Pulpo1.0",
   "fork": "spikediegel-prog/Pulpo-Preview",
   "date": "2026-11-08",
-  "selection_rule": "2026-11-08 port run: the 34 STILL NEEDED / PARTIALLY items from the 2026-11-08 triage of 102 upstream PRs (74 open + 28 closed-unmerged) were ported as 34 open fork PRs (#80-#113), one per upstream PR, each validated on its own branch only. There is NO combined head and NO combined validation for this snapshot (see combined_validation_2026_11_08). The Oct 3 selection rule below is preserved as history in combined_validation.",
+  "selection_rule": "2026-11-08 port run: the 34 STILL NEEDED / PARTIALLY items from the 2026-11-08 triage of 102 upstream PRs (74 open + 28 closed-unmerged) were ported as 34 fork PRs (#80-#113), one per upstream PR, each validated on its own branch. First pass merged 2026-11-08/09: 18 PRs (#80, #82, #83, #84, #89-#94, #97-#99, #101, #102, #104, #112, #113) into main 9c741c9, with a combined validation run on that head (1195 tests OK, see combined_validation_2026_11_08). The remaining 16 port PRs (#81, #85-#88, #95, #96, #100, #103, #105-#111) are still open and are NOT in the combined head. The Oct 3 selection rule below is preserved as history in combined_validation.",
   "upstream_main_sha": "f08486305736346750aba1c8c6ad1e3c16e061ca",
   "combined_code_sha": "60f73fb0fa04703e711a94d89662237cf93b403e",
   "combined_validation": {
@@ -147,8 +147,11 @@
       "port_pr_2026_11_08": {
         "number": 99,
         "branch": "port/upstream-236-dep-audit",
-        "head_sha": "c8924627d18c2416dbfa2d32a2b5301c4f33ae8c",
-        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/99"
+        "head_sha": "b5003aa166cf63a09ab2f2ed755e6e1985396fac",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/99",
+        "state": "MERGED",
+        "merge_commit": "bf1e9b6de42c42a18d9d3b156ea6293f5c785f9d",
+        "merged_at": "2026-11-09T04:14:28Z"
       }
     },
     {
@@ -241,8 +244,11 @@
       "port_pr_2026_11_08": {
         "number": 101,
         "branch": "port/upstream-239-provenance",
-        "head_sha": "9c83f572e416106a953d71cf590d9fde85c7ec8d",
-        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/101"
+        "head_sha": "c061c996195856dd6c5f0907bc061765d97f8040",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/101",
+        "state": "MERGED",
+        "merge_commit": "b111773e151910a42963c53c6f346e0e4156ab2e",
+        "merged_at": "2026-11-09T04:29:38Z"
       }
     },
     {
@@ -351,8 +357,11 @@
       "port_pr_2026_11_08": {
         "number": 112,
         "branch": "port/upstream-258-leftover",
-        "head_sha": "72211e0da2271bf80d1fe23b8e2c041ff2652e7b",
-        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/112"
+        "head_sha": "bb8a9b2ac0932e639af14aa13ce2aae0953097e8",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/112",
+        "state": "MERGED",
+        "merge_commit": "06bdfed48d481703793eaa62bbaff31555aa101e",
+        "merged_at": "2026-11-09T04:59:41Z"
       }
     },
     {
@@ -390,8 +399,11 @@
       "port_pr_2026_11_08": {
         "number": 97,
         "branch": "port/upstream-267-gpu-slice",
-        "head_sha": "d2fb500a147ec6e0d48a034935b808acc3987faa",
-        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/97"
+        "head_sha": "8fc58977f997b106ba74e454a2f7291c3a19d83c",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/97",
+        "state": "MERGED",
+        "merge_commit": "77c826eaa6bea766eb3c8052e260fadb267dcbac",
+        "merged_at": "2026-11-09T04:55:42Z"
       }
     },
     {
@@ -569,8 +581,11 @@
       "port_pr_2026_11_08": {
         "number": 90,
         "branch": "port/upstream-294-readme-host-bound",
-        "head_sha": "09e8a4d85d1d4ab8718c5c0e8d7620abae581fb4",
-        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/90"
+        "head_sha": "339f70f53fbe0ec0d7796e3164c97630bf603aa0",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/90",
+        "state": "MERGED",
+        "merge_commit": "a281ec7e5ef45c3ae5a817c5df628818c87109a6",
+        "merged_at": "2026-11-09T04:04:27Z"
       }
     },
     {
@@ -900,22 +915,38 @@
     "hosted_build": "Unknown until matching workflow completes",
     "boundary": "Not MSI, full Windows suite success, independent deployment or production proof"
   },
-  "refresh_note": "2026-11-08 refresh: the 2026-11-08 port run (34 open fork PRs #80-#113, one per STILL NEEDED / PARTIALLY upstream PR from the 2026-11-08 triage) is recorded in port_prs_2026_11_08 with per-branch validation only. All 34 port PRs are OPEN and none is merged, so there is NO combined head and NO combined validation \u2014 see combined_validation_2026_11_08. Upstream main re-verified at f084863 (0 merges since 2026-11-05); merge-base of Preview main 9c388e6 and upstream main is d674dbb, NOT f084863 \u2014 the Nov 5 '0 behind' ancestry claim is corrected here (content from the 13 post-Oct-3 main commits is present only where the fork re-applied it). The 18 Oct-3/Nov-5 listed PRs were re-checked live (heads unchanged since Nov 5, all checks passing). Keep/drop: #289 DROP, #293/#295 KEEP. Not ported: 8 NEEDS DECISION, the #246/#248/#251 perf-trio design decision, 29 NOT NEEDED. The Nov 5 refresh_note and Oct 3 combined record below are preserved as history.",
-  "fork_main_sha": "9c388e6f3bc674496f3fd6b3fa821fab54d1411a",
+  "refresh_note": "2026-11-08 refresh: the 2026-11-08 port run (34 open fork PRs #80-#113, one per STILL NEEDED / PARTIALLY upstream PR from the 2026-11-08 triage) is recorded in port_prs_2026_11_08 with per-branch validation only. All 34 port PRs are OPEN and none is merged, so there is NO combined head and NO combined validation \u2014 see combined_validation_2026_11_08. Upstream main re-verified at f084863 (0 merges since 2026-11-05); merge-base of Preview main 9c388e6 and upstream main is d674dbb, NOT f084863 \u2014 the Nov 5 '0 behind' ancestry claim is corrected here (content from the 13 post-Oct-3 main commits is present only where the fork re-applied it). The 18 Oct-3/Nov-5 listed PRs were re-checked live (heads unchanged since Nov 5, all checks passing). Keep/drop: #289 DROP, #293/#295 KEEP. Not ported: 8 NEEDS DECISION, the #246/#248/#251 perf-trio design decision, 29 NOT NEEDED. The Nov 5 refresh_note and Oct 3 combined record below are preserved as history. Close-out 2026-11-08/09: the first pass (18 PRs) is merged into main 9c741c9 and a combined validation run on that head passed (1195 tests OK, 67 skipped, 1 expected failure \u2014 see combined_validation_2026_11_08); 16 port PRs remain open and are not in the combined head. Upstream main unchanged at f084863 at close-out.",
+  "fork_main_sha": "9c741c99bfb3c430cafe412691eaa76bd3f3f34f",
   "fork_main_validation": {
     "claim": "Verified local execution",
-    "date": "2026-11-05",
+    "date": "2026-11-08",
     "command": "python3 -W error -m unittest discover -s tests",
-    "tests": 1086,
+    "tests": 1195,
     "result": "OK",
-    "skipped": 66,
-    "elapsed_seconds": 123.767,
+    "skipped": 67,
+    "expected_failures": 1,
+    "elapsed_seconds": 128.532,
     "python": "3.12.3",
     "environment": "Pulpo-OS-Dev VM (pulpo-os), Ubuntu 24.04, 4 CPUs / 3.8 GiB RAM",
-    "log": "perf-results/preview-full-tests-20261105.log",
-    "boundary": "Fork main as-is at dc38bf2 (merge PR #78), not a fresh combined-preview selection. Does not verify all Docker/authority-service/provider containment workflows; Windows full suite not re-run (Oct 3 Windows result stands as historical, still failing); hosted validation of this head pending. Per-branch full-suite runs off 9c388e6 are recorded per port in port_prs_2026_11_08; they corroborate the 1086-test main baseline but are not a combined validation.",
-    "applies_to_fork_main_sha": "9c388e6f3bc674496f3fd6b3fa821fab54d1411a",
-    "applies_to_note": "The only commit between dc38bf2 and 9c388e6 is the docs-only Nov 5 snapshot refresh (PR #79: PREVIEW.md + PREVIEW_MANIFEST.json only), so the code validated at dc38bf2 is the code at 9c388e6. No direct bare-main full-suite run at 9c388e6 was performed in this refresh (docs-only change)."
+    "log": "~/pulpo-workspace/preview-combined-9c741c9.log (VM worktree preview-combined-9c741c9, not in repo)",
+    "head": "9c741c99bfb3c430cafe412691eaa76bd3f3f34f",
+    "head_description": "Merged first pass of the port run: 18 of 34 port PRs (#80, #82, #83, #84, #89-#94, #97-#99, #101, #102, #104, #112, #113). The 16 still-open port PRs are not in this head.",
+    "boundary": "Combined validation of the merged first pass (18 of the 34 port PRs merged, main 9c741c9). Does not verify all Docker/authority-service/provider containment workflows; Windows full suite not re-run (Oct 3 Windows result stands as historical, still failing); hosted validation of this head pending. The 16 still-open port PRs are not in this head.",
+    "previous_baseline": {
+      "claim": "Verified local execution",
+      "date": "2026-11-05",
+      "command": "python3 -W error -m unittest discover -s tests",
+      "tests": 1086,
+      "result": "OK",
+      "skipped": 66,
+      "elapsed_seconds": 123.767,
+      "python": "3.12.3",
+      "environment": "Pulpo-OS-Dev VM (pulpo-os), Ubuntu 24.04, 4 CPUs / 3.8 GiB RAM",
+      "log": "perf-results/preview-full-tests-20261105.log",
+      "boundary": "Fork main as-is at dc38bf2 (merge PR #78), not a fresh combined-preview selection. Does not verify all Docker/authority-service/provider containment workflows; Windows full suite not re-run (Oct 3 Windows result stands as historical, still failing); hosted validation of this head pending. Per-branch full-suite runs off 9c388e6 are recorded per port in port_prs_2026_11_08; they corroborate the 1086-test main baseline but are not a combined validation.",
+      "applies_to_fork_main_sha": "9c388e6f3bc674496f3fd6b3fa821fab54d1411a",
+      "applies_to_note": "The only commit between dc38bf2 and 9c388e6 is the docs-only Nov 5 snapshot refresh (PR #79: PREVIEW.md + PREVIEW_MANIFEST.json only), so the code validated at dc38bf2 is the code at 9c388e6. No direct bare-main full-suite run at 9c388e6 was performed in this refresh (docs-only change)."
+    }
   },
   "open_upstream_prs_2026_11_05": {
     "count": 74,
@@ -980,11 +1011,13 @@
       "preview_pr_number": 80,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/80",
       "preview_branch": "port/upstream-341-shaethon",
-      "preview_head_sha": "b54d22558ce186c7c708992746b00bc606f6d055",
-      "preview_state": "OPEN",
+      "preview_head_sha": "2465473cf58e369fbd07058265749ff84db6bb39",
+      "preview_state": "MERGED",
       "band": "3",
       "branch_validation": "Docs-only. Both evidence zips list cleanly (unzip -l). No code touched, no test run.",
-      "notes": "Preview also lacked the merged #336 base doc this amends, so the review doc is added whole (+686 lines vs upstream +227)."
+      "notes": "Preview also lacked the merged #336 base doc this amends, so the review doc is added whole (+686 lines vs upstream +227).",
+      "preview_merge_commit": "e49871a1e195c80f62382c05b2207d5bacdb5ad6",
+      "preview_merged_at": "2026-11-09T04:34:32Z"
     },
     {
       "upstream_number": 316,
@@ -1018,11 +1051,13 @@
       "preview_pr_number": 82,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/82",
       "preview_branch": "port/upstream-305-guardian",
-      "preview_head_sha": "437d693f032628247c596394c81154598d5fea7e",
-      "preview_state": "OPEN",
+      "preview_head_sha": "5fa0efef17835a12e36abf6645c7aa0d627676a1",
+      "preview_state": "MERGED",
       "band": "3",
       "branch_validation": "Docs-only. results.json parses as valid JSON; p3_probe.py compiles. No test run.",
-      "notes": "Docs-only; evidence recorded as-is from 2026-10-12, nothing re-run."
+      "notes": "Docs-only; evidence recorded as-is from 2026-10-12, nothing re-run.",
+      "preview_merge_commit": "b1facc5a02c691d23663f9f3c3050ad25090f555",
+      "preview_merged_at": "2026-11-09T04:38:20Z"
     },
     {
       "upstream_number": 309,
@@ -1037,11 +1072,13 @@
       "preview_pr_number": 83,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/83",
       "preview_branch": "port/upstream-309-learning",
-      "preview_head_sha": "5dce33ec8168342cdff9987e10b00f4367ea9b3f",
-      "preview_state": "OPEN",
+      "preview_head_sha": "00a402510660a934c8d5e7a4db11a1623d5ce3b1",
+      "preview_state": "MERGED",
       "band": "3",
       "branch_validation": "Lab tests: python3 -W error -m unittest discover -s docs/learning/examples: 7 OK.",
-      "notes": "README.md link section merged by hand (fork README has no upstream insertion point)."
+      "notes": "README.md link section merged by hand (fork README has no upstream insertion point).",
+      "preview_merge_commit": "6c15eafd6e914809d6ee15b7917e12a99f1f4978",
+      "preview_merged_at": "2026-11-09T04:41:16Z"
     },
     {
       "upstream_number": 330,
@@ -1056,11 +1093,13 @@
       "preview_pr_number": 84,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/84",
       "preview_branch": "port/upstream-330-gpio-dry-run",
-      "preview_head_sha": "c2607e83974a1efb60b6c8f83dc9246e3bfd98f2",
-      "preview_state": "OPEN",
+      "preview_head_sha": "a1917583c4f3fd0ed2f1b6be6aa32279dcb6415d",
+      "preview_state": "MERGED",
       "band": "side-project",
       "branch_validation": "New tests tests.test_pulpo_node_dry_run_gpio: 21 OK; proof script run: 21 tests OK. Fork adaptation: reconcile_dry_run_output maps ValueError from kernel.verify_audit() to MISMATCH (fail-closed).",
-      "notes": "Side-project scope (Autonomous/Pi), not Phase II core. Phase 1 node proof (merged 561e64f) still absent from Preview."
+      "notes": "Side-project scope (Autonomous/Pi), not Phase II core. Phase 1 node proof (merged 561e64f) still absent from Preview.",
+      "preview_merge_commit": "4f9ed781474c00422ada3d892ec88e246a940a4e",
+      "preview_merged_at": "2026-11-09T05:21:37Z"
     },
     {
       "upstream_number": 311,
@@ -1161,10 +1200,12 @@
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/89",
       "preview_branch": "port/upstream-72-exact-target-docs",
       "preview_head_sha": "7c7960bb8c83de1c4bab3e86387f46af6aaf2743",
-      "preview_state": "OPEN",
+      "preview_state": "MERGED",
       "band": "1",
       "branch_validation": "Docs-only. Tree check only (working tree clean apart from the two intended files; diff +91/-63 matches upstream).",
-      "notes": "EXACT_TARGET_PROOF status line cites upstream merge fc94126 (PR #55); in Preview the target-lock content arrived via combined commit 60f73fb, not that merge \u2014 citation kept verbatim as upstream provenance."
+      "notes": "EXACT_TARGET_PROOF status line cites upstream merge fc94126 (PR #55); in Preview the target-lock content arrived via combined commit 60f73fb, not that merge \u2014 citation kept verbatim as upstream provenance.",
+      "preview_merge_commit": "ebf027c17580cd90bdc884e89bc23985440b39bd",
+      "preview_merged_at": "2026-11-09T04:02:02Z"
     },
     {
       "upstream_number": 294,
@@ -1179,11 +1220,13 @@
       "preview_pr_number": 90,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/90",
       "preview_branch": "port/upstream-294-readme-host-bound",
-      "preview_head_sha": "09e8a4d85d1d4ab8718c5c0e8d7620abae581fb4",
-      "preview_state": "OPEN",
+      "preview_head_sha": "339f70f53fbe0ec0d7796e3164c97630bf603aa0",
+      "preview_state": "MERGED",
       "band": "1",
       "branch_validation": "Docs-only. Tree check only (1 file, README.md +6, wording verbatim upstream).",
-      "notes": "README section only; docs/AUTHORITY_BOUNDARY_DECISION.md already byte-identical to head."
+      "notes": "README section only; docs/AUTHORITY_BOUNDARY_DECISION.md already byte-identical to head.",
+      "preview_merge_commit": "a281ec7e5ef45c3ae5a817c5df628818c87109a6",
+      "preview_merged_at": "2026-11-09T04:04:27Z"
     },
     {
       "upstream_number": 299,
@@ -1198,11 +1241,13 @@
       "preview_pr_number": 91,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/91",
       "preview_branch": "port/upstream-299-context-custody",
-      "preview_head_sha": "3f1e45d280e78acbf117b57a830a9bac8c038987",
-      "preview_state": "OPEN",
+      "preview_head_sha": "7b2a630f06baf34f3da418868520625c5bae3fde",
+      "preview_state": "MERGED",
       "band": "2",
       "branch_validation": "New tests 30/30 OK. Full suite: 1116 tests OK (skipped=66); baseline 1086 + 30 new.",
-      "notes": "Pure additive; no production router/authority source involved."
+      "notes": "Pure additive; no production router/authority source involved.",
+      "preview_merge_commit": "e666b3593d6296a5d3169227e70bf01553072448",
+      "preview_merged_at": "2026-11-09T04:17:54Z"
     },
     {
       "upstream_number": 327,
@@ -1217,11 +1262,13 @@
       "preview_pr_number": 92,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/92",
       "preview_branch": "port/upstream-327-monitor-custody",
-      "preview_head_sha": "61e0b33be8e40bfc9a463d420ae26f547496eaec",
-      "preview_state": "OPEN",
+      "preview_head_sha": "57f96e5220e1c99c9cd2d0809b5b4152f3dbcb2b",
+      "preview_state": "MERGED",
       "band": "2",
       "branch_validation": "New test 1/1 OK. Full suite: 1087 tests OK (skipped=66); baseline 1086 + 1 new.",
-      "notes": "Pure additive; reuses Preview pulpo.targets and tests.authority_support unchanged."
+      "notes": "Pure additive; reuses Preview pulpo.targets and tests.authority_support unchanged.",
+      "preview_merge_commit": "69777294262a387a4e84168d70146f0f30022cd6",
+      "preview_merged_at": "2026-11-09T04:22:30Z"
     },
     {
       "upstream_number": 333,
@@ -1236,11 +1283,13 @@
       "preview_pr_number": 93,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/93",
       "preview_branch": "port/upstream-333-task-injection",
-      "preview_head_sha": "c84f0b2b9ff669c95f82e81d201e07c43c819180",
-      "preview_state": "OPEN",
+      "preview_head_sha": "07bfd141703229357a84f4b6794014cc32fd9b10",
+      "preview_state": "MERGED",
       "band": "2",
       "branch_validation": "New tests 3 run / 1 skipped (macOS Seatbelt case) OK. Full suite: 1089 tests OK (skipped=67). Vendors the 6b3caac incident-response proof as a first commit (dependency of the #333 fixture).",
-      "notes": "Also covers the task-injection part of upstream #334 (byte-identical files). macOS sandbox proof covered by the CI job added in this PR, not runnable on the Linux VM."
+      "notes": "Also covers the task-injection part of upstream #334 (byte-identical files). macOS sandbox proof covered by the CI job added in this PR, not runnable on the Linux VM.",
+      "preview_merge_commit": "3c707f54bb91fcadf918380b6892e2be72eda755",
+      "preview_merged_at": "2026-11-09T04:24:31Z"
     },
     {
       "upstream_number": 244,
@@ -1255,11 +1304,13 @@
       "preview_pr_number": 94,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/94",
       "preview_branch": "port/upstream-244-custody-dockerfile",
-      "preview_head_sha": "c31143ef468b7081a7f7ef3563a79a8aeeda06da",
-      "preview_state": "OPEN",
+      "preview_head_sha": "7cff1b0c62951012365d315f7185a1297779e597",
+      "preview_state": "MERGED",
       "band": "1",
       "branch_validation": "Full suite: 1086 tests OK (skipped=66), identical to main baseline. Docker image build NOT verified (no Docker on the VM). Adaptation: cryptography==50.0.2 (Preview pin), not upstream 50.0.1.",
-      "notes": "Upstream #244's change is also contained in the #250 remainder port (#111) \u2014 do not port #244 separately afterward."
+      "notes": "Upstream #244's change is also contained in the #250 remainder port (#111) \u2014 do not port #244 separately afterward.",
+      "preview_merge_commit": "f595f55e9ada52566a6e48d2d272f6181e775a9c",
+      "preview_merged_at": "2026-11-09T04:06:29Z"
     },
     {
       "upstream_number": 219,
@@ -1312,11 +1363,13 @@
       "preview_pr_number": 97,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/97",
       "preview_branch": "port/upstream-267-gpu-slice",
-      "preview_head_sha": "d2fb500a147ec6e0d48a034935b808acc3987faa",
-      "preview_state": "OPEN",
+      "preview_head_sha": "8fc58977f997b106ba74e454a2f7291c3a19d83c",
+      "preview_state": "MERGED",
       "band": "remainder",
       "branch_validation": "Full suite: 1089 tests OK (skipped=66). GPU tests are pytest-style and NOT collected by unittest; the 2 CPU-only functions were run directly and pass. torch/pytest not installed on the VM. Upstream validation shows near-parity, not speedup (0.67x-0.99x).",
-      "notes": "GPU slice only; the base remainder is covered by the #250 (#111) and #258 (#112) ports. Do not port the base from this PR."
+      "notes": "GPU slice only; the base remainder is covered by the #250 (#111) and #258 (#112) ports. Do not port the base from this PR.",
+      "preview_merge_commit": "77c826eaa6bea766eb3c8052e260fadb267dcbac",
+      "preview_merged_at": "2026-11-09T04:55:42Z"
     },
     {
       "upstream_number": 280,
@@ -1331,11 +1384,13 @@
       "preview_pr_number": 98,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/98",
       "preview_branch": "port/upstream-280-ceremony-provenance-test",
-      "preview_head_sha": "77c41109bbe0726ebbf1b2edab9c52e1bb3a589f",
-      "preview_state": "OPEN",
+      "preview_head_sha": "4184123848e61cd3b37553e9ec49997a7f726362",
+      "preview_state": "MERGED",
       "band": "1",
       "branch_validation": "New test 1 OK (expected failures=1). Full suite: 1087 tests OK (skipped=66, expected failures=1). Stays an expectedFailure: fork ceremony gate checks only opted-in actions and this test does not opt in.",
-      "notes": "One-file expectedFailure marker; see also upstream #288/#334 (needs-decision, not ported)."
+      "notes": "One-file expectedFailure marker; see also upstream #288/#334 (needs-decision, not ported).",
+      "preview_merge_commit": "2bad0db3675f0ea8ccdc0a1188be576f1a59e4e8",
+      "preview_merged_at": "2026-11-09T04:10:08Z"
     },
     {
       "upstream_number": 236,
@@ -1350,11 +1405,13 @@
       "preview_pr_number": 99,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/99",
       "preview_branch": "port/upstream-236-dep-audit",
-      "preview_head_sha": "c8924627d18c2416dbfa2d32a2b5301c4f33ae8c",
-      "preview_state": "OPEN",
+      "preview_head_sha": "b5003aa166cf63a09ab2f2ed755e6e1985396fac",
+      "preview_state": "MERGED",
       "band": "1",
       "branch_validation": "Full suite: 1086 tests OK (skipped=66). New CI command run directly (pip-audit 2.10.1): no known vulnerabilities found. Adaptation: cryptography==50.0.2 (Preview pin); README hunk skipped (fork-rewritten README already states the equivalent).",
-      "notes": "Known Oct 3 README conflict resolved by skipping the hunk (see validation)."
+      "notes": "Known Oct 3 README conflict resolved by skipping the hunk (see validation).",
+      "preview_merge_commit": "bf1e9b6de42c42a18d9d3b156ea6293f5c785f9d",
+      "preview_merged_at": "2026-11-09T04:14:28Z"
     },
     {
       "upstream_number": 297,
@@ -1388,11 +1445,13 @@
       "preview_pr_number": 101,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/101",
       "preview_branch": "port/upstream-239-provenance",
-      "preview_head_sha": "9c83f572e416106a953d71cf590d9fde85c7ec8d",
-      "preview_state": "OPEN",
+      "preview_head_sha": "c061c996195856dd6c5f0907bc061765d97f8040",
+      "preview_state": "MERGED",
       "band": "2",
       "branch_validation": "New/affected tests 14/14 OK; authority-service tests 10/10 OK. Full suite: 1093 tests OK (skipped=66); baseline 1086 + 7 new. One-line fork-test adaptation (test_ollama_preview_boundary.py:83, strips absent provenance field).",
-      "notes": "Intent-hash change interacts with the fork ceremony gate (2c31f78); checked self-consistent (legacy intents hash identically)."
+      "notes": "Intent-hash change interacts with the fork ceremony gate (2c31f78); checked self-consistent (legacy intents hash identically).",
+      "preview_merge_commit": "b111773e151910a42963c53c6f346e0e4156ab2e",
+      "preview_merged_at": "2026-11-09T04:29:38Z"
     },
     {
       "upstream_number": 306,
@@ -1407,11 +1466,13 @@
       "preview_pr_number": 102,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/102",
       "preview_branch": "port/upstream-306-pulpo35",
-      "preview_head_sha": "49942ffaa219363b12605e65e424c9ea794036f0",
-      "preview_state": "OPEN",
+      "preview_head_sha": "47d4ad97f5d421f21eb33a9de17c865a89897449",
+      "preview_state": "MERGED",
       "band": "3",
       "branch_validation": "Tournament script run live: FINAL PASS_WITH_BOUNDARIES 158 10600; all 24 phase rows 0 failures / 0 errors. Full suite: 1086 tests OK (skipped=66).",
-      "notes": "Duplication: #306's files are ~identical to merged #318 (4ef890e); port #306 ONLY, not both. Overlaps the #314 port (#103) \u2014 whichever merges first, the other needs a rebase."
+      "notes": "Duplication: #306's files are ~identical to merged #318 (4ef890e); port #306 ONLY, not both. Overlaps the #314 port (#103) \u2014 whichever merges first, the other needs a rebase.",
+      "preview_merge_commit": "c769935a61fdc85e82c2fb41de6c4f8c16ec4f4c",
+      "preview_merged_at": "2026-11-09T04:53:09Z"
     },
     {
       "upstream_number": 314,
@@ -1447,11 +1508,13 @@
       "preview_pr_number": 104,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/104",
       "preview_branch": "port/upstream-304-gladiator-gate",
-      "preview_head_sha": "06ba3dbaac455c9860d8a1238fb9aa5548b5950f",
-      "preview_state": "OPEN",
+      "preview_head_sha": "58b7c8bcecf4f8c6ac96c88a18371c08d605c691",
+      "preview_state": "MERGED",
       "band": "2",
       "branch_validation": "New tests 32 OK. Full suite: 1118 tests OK (skipped=66); baseline 1086 + 32 new.",
-      "notes": "Advisory gate only; NOT wired into enforcement. No overlap with the #250 remainder port."
+      "notes": "Advisory gate only; NOT wired into enforcement. No overlap with the #250 remainder port.",
+      "preview_merge_commit": "81e81aef75d2eeee73f7af437d7a2833a0378999",
+      "preview_merged_at": "2026-11-09T04:32:33Z"
     },
     {
       "upstream_number": 147,
@@ -1607,11 +1670,13 @@
       "preview_pr_number": 112,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/112",
       "preview_branch": "port/upstream-258-leftover",
-      "preview_head_sha": "72211e0da2271bf80d1fe23b8e2c041ff2652e7b",
-      "preview_state": "OPEN",
+      "preview_head_sha": "bb8a9b2ac0932e639af14aa13ce2aae0953097e8",
+      "preview_state": "MERGED",
       "band": "remainder",
       "branch_validation": "Full suite: 1086 tests OK (skipped=66). Custody-service suite: 50 OK. Authority-service suite: 2 errors, pre-existing on main (webauthn not installed in the venv).",
-      "notes": "Only the #258-only leftovers; everything shared with #250 lives in #111 by construction (disjoint, either merges cleanly). custody-service/tests/test_api.py deliberately NOT deleted (divergence, not a gap)."
+      "notes": "Only the #258-only leftovers; everything shared with #250 lives in #111 by construction (disjoint, either merges cleanly). custody-service/tests/test_api.py deliberately NOT deleted (divergence, not a gap).",
+      "preview_merge_commit": "06bdfed48d481703793eaa62bbaff31555aa101e",
+      "preview_merged_at": "2026-11-09T04:59:41Z"
     },
     {
       "upstream_number": 302,
@@ -1626,18 +1691,31 @@
       "preview_pr_number": 113,
       "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/113",
       "preview_branch": "port/upstream-302-audit-boundary-test",
-      "preview_head_sha": "1a2d94654b2d277c11eecc2fcc16db9efe4544ae",
-      "preview_state": "OPEN",
+      "preview_head_sha": "41dbf9c145e42907fae078ddd10c6957d0a0adbb",
+      "preview_state": "MERGED",
       "band": "remainder",
       "branch_validation": "New tests 10/10 OK. Full suite: 1096 tests OK (skipped=66); baseline 1086 + 10 new. Constitutional mutation harness: 21/21 killed, 0 survived.",
-      "notes": "DRAFT upstream, closed unmerged. Carries no authority change and no canonical state mutation. One test-only adaptation (verify_audit ValueError 'audit head' vs upstream False) \u2014 fork behaviour pinned by an existing test."
+      "notes": "DRAFT upstream, closed unmerged. Carries no authority change and no canonical state mutation. One test-only adaptation (verify_audit ValueError 'audit head' vs upstream False) \u2014 fork behaviour pinned by an existing test.",
+      "preview_merge_commit": "dd49d8bfb53480058f4f450deb539ebcf55b52f0",
+      "preview_merged_at": "2026-11-09T05:03:43Z"
     }
   ],
   "combined_validation_2026_11_08": {
-    "claim": "none \u2014 no combined validation exists for this snapshot",
-    "reason": "All 34 port PRs are OPEN and none is merged, so there is no combined head to validate. Validation is per-branch only (see port_prs_2026_11_08). A combined validation run (python3 -W error -m unittest discover -s tests) must be re-done after Mike merges, on the merged head, before any combined claim is made.",
+    "claim": "Verified local execution",
+    "date": "2026-11-08",
+    "command": "python3 -W error -m unittest discover -s tests",
+    "tests": 1195,
+    "result": "OK",
+    "skipped": 67,
+    "expected_failures": 1,
+    "elapsed_seconds": 128.532,
+    "python": "3.12.3",
+    "environment": "Pulpo-OS-Dev VM (pulpo-os), Ubuntu 24.04, 4 CPUs / 3.8 GiB RAM",
+    "head": "9c741c99bfb3c430cafe412691eaa76bd3f3f34f",
+    "head_description": "Merged first pass of the port run: 18 of 34 port PRs (#80, #82, #83, #84, #89-#94, #97-#99, #101, #102, #104, #112, #113). The 16 still-open port PRs are not in this head.",
+    "log": "~/pulpo-workspace/preview-combined-9c741c9.log (VM worktree preview-combined-9c741c9, not in repo)",
     "october_2026_combined_set_stands": false,
-    "note": "The Oct 3 combined set (60f73fb) is preserved as history in combined_validation / combined_code_sha; it no longer stands as a combined set (3 members closed unmerged, heads moved), as already stated in the 2026-11-05 refresh. This refresh does not revive it."
+    "note": "The Oct 3 combined set (60f73fb) is preserved as history in combined_validation / combined_code_sha; it no longer stands as a combined set (3 members closed unmerged, heads moved), as already stated in the 2026-11-05 refresh. This refresh does not revive it. The per-branch validation recorded in port_prs_2026_11_08 still stands for the 16 unmerged ports."
   },
   "keep_drop_2026_11_08": [
     {
