@@ -31,7 +31,7 @@ Within this proof topology:
 
 `hostile worker -> internal worker network -> custody -> egress network -> api.dev.name.com:443`
 
-The worker receives no egress-capable network. Custody spans the worker network and a separate egress-capable Docker bridge. Provider credentials in this proof are explicit non-secret sentinel placeholders required only to satisfy local custody configuration; they are not valid Name.com credentials and are never transmitted.
+The worker receives no egress-capable network. Custody spans the worker network and a separate egress-capable Docker bridge. Provider credentials in this proof are explicit non-secret sentinel placeholders required only to satisfy local custody configuration; they are not valid Name.com credentials and are never transmitted. The internal kernel and custody secrets, by contrast, are freshly generated per run (see the proof script) — the custody runtime refuses repeated-pattern placeholders.
 
 ## Positive control
 

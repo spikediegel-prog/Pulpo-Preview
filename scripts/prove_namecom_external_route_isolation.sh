@@ -20,8 +20,15 @@ docker network create --internal "$worker_network" >/dev/null
 docker network create "$egress_network" >/dev/null
 docker volume create "$volume" >/dev/null
 
-# These values are explicit non-secret sentinels. They satisfy local runtime
-# configuration only; no authenticated Name.com request is sent in this proof.
+# Generate fresh internal proof keys without exposing them to the worker.
+# The custody image already exists (built by the workflow before this script
+# runs); its own python generates the secrets, so no host python is needed.
+kernel_secret="$(docker run --rm --network none --entrypoint python "$image" -c 'import secrets; print(secrets.token_hex(32))')"
+custody_secret="$(docker run --rm --network none --entrypoint python "$image" -c 'import secrets; print(secrets.token_hex(32))')"
+
+# The remaining values are explicit non-secret sentinels. They satisfy local
+# runtime configuration only; no authenticated Name.com request is sent in
+# this proof.
 docker run -d \
   --name "$custody" \
   --network "$egress_network" \
@@ -31,8 +38,8 @@ docker run -d \
   --security-opt no-new-privileges:true \
   -v "$volume:/var/lib/pulpo:rw" \
   -e PULPO_CUSTODY_STATE_PATH=/var/lib/pulpo/custody.sqlite3 \
-  -e PULPO_KERNEL_SECRET_HEX=1111111111111111111111111111111111111111111111111111111111111111 \
-  -e PULPO_CUSTODY_SECRET_HEX=2222222222222222222222222222222222222222222222222222222222222222 \
+  -e "PULPO_KERNEL_SECRET_HEX=${kernel_secret}" \
+  -e "PULPO_CUSTODY_SECRET_HEX=${custody_secret}" \
   -e PULPO_AUTHORITY_PUBLIC_KEY_HEX=d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a \
   -e PULPO_AUTHORITY_ID=authority:external-route-test \
   -e PULPO_AUTHORITY_VERIFIER_ID=verifier:external-route-ed25519 \
