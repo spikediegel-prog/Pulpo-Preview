@@ -16,7 +16,7 @@ from os import PathLike
 from pathlib import Path
 import sqlite3
 from threading import RLock
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Iterator, Protocol
 
 from .audit_parallel import audit_row_has_valid_types
 from .database_activity import ObservedConnection
@@ -476,6 +476,32 @@ class SQLiteKernelState:
         for sequence, *body in rows:
             if type(sequence) is not int or not audit_row_has_valid_types(body):
                 raise ValueError("audit row types invalid")
+
+    def iter_audit(
+        self,
+        *,
+        event: str | None = None,
+        reverse: bool = False,
+    ) -> Iterator[dict[str, Any]]:
+        """Stream audit records without materializing the whole chain.
+
+        Preview adaptation of upstream #250: Preview's audit table has no
+        delta columns (delta-audit projection not adopted), so only the
+        canonical columns are selected. The chain is NOT verified here.
+        """
+        order = "DESC" if reverse else "ASC"
+        columns = "event, payload_json, previous_hash, timestamp_ns, hash"
+        if event is None:
+            cursor = self._connection.execute(
+                f"SELECT {columns} FROM audit ORDER BY sequence {order}"
+            )
+        else:
+            cursor = self._connection.execute(
+                f"SELECT {columns} FROM audit WHERE event = ? ORDER BY sequence {order}",
+                (event,),
+            )
+        for e, p, ph, ts, h in cursor:
+            yield {"event": e, "payload": json.loads(p), "previous_hash": ph, "timestamp_ns": ts, "hash": h}
 
     @property
     def audit(self) -> list[dict[str, Any]]:
