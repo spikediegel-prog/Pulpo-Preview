@@ -7,6 +7,7 @@ not another router, policy engine, or evidence ledger.
 
 from __future__ import annotations
 
+from contextlib import closing
 from dataclasses import dataclass
 from hashlib import sha256
 import hmac
@@ -695,17 +696,18 @@ class SQLiteKernelState:
             raise ValueError("unique audit identity invalid")
         with self._connection:
             self._connection.execute("BEGIN IMMEDIATE")
-            rows = self._connection.execute(
+            with closing(self._connection.execute(
                 "SELECT payload_json FROM audit WHERE event = ? ORDER BY sequence",
                 (event,),
-            )
-            # Stream raw rows within the same locked transaction. Still scan
-            # every row: later duplicates or malformed JSON must not be hidden.
-            matches: list[dict[str, Any]] = []
-            for (encoded,) in rows:
-                candidate = json.loads(str(encoded))
-                if isinstance(candidate, dict) and candidate.get(identity_field) == identity_value:
-                    matches.append(candidate)
+            )) as rows:
+                # Stream raw rows within the same locked transaction. Still scan
+                # every row: later duplicates or malformed JSON must not be hidden.
+                # Close even on failure: a retained traceback must not hold a read lock.
+                matches: list[dict[str, Any]] = []
+                for (encoded,) in rows:
+                    candidate = json.loads(str(encoded))
+                    if isinstance(candidate, dict) and candidate.get(identity_field) == identity_value:
+                        matches.append(candidate)
             if len(matches) > 1:
                 raise ValueError("unique audit identity ambiguous")
             if matches:
