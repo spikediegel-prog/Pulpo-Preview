@@ -44,7 +44,11 @@ class SQLiteCustodyEvidenceConvergence:
         custody: SQLiteGovernanceCustody,
         *,
         fault_hook: FaultHook | None = None,
+        reuse_connection: bool = False,
     ) -> None:
+        if type(reuse_connection) is not bool:
+            raise ValueError("reuse_connection must be a host boolean")
+        self._reuse_connection = reuse_connection
         self.custody = custody
         self.path = Path(custody.path)
         self._fault_hook = fault_hook
@@ -229,7 +233,11 @@ class SQLiteCustodyEvidenceConvergence:
     def project_one(self) -> str | None:
         """Project one pending transition atomically into canonical audit evidence."""
 
-        connection = self._connect()
+        with closing(self._connect()) as connection:
+            return self._project_one_connection(connection)
+
+    def _project_one_connection(self, connection: sqlite3.Connection) -> str | None:
+        # Same per-transition transaction, validations, fault hooks and commits.
         try:
             connection.execute("BEGIN IMMEDIATE")
             row = connection.execute(
@@ -299,10 +307,18 @@ class SQLiteCustodyEvidenceConvergence:
             if isinstance(exc, (KeyboardInterrupt, SystemExit)):
                 raise
             raise CustodyEvidenceViolation("custody_evidence_projection_failed") from exc
-        finally:
-            connection.close()
 
     def project_all(self) -> tuple[str, ...]:
+        if self._reuse_connection:
+            # Invocation-local owner connection only. Never retained across calls
+            # or shared with another thread; each transition still commits alone.
+            with closing(self._connect()) as connection:
+                projected: list[str] = []
+                while True:
+                    value = self._project_one_connection(connection)
+                    if value is None:
+                        return tuple(projected)
+                    projected.append(value)
         projected: list[str] = []
         while True:
             value = self.project_one()
