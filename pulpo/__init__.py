@@ -2,6 +2,8 @@
 
 __version__ = "0.1.0"
 
+from .accountability import AccountableContext, AccountableContextObservation, AccountableGovernance
+
 from .authority import (
     ApprovalEnvelope,
     ApprovalVerifier,
@@ -37,6 +39,7 @@ from .performance_tuning import (
     PerformanceProfile,
     SystemFingerprint,
 )
+from .provenance import SemanticProvenance, artifact_hash
 from .orchestrator import (
     ApprovalHandle,
     AuthorizationAttempt,
@@ -57,6 +60,9 @@ __all__ = [
     "StateRecoveryError",
     "ResourceScope",
     "AdaptiveAuditVerificationEngine",
+    "AccountableContext",
+    "AccountableContextObservation",
+    "AccountableGovernance",
     "AgentGrant",
     "ApprovalEnvelope",
     "ApprovalHandle",
@@ -93,9 +99,11 @@ __all__ = [
     "PulpoOrchestrator",
     "SQLiteBudgetAccount",
     "SQLiteKernelState",
+    "SemanticProvenance",
     "StateIntegrityError",
     "SystemFingerprint",
     "TargetObligationStatus",
     "TargetResolution",
+    "artifact_hash",
     "evaluate_locked_target_with_approval",
 ]
