@@ -1,12 +1,12 @@
 {
   "channel": "preview",
-  "display_name": "Pulpo Preview — The Mad Lads Playground",
+  "display_name": "Pulpo Preview \u2014 The Mad Lads Playground",
   "classification": "unofficial testing snapshot",
   "official_release": false,
   "upstream": "Ironnember/Pulpo1.0",
   "fork": "spikediegel-prog/Pulpo-Preview",
-  "date": "2026-11-05",
-  "selection_rule": "Open, ready-for-review PR; no explicit hold; current head matches retrieved check revision; every reported check/status is completed/success; no incomplete pagination. Historical individual-head checks do not prove combined or production safety.",
+  "date": "2026-11-08",
+  "selection_rule": "2026-11-08 port run: the 34 STILL NEEDED / PARTIALLY items from the 2026-11-08 triage of 102 upstream PRs (74 open + 28 closed-unmerged) were ported as 34 open fork PRs (#80-#113), one per upstream PR, each validated on its own branch only. There is NO combined head and NO combined validation for this snapshot (see combined_validation_2026_11_08). The Oct 3 selection rule below is preserved as history in combined_validation.",
   "upstream_main_sha": "f08486305736346750aba1c8c6ad1e3c16e061ca",
   "combined_code_sha": "60f73fb0fa04703e711a94d89662237cf93b403e",
   "combined_validation": {
@@ -41,6 +41,20 @@
         "head_changed": true,
         "reported_checks": 11,
         "reported_result": "success"
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "8246fa0ea0fe910e5107b18c343e472c7f35f9e1",
+        "head_changed": false,
+        "reported_checks": 11,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": {
+        "number": 95,
+        "branch": "port/upstream-219-windows",
+        "head_sha": "938687c5b20500b8556007dbc5646b9f814b21e7",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/95"
       }
     },
     {
@@ -61,7 +75,16 @@
         "head_changed": true,
         "reported_checks": 11,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "1677b11f8db939a501802f659ea896224b2f7e4b",
+        "head_changed": false,
+        "reported_checks": 11,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     },
     {
       "number": 235,
@@ -81,7 +104,16 @@
         "head_changed": false,
         "reported_checks": 13,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "4c5305de5bc7e6fdbe20ee39dc2c3a10345eb528",
+        "head_changed": false,
+        "reported_checks": 13,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     },
     {
       "number": 236,
@@ -103,6 +135,20 @@
         "head_changed": false,
         "reported_checks": 12,
         "reported_result": "success"
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "24a1d16a925b86376ff03f0dcf75b3b9b46a1ac6",
+        "head_changed": false,
+        "reported_checks": 12,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": {
+        "number": 99,
+        "branch": "port/upstream-236-dep-audit",
+        "head_sha": "c8924627d18c2416dbfa2d32a2b5301c4f33ae8c",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/99"
       }
     },
     {
@@ -123,7 +169,16 @@
         "head_changed": true,
         "reported_checks": 12,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "2542bf37ec9c92dfb5b8f427330cafbcc4b46776",
+        "head_changed": false,
+        "reported_checks": 12,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     },
     {
       "number": 238,
@@ -143,7 +198,16 @@
         "head_changed": false,
         "reported_checks": 9,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "b7b3eac5447b46b9614b799d4cb76d8c6e2415eb",
+        "head_changed": false,
+        "reported_checks": 9,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     },
     {
       "number": 239,
@@ -165,6 +229,20 @@
         "head_changed": true,
         "reported_checks": 11,
         "reported_result": "success"
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "b15a81f76c5e634d0523831fa54683f342dc34f4",
+        "head_changed": false,
+        "reported_checks": 11,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": {
+        "number": 101,
+        "branch": "port/upstream-239-provenance",
+        "head_sha": "9c83f572e416106a953d71cf590d9fde85c7ec8d",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/101"
       }
     },
     {
@@ -185,7 +263,16 @@
         "head_changed": false,
         "reported_checks": 8,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "74dc36d0076591c66a4913b339927e71461b94e3",
+        "head_changed": false,
+        "reported_checks": 8,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     },
     {
       "number": 250,
@@ -213,6 +300,20 @@
         "head_changed": false,
         "reported_checks": 10,
         "reported_result": "success"
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "962033d51c7d2756471aa004bfc0554021d74fa5",
+        "head_changed": false,
+        "reported_checks": 10,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": {
+        "number": 111,
+        "branch": "port/upstream-250-remainder",
+        "head_sha": "171a193fba34d76fb680cbed430b10952611da88",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/111"
       }
     },
     {
@@ -238,6 +339,20 @@
         "head_changed": false,
         "reported_checks": 13,
         "reported_result": "success"
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "5c258b332c414cfa22af10cf6f959e57aabaaf17",
+        "head_changed": false,
+        "reported_checks": 13,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": {
+        "number": 112,
+        "branch": "port/upstream-258-leftover",
+        "head_sha": "72211e0da2271bf80d1fe23b8e2c041ff2652e7b",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/112"
       }
     },
     {
@@ -263,6 +378,20 @@
         "head_changed": false,
         "reported_checks": 12,
         "reported_result": "success"
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "ebc72e02d35b97428754e61edf4cc534b6cf9e89",
+        "head_changed": false,
+        "reported_checks": 12,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": {
+        "number": 97,
+        "branch": "port/upstream-267-gpu-slice",
+        "head_sha": "d2fb500a147ec6e0d48a034935b808acc3987faa",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/97"
       }
     },
     {
@@ -283,7 +412,16 @@
         "head_changed": false,
         "reported_checks": 11,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "9902d17c7c39b9a30b20b1fc6fb73e96eefe73d5",
+        "head_changed": false,
+        "reported_checks": 11,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     },
     {
       "number": 276,
@@ -303,7 +441,16 @@
         "head_changed": false,
         "reported_checks": 11,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "298e9b24d885a442dc4e0b95336b38bda74a0ea2",
+        "head_changed": false,
+        "reported_checks": 11,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     },
     {
       "number": 277,
@@ -323,7 +470,16 @@
         "head_changed": false,
         "reported_checks": 12,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "21742d3d2f9340074533b36d97844b17effa1830",
+        "head_changed": false,
+        "reported_checks": 12,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     },
     {
       "number": 289,
@@ -343,7 +499,16 @@
         "head_changed": true,
         "reported_checks": 12,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "CLOSED",
+        "head_sha": "fb849cb0794bf0c9834c31f349139db98228abb0",
+        "head_changed": false,
+        "reported_checks": 12,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     },
     {
       "number": 293,
@@ -363,7 +528,16 @@
         "head_changed": true,
         "reported_checks": 12,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "CLOSED",
+        "head_sha": "36a7789c4cfbd16b5f4e9b497eba29a9588b362f",
+        "head_changed": false,
+        "reported_checks": 12,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     },
     {
       "number": 294,
@@ -383,6 +557,20 @@
         "head_changed": false,
         "reported_checks": 11,
         "reported_result": "success"
+      },
+      "status_2026_11_08": {
+        "state": "OPEN",
+        "head_sha": "ea73035f44ac07c313a2330b74d653efb3aef02d",
+        "head_changed": false,
+        "reported_checks": 11,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": {
+        "number": 90,
+        "branch": "port/upstream-294-readme-host-bound",
+        "head_sha": "09e8a4d85d1d4ab8718c5c0e8d7620abae581fb4",
+        "url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/90"
       }
     },
     {
@@ -403,7 +591,16 @@
         "head_changed": false,
         "reported_checks": 10,
         "reported_result": "success"
-      }
+      },
+      "status_2026_11_08": {
+        "state": "CLOSED",
+        "head_sha": "d95a2ef3180a2d5186ddeebce108ae6b49ea7274",
+        "head_changed": false,
+        "reported_checks": 10,
+        "reported_result": "success",
+        "failing_checks": []
+      },
+      "port_pr_2026_11_08": "none \u2014 already in Preview (Oct 3 combined preview or fork backport); no new port PR in this run"
     }
   ],
   "excluded": [
@@ -703,8 +900,8 @@
     "hosted_build": "Unknown until matching workflow completes",
     "boundary": "Not MSI, full Windows suite success, independent deployment or production proof"
   },
-  "refresh_note": "2026-11-05 refresh: upstream main and the 18 listed PRs were re-checked against Ironnember/Pulpo1.0 on 2026-11-05 (states, heads, check counts); the Oct 3 combined-preview record below is preserved as history. This refresh does NOT re-run the Oct 3 selection: the 3 closed PRs (#289, #293, #295) are no longer open candidates, 6 PRs have new heads, and the Oct 3 combined-preview list no longer stands as a combined set. New upstream PRs since Oct 3 were listed, not evaluated. The new validation is fork main as-is, not a fresh combined preview.",
-  "fork_main_sha": "dc38bf2c935168d70090ac24cdeec0fbd10b5e87",
+  "refresh_note": "2026-11-08 refresh: the 2026-11-08 port run (34 open fork PRs #80-#113, one per STILL NEEDED / PARTIALLY upstream PR from the 2026-11-08 triage) is recorded in port_prs_2026_11_08 with per-branch validation only. All 34 port PRs are OPEN and none is merged, so there is NO combined head and NO combined validation \u2014 see combined_validation_2026_11_08. Upstream main re-verified at f084863 (0 merges since 2026-11-05); merge-base of Preview main 9c388e6 and upstream main is d674dbb, NOT f084863 \u2014 the Nov 5 '0 behind' ancestry claim is corrected here (content from the 13 post-Oct-3 main commits is present only where the fork re-applied it). The 18 Oct-3/Nov-5 listed PRs were re-checked live (heads unchanged since Nov 5, all checks passing). Keep/drop: #289 DROP, #293/#295 KEEP. Not ported: 8 NEEDS DECISION, the #246/#248/#251 perf-trio design decision, 29 NOT NEEDED. The Nov 5 refresh_note and Oct 3 combined record below are preserved as history.",
+  "fork_main_sha": "9c388e6f3bc674496f3fd6b3fa821fab54d1411a",
   "fork_main_validation": {
     "claim": "Verified local execution",
     "date": "2026-11-05",
@@ -716,7 +913,9 @@
     "python": "3.12.3",
     "environment": "Pulpo-OS-Dev VM (pulpo-os), Ubuntu 24.04, 4 CPUs / 3.8 GiB RAM",
     "log": "perf-results/preview-full-tests-20261105.log",
-    "boundary": "Fork main as-is at dc38bf2 (merge PR #78), not a fresh combined-preview selection. Does not verify all Docker/authority-service/provider containment workflows; Windows full suite not re-run (Oct 3 Windows result stands as historical, still failing); hosted validation of this head pending."
+    "boundary": "Fork main as-is at dc38bf2 (merge PR #78), not a fresh combined-preview selection. Does not verify all Docker/authority-service/provider containment workflows; Windows full suite not re-run (Oct 3 Windows result stands as historical, still failing); hosted validation of this head pending. Per-branch full-suite runs off 9c388e6 are recorded per port in port_prs_2026_11_08; they corroborate the 1086-test main baseline but are not a combined validation.",
+    "applies_to_fork_main_sha": "9c388e6f3bc674496f3fd6b3fa821fab54d1411a",
+    "applies_to_note": "The only commit between dc38bf2 and 9c388e6 is the docs-only Nov 5 snapshot refresh (PR #79: PREVIEW.md + PREVIEW_MANIFEST.json only), so the code validated at dc38bf2 is the code at 9c388e6. No direct bare-main full-suite run at 9c388e6 was performed in this refresh (docs-only change)."
   },
   "open_upstream_prs_2026_11_05": {
     "count": 74,
@@ -765,6 +964,974 @@
       35,
       31
     ],
-    "note": "Listed, not evaluated under the selection rule in this refresh. Notably #246 and #248 (Phase II audit-optimization pair) and #262 remain open. The Oct 3 excluded list was status-checked only; check status was not re-verified, so no excluded PR was re-decided here — notably #241–#245 and #247 (Phase II admission-train items) are still open and non-draft."
+    "note": "Listed, not evaluated under the selection rule in this refresh. Notably #246 and #248 (Phase II audit-optimization pair) and #262 remain open. The Oct 3 excluded list was status-checked only; check status was not re-verified, so no excluded PR was re-decided here \u2014 notably #241\u2013#245 and #247 (Phase II admission-train items) are still open and non-draft."
+  },
+  "port_prs_2026_11_08": [
+    {
+      "upstream_number": 341,
+      "upstream_title": "docs: publish SHAETHON evidence packages and record the canonical pass",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/341",
+      "upstream_head_sha": "1f8708a7e5d50b3e51dfdace350fcddbce89223e",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 12,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 80,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/80",
+      "preview_branch": "port/upstream-341-shaethon",
+      "preview_head_sha": "b54d22558ce186c7c708992746b00bc606f6d055",
+      "preview_state": "OPEN",
+      "band": "3",
+      "branch_validation": "Docs-only. Both evidence zips list cleanly (unzip -l). No code touched, no test run.",
+      "notes": "Preview also lacked the merged #336 base doc this amends, so the review doc is added whole (+686 lines vs upstream +227)."
+    },
+    {
+      "upstream_number": 316,
+      "upstream_title": "feat: opt-in local Ollama proposals and offline worker proof",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/316",
+      "upstream_head_sha": "5190a6ddfc77963e20bd0623fbbc5747d75b7cf6",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 12,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 81,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/81",
+      "preview_branch": "port/upstream-316-ollama-offline",
+      "preview_head_sha": "40cee1d36b19d163de8107fa069d21c894a4eb95",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "Focused tests: tests.test_offline_python_profile 13 OK, 1 skipped (live macOS probe path).",
+      "notes": "#316 duplicates merged upstream #317; fork port 6e260e2 covered 5/9 files \u2014 this ports only the 4 missing files + 1 function."
+    },
+    {
+      "upstream_number": 305,
+      "upstream_title": "docs: record bounded Guardian security evidence and integration checklist",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/305",
+      "upstream_head_sha": "89a9e29408ce2b197d287d33f6b79a875e774b19",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 11,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 82,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/82",
+      "preview_branch": "port/upstream-305-guardian",
+      "preview_head_sha": "437d693f032628247c596394c81154598d5fea7e",
+      "preview_state": "OPEN",
+      "band": "3",
+      "branch_validation": "Docs-only. results.json parses as valid JSON; p3_probe.py compiles. No test run.",
+      "notes": "Docs-only; evidence recorded as-is from 2026-10-12, nothing re-run."
+    },
+    {
+      "upstream_number": 309,
+      "upstream_title": "docs: source-linked learning library and offline financial evidence lab",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/309",
+      "upstream_head_sha": "54ab6fec56023fc35b58e712b91c8db5d61eda7b",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 11,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 83,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/83",
+      "preview_branch": "port/upstream-309-learning",
+      "preview_head_sha": "5dce33ec8168342cdff9987e10b00f4367ea9b3f",
+      "preview_state": "OPEN",
+      "band": "3",
+      "branch_validation": "Lab tests: python3 -W error -m unittest discover -s docs/learning/examples: 7 OK.",
+      "notes": "README.md link section merged by hand (fork README has no upstream insertion point)."
+    },
+    {
+      "upstream_number": 330,
+      "upstream_title": "proof: add Phase 2 synthetic GPIO adapter contract",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/330",
+      "upstream_head_sha": "a5634ad0e5de0c920131290f72173c9859737e31",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 13,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 84,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/84",
+      "preview_branch": "port/upstream-330-gpio-dry-run",
+      "preview_head_sha": "c2607e83974a1efb60b6c8f83dc9246e3bfd98f2",
+      "preview_state": "OPEN",
+      "band": "side-project",
+      "branch_validation": "New tests tests.test_pulpo_node_dry_run_gpio: 21 OK; proof script run: 21 tests OK. Fork adaptation: reconcile_dry_run_output maps ValueError from kernel.verify_audit() to MISMATCH (fail-closed).",
+      "notes": "Side-project scope (Autonomous/Pi), not Phase II core. Phase 1 node proof (merged 561e64f) still absent from Preview."
+    },
+    {
+      "upstream_number": 311,
+      "upstream_title": "fix: combine custody-handle validation, renewal semantics and budget cleanup",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/311",
+      "upstream_head_sha": "3db22fe80c4d407b1a117f5e6f1b43528f79910e",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 13,
+      "upstream_reported_result": "failure",
+      "upstream_failing_checks": [
+        "admission-hold"
+      ],
+      "upstream_check_note": "admission-hold is a process/admission gate, not a test failure",
+      "preview_pr_number": 85,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/85",
+      "preview_branch": "port/upstream-311-commerce-repairs",
+      "preview_head_sha": "7eb4513a874ef195d3d6c20b774126260773651d",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "Custody-service tests: test_combined_commerce_repairs 3 OK.",
+      "notes": "Also closes the only gap of upstream #307 (docs/CUSTODY_EXACT_HANDLES.md), included here rather than in a separate #307 port."
+    },
+    {
+      "upstream_number": 292,
+      "upstream_title": "docs: add Pulpo user guide PDF",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/292",
+      "upstream_head_sha": "1238aa66fff8faf1dea8f099094faa8aa36210a2",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 11,
+      "upstream_reported_result": "failure",
+      "upstream_failing_checks": [
+        "test",
+        "unit-tests"
+      ],
+      "upstream_check_note": "real test failures at the upstream head (unit-tests, test) \u2014 pre-existing on its base",
+      "preview_pr_number": 86,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/86",
+      "preview_branch": "port/upstream-292-userguide",
+      "preview_head_sha": "59fd29b9372b022e1621b94f64759ca77d9c137c",
+      "preview_state": "OPEN",
+      "band": "3",
+      "branch_validation": "Docs-only (1 PDF, byte-identical to upstream head). No test run. FLAG: guide is scoped to Pulpo1.0 at d674dbb and predates fork TTL/checkpoint work \u2014 stale, do not present as current.",
+      "notes": "Upstream #292 itself fails unit-tests + test at its head (pre-existing on its base, unrelated to this single-PDF change)."
+    },
+    {
+      "upstream_number": 212,
+      "upstream_title": "Proof: reconcile Name.com completion controls onto current main v0",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/212",
+      "upstream_head_sha": "b1f67af3008fe022ffc76c57422728ccd7accea5",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 14,
+      "upstream_reported_result": "failure",
+      "upstream_failing_checks": [
+        "admission-hold"
+      ],
+      "upstream_check_note": "admission-hold is a process/admission gate, not a test failure",
+      "preview_pr_number": 87,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/87",
+      "preview_branch": "port/upstream-212-namecom-discovery",
+      "preview_head_sha": "1045625ddcbebd1c455a99d736b9d628d922a866",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "New tests tests.test_namecom_sandbox_discovery_v0: 3 OK. Discovery script not run live (sandbox-gated). Base Sep 8 \u2014 stale, treat proof doc as historical.",
+      "notes": "Core commerce controls already in Preview; proof/discovery part only."
+    },
+    {
+      "upstream_number": 171,
+      "upstream_title": "Proof: external Name.com route custody v0",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/171",
+      "upstream_head_sha": "29e2da6ef2f68f51cac6d67778047e09b839d101",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 16,
+      "upstream_reported_result": "failure",
+      "upstream_failing_checks": [
+        "admission-hold"
+      ],
+      "upstream_check_note": "admission-hold is a process/admission gate, not a test failure",
+      "preview_pr_number": 88,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/88",
+      "preview_branch": "port/upstream-171-external-route",
+      "preview_head_sha": "aad96b4f636faa90f23ce7b1b4803148e2b52936",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "No unit test in this port. Scripts syntax-checked (bash -n OK). Proof script not run live (CI-gated, needs Docker). Base Sep 4 \u2014 stale.",
+      "notes": "Internal route isolation already in Preview (fork version); external proof/discovery part only."
+    },
+    {
+      "upstream_number": 72,
+      "upstream_title": "Apply learned skill discipline to target and authority proofs",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/72",
+      "upstream_head_sha": "6edae7faf3225d7f6bdf5aa5b3ee993606d412a1",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 12,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 89,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/89",
+      "preview_branch": "port/upstream-72-exact-target-docs",
+      "preview_head_sha": "7c7960bb8c83de1c4bab3e86387f46af6aaf2743",
+      "preview_state": "OPEN",
+      "band": "1",
+      "branch_validation": "Docs-only. Tree check only (working tree clean apart from the two intended files; diff +91/-63 matches upstream).",
+      "notes": "EXACT_TARGET_PROOF status line cites upstream merge fc94126 (PR #55); in Preview the target-lock content arrived via combined commit 60f73fb, not that merge \u2014 citation kept verbatim as upstream provenance."
+    },
+    {
+      "upstream_number": 294,
+      "upstream_title": "docs: state host bound vs Pulpo bound",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/294",
+      "upstream_head_sha": "ea73035f44ac07c313a2330b74d653efb3aef02d",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 11,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 90,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/90",
+      "preview_branch": "port/upstream-294-readme-host-bound",
+      "preview_head_sha": "09e8a4d85d1d4ab8718c5c0e8d7620abae581fb4",
+      "preview_state": "OPEN",
+      "band": "1",
+      "branch_validation": "Docs-only. Tree check only (1 file, README.md +6, wording verbatim upstream).",
+      "notes": "README section only; docs/AUTHORITY_BOUNDARY_DECISION.md already byte-identical to head."
+    },
+    {
+      "upstream_number": 299,
+      "upstream_title": "Proof: add synthetic Context Custody V0",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/299",
+      "upstream_head_sha": "43d9588d7f4ac6a6acaa61c69ebc6e1894f1c138",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 22,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 91,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/91",
+      "preview_branch": "port/upstream-299-context-custody",
+      "preview_head_sha": "3f1e45d280e78acbf117b57a830a9bac8c038987",
+      "preview_state": "OPEN",
+      "band": "2",
+      "branch_validation": "New tests 30/30 OK. Full suite: 1116 tests OK (skipped=66); baseline 1086 + 30 new.",
+      "notes": "Pure additive; no production router/authority source involved."
+    },
+    {
+      "upstream_number": 327,
+      "upstream_title": "proof: add synthetic monitor-custody challenge",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/327",
+      "upstream_head_sha": "4c055cd2eaf82d1db048df6058182a0c91c310fa",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 13,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 92,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/92",
+      "preview_branch": "port/upstream-327-monitor-custody",
+      "preview_head_sha": "61e0b33be8e40bfc9a463d420ae26f547496eaec",
+      "preview_state": "OPEN",
+      "band": "2",
+      "branch_validation": "New test 1/1 OK. Full suite: 1087 tests OK (skipped=66); baseline 1086 + 1 new.",
+      "notes": "Pure additive; reuses Preview pulpo.targets and tests.authority_support unchanged."
+    },
+    {
+      "upstream_number": 333,
+      "upstream_title": "Proof: hostile agent task injection cannot bypass exact synthetic custody route",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/333",
+      "upstream_head_sha": "69e636d1be97168483636acb3c97727595c8d55d",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 14,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 93,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/93",
+      "preview_branch": "port/upstream-333-task-injection",
+      "preview_head_sha": "c84f0b2b9ff669c95f82e81d201e07c43c819180",
+      "preview_state": "OPEN",
+      "band": "2",
+      "branch_validation": "New tests 3 run / 1 skipped (macOS Seatbelt case) OK. Full suite: 1089 tests OK (skipped=67). Vendors the 6b3caac incident-response proof as a first commit (dependency of the #333 fixture).",
+      "notes": "Also covers the task-injection part of upstream #334 (byte-identical files). macOS sandbox proof covered by the CI job added in this PR, not runnable on the Linux VM."
+    },
+    {
+      "upstream_number": 244,
+      "upstream_title": "Narrow custody container package surface",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/244",
+      "upstream_head_sha": "0b5c38cb2041cd608e0efe3584316a2814f47cc9",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 12,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 94,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/94",
+      "preview_branch": "port/upstream-244-custody-dockerfile",
+      "preview_head_sha": "c31143ef468b7081a7f7ef3563a79a8aeeda06da",
+      "preview_state": "OPEN",
+      "band": "1",
+      "branch_validation": "Full suite: 1086 tests OK (skipped=66), identical to main baseline. Docker image build NOT verified (no Docker on the VM). Adaptation: cryptography==50.0.2 (Preview pin), not upstream 50.0.1.",
+      "notes": "Upstream #244's change is also contained in the #250 remainder port (#111) \u2014 do not port #244 separately afterward."
+    },
+    {
+      "upstream_number": 219,
+      "upstream_title": "Review patch for local proof and snapshot portability",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/219",
+      "upstream_head_sha": "8246fa0ea0fe910e5107b18c343e472c7f35f9e1",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 11,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 95,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/95",
+      "preview_branch": "port/upstream-219-windows",
+      "preview_head_sha": "938687c5b20500b8556007dbc5646b9f814b21e7",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "Affected tests: test_local_intelligence_effect_proof + v2: 14 OK; test_mcp_boundary + test_mcp_plugin: 28 OK, 2 skipped. mcp_boundary.py deliberately NOT restructured (fork Windows branch is stronger). Open follow-up: commit_unknown vs export_failed wording (Windows-only).",
+      "notes": "Touches the same proof script as the #316 and #287 ports (different regions); whichever merges first, the others rebase cleanly."
+    },
+    {
+      "upstream_number": 287,
+      "upstream_title": "Split #258: harden local intelligence containment",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/287",
+      "upstream_head_sha": "0e30bf8ab91e48db84e4fcc09390f92b78a96af8",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 11,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 96,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/96",
+      "preview_branch": "port/upstream-287-v1-containment",
+      "preview_head_sha": "1c29c987c16208122bb0dfb87abcf92286ba58a0",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "Affected tests: test_local_intelligence_effect_proof + v2: 18 OK.",
+      "notes": "V2 disposable-home/auth-copy already in Preview; V1 remainder only. PurePosixPath lines also in the #219 port \u2014 whichever merges first, the other needs a trivial rebase."
+    },
+    {
+      "upstream_number": 267,
+      "upstream_title": "feat: add portable GPU audit integrity acceleration",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/267",
+      "upstream_head_sha": "ebc72e02d35b97428754e61edf4cc534b6cf9e89",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 12,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 97,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/97",
+      "preview_branch": "port/upstream-267-gpu-slice",
+      "preview_head_sha": "d2fb500a147ec6e0d48a034935b808acc3987faa",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "Full suite: 1089 tests OK (skipped=66). GPU tests are pytest-style and NOT collected by unittest; the 2 CPU-only functions were run directly and pass. torch/pytest not installed on the VM. Upstream validation shows near-parity, not speedup (0.67x-0.99x).",
+      "notes": "GPU slice only; the base remainder is covered by the #250 (#111) and #258 (#112) ports. Do not port the base from this PR."
+    },
+    {
+      "upstream_number": 280,
+      "upstream_title": "Proof: expose ceremony provenance gap",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/280",
+      "upstream_head_sha": "52bb7ac5b8f59fded2f86d6e42551e8ac0cbab6a",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 11,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 98,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/98",
+      "preview_branch": "port/upstream-280-ceremony-provenance-test",
+      "preview_head_sha": "77c41109bbe0726ebbf1b2edab9c52e1bb3a589f",
+      "preview_state": "OPEN",
+      "band": "1",
+      "branch_validation": "New test 1 OK (expected failures=1). Full suite: 1087 tests OK (skipped=66, expected failures=1). Stays an expectedFailure: fork ceremony gate checks only opted-in actions and this test does not opt in.",
+      "notes": "One-file expectedFailure marker; see also upstream #288/#334 (needs-decision, not ported)."
+    },
+    {
+      "upstream_number": 236,
+      "upstream_title": "Harden dependency auditing for Pulpo AI governance",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/236",
+      "upstream_head_sha": "24a1d16a925b86376ff03f0dcf75b3b9b46a1ac6",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 12,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 99,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/99",
+      "preview_branch": "port/upstream-236-dep-audit",
+      "preview_head_sha": "c8924627d18c2416dbfa2d32a2b5301c4f33ae8c",
+      "preview_state": "OPEN",
+      "band": "1",
+      "branch_validation": "Full suite: 1086 tests OK (skipped=66). New CI command run directly (pip-audit 2.10.1): no known vulnerabilities found. Adaptation: cryptography==50.0.2 (Preview pin); README hunk skipped (fork-rewritten README already states the equivalent).",
+      "notes": "Known Oct 3 README conflict resolved by skipping the hunk (see validation)."
+    },
+    {
+      "upstream_number": 297,
+      "upstream_title": "perf: stream unique audit scans without changing durability",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/297",
+      "upstream_head_sha": "e2e06a45256a86d9986ee265a7ff472effebf3f6",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 12,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 100,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/100",
+      "preview_branch": "port/upstream-297-audit-scan-closing",
+      "preview_head_sha": "674affddd62e2d545da75daaa4a24f79b322b904",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "Focused tests test_unique_audit_scan + test_persistence + test_kernel: 56 OK.",
+      "notes": "Streaming scan already in via fork 2fb11f9; this ports the explicit cursor close + regression test + docs."
+    },
+    {
+      "upstream_number": 239,
+      "upstream_title": "Proof: bind semantic provenance to exact intent authority",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/239",
+      "upstream_head_sha": "b15a81f76c5e634d0523831fa54683f342dc34f4",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 11,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 101,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/101",
+      "preview_branch": "port/upstream-239-provenance",
+      "preview_head_sha": "9c83f572e416106a953d71cf590d9fde85c7ec8d",
+      "preview_state": "OPEN",
+      "band": "2",
+      "branch_validation": "New/affected tests 14/14 OK; authority-service tests 10/10 OK. Full suite: 1093 tests OK (skipped=66); baseline 1086 + 7 new. One-line fork-test adaptation (test_ollama_preview_boundary.py:83, strips absent provenance field).",
+      "notes": "Intent-hash change interacts with the fork ceremony gate (2c31f78); checked self-consistent (legacy intents hash identically)."
+    },
+    {
+      "upstream_number": 306,
+      "upstream_title": "proof: make bounded Pulpo 3.5 chat evidence reproducible",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/306",
+      "upstream_head_sha": "d11d713d62f412559dc028b2cbb48a9793c4221c",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 12,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 102,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/102",
+      "preview_branch": "port/upstream-306-pulpo35",
+      "preview_head_sha": "49942ffaa219363b12605e65e424c9ea794036f0",
+      "preview_state": "OPEN",
+      "band": "3",
+      "branch_validation": "Tournament script run live: FINAL PASS_WITH_BOUNDARIES 158 10600; all 24 phase rows 0 failures / 0 errors. Full suite: 1086 tests OK (skipped=66).",
+      "notes": "Duplication: #306's files are ~identical to merged #318 (4ef890e); port #306 ONLY, not both. Overlaps the #314 port (#103) \u2014 whichever merges first, the other needs a rebase."
+    },
+    {
+      "upstream_number": 314,
+      "upstream_title": "fix: close SQLite stores and reproduce bounded Pulpo 3.5 proof",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/314",
+      "upstream_head_sha": "6ec73ff38e05541725b006e66759784a4d188326",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 13,
+      "upstream_reported_result": "failure",
+      "upstream_failing_checks": [
+        "admission-hold"
+      ],
+      "upstream_check_note": "admission-hold is a process/admission gate, not a test failure",
+      "preview_pr_number": 103,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/103",
+      "preview_branch": "port/upstream-314-sqlite-cleanup",
+      "preview_head_sha": "6da679699077dfd820aa08f2dce1dfedd4c51b28",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "New tests test_custody_evidence_cleanup 5 OK; restart-adapter tests 12 OK. Tournament script run live: 158 tests, 0 failures, 0 errors, 0 skips.",
+      "notes": "DRAFT upstream. Core fix already in Preview. Overlaps the #306 port (#102) \u2014 whichever merges first, the other needs a rebase. The 3 restart-adapter closing tests are also in #325; included here, not duplicated there."
+    },
+    {
+      "upstream_number": 304,
+      "upstream_title": "proof: introduce Gladiator assessment completion gate (advisory v0)",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/304",
+      "upstream_head_sha": "1fd8120e55f6858edcebc8c069deef3fd3427f64",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 11,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 104,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/104",
+      "preview_branch": "port/upstream-304-gladiator-gate",
+      "preview_head_sha": "06ba3dbaac455c9860d8a1238fb9aa5548b5950f",
+      "preview_state": "OPEN",
+      "band": "2",
+      "branch_validation": "New tests 32 OK. Full suite: 1118 tests OK (skipped=66); baseline 1086 + 32 new.",
+      "notes": "Advisory gate only; NOT wired into enforcement. No overlap with the #250 remainder port."
+    },
+    {
+      "upstream_number": 147,
+      "upstream_title": "Proof: Directive Memory skill capability boundary v0",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/147",
+      "upstream_head_sha": "d67601d24508a8d48b86cf0161669a9d1fae6f2e",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 13,
+      "upstream_reported_result": "failure",
+      "upstream_failing_checks": [
+        "admission-hold"
+      ],
+      "upstream_check_note": "admission-hold is a process/admission gate, not a test failure",
+      "preview_pr_number": 105,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/105",
+      "preview_branch": "port/upstream-147-directive-memory",
+      "preview_head_sha": "e5ee073015e3e7338083659fd39467f1c6f2182d",
+      "preview_state": "OPEN",
+      "band": "2",
+      "branch_validation": "New tests 12 OK. Full suite: 1098 tests OK (skipped=66); baseline 1086 + 12 new.",
+      "notes": "Draft/held upstream (closed unmerged, admission-hold failing). Files only, as-is; nothing wired into the kernel."
+    },
+    {
+      "upstream_number": 232,
+      "upstream_title": "Proof: conversation-derived directives cannot create or broaden authority",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/232",
+      "upstream_head_sha": "be4ad16837e1f902d64ad0467494f2feca2cc3de",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 13,
+      "upstream_reported_result": "failure",
+      "upstream_failing_checks": [
+        "admission-hold"
+      ],
+      "upstream_check_note": "admission-hold is a process/admission gate, not a test failure",
+      "preview_pr_number": 106,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/106",
+      "preview_branch": "port/upstream-232-conversation-directives",
+      "preview_head_sha": "c9857de37a987899793c4819118c27674b9e95ce",
+      "preview_state": "OPEN",
+      "band": "2",
+      "branch_validation": "New tests 10 OK. Full suite: 1096 tests OK (skipped=66); baseline 1086 + 10 new.",
+      "notes": "Draft/held upstream (closed unmerged, admission-hold failing). Files only, as-is."
+    },
+    {
+      "upstream_number": 241,
+      "upstream_title": "Security: contain prompt injection in local intelligence execution",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/241",
+      "upstream_head_sha": "99de655d03cd42c91ed37b9774c7dff48ea0ddc7",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 12,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 107,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/107",
+      "preview_branch": "port/upstream-241-seatbelt",
+      "preview_head_sha": "2d565adc59ed3d8f6342691e1a06f104b1ef3500",
+      "preview_state": "OPEN",
+      "band": "2",
+      "branch_validation": "Affected tests 18 OK. Full suite: 1090 tests OK (skipped=66); baseline 1086 + 4 new. macOS Seatbelt CANNOT be verified on the Linux VM (profile text generated and unit-tested only).",
+      "notes": "Overlaps the #250 remainder port (#111), which left the Seatbelt hunks out because this separate #241 port was running in parallel \u2014 merge-time check needed, not a second port."
+    },
+    {
+      "upstream_number": 325,
+      "upstream_title": "fix: reconcile approval permit lifetime and SQLite cleanup on current main",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/325",
+      "upstream_head_sha": "752604fa4752b02e8c0da318d6f839fa65a98447",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 39,
+      "upstream_reported_result": "failure",
+      "upstream_failing_checks": [
+        "admission-hold"
+      ],
+      "upstream_check_note": "admission-hold is a process/admission gate, not a test failure",
+      "preview_pr_number": 108,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/108",
+      "preview_branch": "port/upstream-325-reconciliation-docs",
+      "preview_head_sha": "a7c1bdd06ef917faade90aea31888cdfccde1cc6",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "Focused tests 55 OK. Full suite: 1090 tests OK (skipped=66); baseline 1086 + 4 new.",
+      "notes": "Expiry enforcement already in via fork 33a0d67/d7ab10e. The 3 restart-adapter closing tests are covered by the #314 port (#103), not duplicated here."
+    },
+    {
+      "upstream_number": 141,
+      "upstream_title": "Proof: accountable context before delegation v0",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/141",
+      "upstream_head_sha": "ff9c1a8cc3e46e941df8b0f86ce1c0fddbb4d8c3",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 25,
+      "upstream_reported_result": "failure",
+      "upstream_failing_checks": [
+        "admission-hold"
+      ],
+      "upstream_check_note": "admission-hold is a process/admission gate, not a test failure",
+      "preview_pr_number": 109,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/109",
+      "preview_branch": "port/upstream-141-accountability",
+      "preview_head_sha": "fec4536980b28f0b030f8141fa1090c7942ca143",
+      "preview_state": "OPEN",
+      "band": "2",
+      "branch_validation": "Full suite: 1086 tests OK (skipped=66). New test file is pytest-style, 0 tests collected by unittest. Run directly: 6/7 pass \u2014 the 7th FAILS identically against upstream base 6b3caac (pre-existing upstream defect: the helper always re-signs, discarding the invalid signature). Left as-is.",
+      "notes": "Draft/held upstream (closed unmerged, admission-hold failing). Files only, as-is. Pre-existing upstream test defect (see validation)."
+    },
+    {
+      "upstream_number": 300,
+      "upstream_title": "Add opt-in bounded SQL admission and evidence connection reuse",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/300",
+      "upstream_head_sha": "7488baaf1ab319828c26a3bdab73e878511cbba8",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 11,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 110,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/110",
+      "preview_branch": "port/upstream-300-sql-qos",
+      "preview_head_sha": "64da5051f9b1f7d8c26b5ef78ac9baf5fb71f22d",
+      "preview_state": "OPEN",
+      "band": "2",
+      "branch_validation": "Main suite: 1095 tests OK (skipped=66). Custody-service suite: 75 tests, 74 pass. Benchmark test_sql_qos_benchmark.py is FLAKY UNDER LOAD (passes 4/4 in isolation, fails intermittently on a loaded VM \u2014 timing/load-sensitive exact-count assertions, not a port defect).",
+      "notes": "Defaults off (SQL QoS admission + connection reuse are opt-in). Overlaps the #250 remainder area; this branch ports #300 exactly as its own upstream PR."
+    },
+    {
+      "upstream_number": 250,
+      "upstream_title": "Consolidate recent governance, security, portability, and performance hardening",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/250",
+      "upstream_head_sha": "962033d51c7d2756471aa004bfc0554021d74fa5",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 10,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 111,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/111",
+      "preview_branch": "port/upstream-250-remainder",
+      "preview_head_sha": "171a193fba34d76fb680cbed430b10952611da88",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "Full suite: 1091 tests OK (skipped=66). Custody-service suite: 54 OK. Benchmark smoke OK (8 metrics incl. audit_stream_iterate). BLOCKED slice NOT ported: state.py delta-audit projection + test_delta_audit_performance.py (needs Mike/Austin design decision \u2014 token vs fork checkpoint, changes canonical audit bytes).",
+      "notes": "Porting this remainder effectively ports #241-#248 \u2014 do not port those separately afterward (except #241, ported in parallel as #107 \u2014 see its note). requirements-audit.txt overlaps the #236 port (#99); whoever merges second conflicts on that one file."
+    },
+    {
+      "upstream_number": 258,
+      "upstream_title": "Feature/gpu governance audit",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/258",
+      "upstream_head_sha": "5c258b332c414cfa22af10cf6f959e57aabaaf17",
+      "upstream_state": "OPEN",
+      "upstream_reported_checks": 13,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 112,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/112",
+      "preview_branch": "port/upstream-258-leftover",
+      "preview_head_sha": "72211e0da2271bf80d1fe23b8e2c041ff2652e7b",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "Full suite: 1086 tests OK (skipped=66). Custody-service suite: 50 OK. Authority-service suite: 2 errors, pre-existing on main (webauthn not installed in the venv).",
+      "notes": "Only the #258-only leftovers; everything shared with #250 lives in #111 by construction (disjoint, either merges cleanly). custody-service/tests/test_api.py deliberately NOT deleted (divergence, not a gap)."
+    },
+    {
+      "upstream_number": 302,
+      "upstream_title": "fix: close PR #293 audit integrity and worker custody blockers",
+      "upstream_url": "https://github.com/Ironnember/Pulpo1.0/pull/302",
+      "upstream_head_sha": "38a23ad7a8fa7af0173b2b89d14cef8c0a6acd94",
+      "upstream_state": "CLOSED",
+      "upstream_reported_checks": 10,
+      "upstream_reported_result": "success",
+      "upstream_failing_checks": [],
+      "upstream_check_note": "",
+      "preview_pr_number": 113,
+      "preview_pr_url": "https://github.com/spikediegel-prog/Pulpo-Preview/pull/113",
+      "preview_branch": "port/upstream-302-audit-boundary-test",
+      "preview_head_sha": "1a2d94654b2d277c11eecc2fcc16db9efe4544ae",
+      "preview_state": "OPEN",
+      "band": "remainder",
+      "branch_validation": "New tests 10/10 OK. Full suite: 1096 tests OK (skipped=66); baseline 1086 + 10 new. Constitutional mutation harness: 21/21 killed, 0 survived.",
+      "notes": "DRAFT upstream, closed unmerged. Carries no authority change and no canonical state mutation. One test-only adaptation (verify_audit ValueError 'audit head' vs upstream False) \u2014 fork behaviour pinned by an existing test."
+    }
+  ],
+  "combined_validation_2026_11_08": {
+    "claim": "none \u2014 no combined validation exists for this snapshot",
+    "reason": "All 34 port PRs are OPEN and none is merged, so there is no combined head to validate. Validation is per-branch only (see port_prs_2026_11_08). A combined validation run (python3 -W error -m unittest discover -s tests) must be re-done after Mike merges, on the merged head, before any combined claim is made.",
+    "october_2026_combined_set_stands": false,
+    "note": "The Oct 3 combined set (60f73fb) is preserved as history in combined_validation / combined_code_sha; it no longer stands as a combined set (3 members closed unmerged, heads moved), as already stated in the 2026-11-05 refresh. This refresh does not revive it."
+  },
+  "keep_drop_2026_11_08": [
+    {
+      "number": 289,
+      "title": "docs: clarify current Pulpo state and PR direction",
+      "decision": "DROP",
+      "reason": "Content commit 312e73c is an ancestor of Preview HEAD, but the README section it added was already removed by later fork README rewrites (1d8b6af, af80989); no trace remains in current README.md / PREVIEW.md / docs/. Stale Oct snapshot \u2014 do not re-add (write a fresh status section if one is wanted). No port PR was opened for #289 in this run."
+    },
+    {
+      "number": 293,
+      "title": "perf: add multi-core audit verification and parallel evidence collection",
+      "decision": "KEEP",
+      "reason": "Head is not an ancestor \u2014 content arrived as cherry-picked blobs + fork evolution \u2014 but the multi-core verification + setup path Preview relies on (fork perf train: 622f1a9, 947ed3a, 1d9747e, 40fdf25, d95a2ef; pulpo setup CLI) supersedes the exact head. Dropping would remove it. No port PR was opened for #293 in this run (its repair #302 was ported as #113)."
+    },
+    {
+      "number": 295,
+      "title": "perf: reduce SQLite audit overhead with an opt-in event index",
+      "decision": "KEEP",
+      "reason": "Head d95a2ef is a true ancestor of Preview HEAD; the audit-event index (pulpo/state.py:379) is load-bearing for the fork perf train. Dropping regresses audit perf. No port PR was opened for #295 in this run."
+    }
+  ],
+  "not_ported_2026_11_08": {
+    "needs_decision": [
+      {
+        "number": 64,
+        "title": "Launch: bounded Pulpo Public Proof Lab V0",
+        "reason": "New public surface + design-partner CTA \u2014 Mike/Austin decision, not a quiet port."
+      },
+      {
+        "number": 262,
+        "title": "Proof: deterministic directive supersession v0",
+        "reason": "Changes the meaning of existing directive/permit behaviour \u2014 kernel-admission decision."
+      },
+      {
+        "number": 315,
+        "title": "Require live PostgreSQL authority tests without skips",
+        "reason": "DRAFT; the strict no-skip CI gate + live-Postgres requirement may not suit Preview \u2014 decision needed."
+      },
+      {
+        "number": 334,
+        "title": "Bind protected human-ceremony evidence to durable counter + hostile-worker custody",
+        "reason": "HOLD; Preview has no counter/monotonic logic \u2014 porting means replacing/augmenting the fork ceremony gate (design decision). #333's files are covered by port #93."
+      },
+      {
+        "number": 288,
+        "title": "Repair: require independent ceremony proof for opted-in approvals",
+        "reason": "Same decision as #334 (its parent); fork gate 2c31f78 is the incumbent."
+      },
+      {
+        "number": 291,
+        "title": "Experiment: HELM v0.8.4 G5 alternate-route custody",
+        "reason": "DRAFT experiment scaffolding; body says it should not be merged merely because the experiment passed."
+      },
+      {
+        "number": 221,
+        "title": "Proof: live Telegram external consequence ceremony v0",
+        "reason": "DO NOT FIRE hold object \u2014 firing authority is owner-executed only; porting is not authorising a send."
+      },
+      {
+        "number": 131,
+        "title": "Read-only canonical mobile evidence v0",
+        "reason": "Distribution surface + frozen-snapshot boundary is a product decision; closed unmerged while #130 stays open."
+      }
+    ],
+    "perf_trio_design_decision": [
+      {
+        "number": 246,
+        "title": "perf: add canonical delta logging and audit path optimizations",
+        "reason": "Delta records / delta-root continuity, policy-hash material cache, directive-hash index, indexed unique-audit projection \u2014 the token design vs the fork's restart checkpoint + digest cache is a Mike/Austin design call, not a quiet port. Blocked slice recorded under port #111 (#250)."
+      },
+      {
+        "number": 248,
+        "title": "Perf: eliminate repeated full audit-chain scans",
+        "reason": "The data_version integrity token itself is absent; same design decision as #246 (see #111 blocked slice)."
+      },
+      {
+        "number": 251,
+        "title": "Perf: synthesize delta audit and integrity fast path",
+        "reason": "The synthesis design was never adopted; adopting it means choosing between its token design and the fork's checkpoint/digest-cache approach (they could coexist, but that is a design call)."
+      }
+    ],
+    "not_needed": [
+      {
+        "number": 31,
+        "title": "Record consolidated Pulpo lessons learned register",
+        "reason": "Docs-only; no code gap, no Preview consumer."
+      },
+      {
+        "number": 35,
+        "title": "Research: reconcile emerging agent authorization standards with Pulpo",
+        "reason": "Docs-only research; no code gap."
+      },
+      {
+        "number": 38,
+        "title": "Experiment: verify governed compounding transfer",
+        "reason": "Experiment; no Preview consumer."
+      },
+      {
+        "number": 46,
+        "title": "Experiment: map temporal knowledge transfer across Pulpo generations",
+        "reason": "Experiment; no Preview consumer."
+      },
+      {
+        "number": 47,
+        "title": "Experiment: measure cross-model reasoning lift from Pulpo",
+        "reason": "Frozen live-model benchmark; no Preview consumer."
+      },
+      {
+        "number": 48,
+        "title": "Experiment: execute authorized cross-model Pulpo lift",
+        "reason": "Execution record of #47; no Preview consumer."
+      },
+      {
+        "number": 49,
+        "title": "Generation 4 compatible-client cross-model lift",
+        "reason": "Same experiment lineage; no Preview consumer."
+      },
+      {
+        "number": 50,
+        "title": "Doctrine: make canonical consequence the expansion gate",
+        "reason": "Docs-only; Preview maintains its own CURRENT_STATE/AGENTS.md."
+      },
+      {
+        "number": 68,
+        "title": "Proof: governed evidence retention and deletion manifest V0",
+        "reason": "Kernel-level deletion proof; Preview retention is a different layer (Control Center storage policy/rotation) \u2014 proof-only, no Preview consumer."
+      },
+      {
+        "number": 71,
+        "title": "Learning: govern plugin-skill patterns without authority transfer",
+        "reason": "Docs-only; no code gap."
+      },
+      {
+        "number": 73,
+        "title": "Measure Pulpo with Effective Governed Intelligence V0",
+        "reason": "Docs-only metric; no code gap."
+      },
+      {
+        "number": 74,
+        "title": "Proof: cost-aware intelligence escalation V0",
+        "reason": "New capability (pulpo/intelligence.py absent); no Preview consumer."
+      },
+      {
+        "number": 75,
+        "title": "Experiment: constructed governed transfer curve G0-G8",
+        "reason": "Experiment; body says it does not measure Pulpo's real compounding rate."
+      },
+      {
+        "number": 77,
+        "title": "Research: assess agent-governance sector against Pulpo boundary",
+        "reason": "Docs-only research; no code gap."
+      },
+      {
+        "number": 105,
+        "title": "Learn: Ollama multi-harness governance experiment v0",
+        "reason": "Docs-only; Ollama path already in Preview via fork port of #317."
+      },
+      {
+        "number": 106,
+        "title": "Experiment: unauthorized-effect benchmark v0",
+        "reason": "Frozen benchmark; not a duplicate of #333."
+      },
+      {
+        "number": 107,
+        "title": "Learn: evidence-grounded workstream analyzer v0",
+        "reason": "Learning projection (pulpo/workstream_learning.py absent); first head had a material evidence-integrity flaw per its body."
+      },
+      {
+        "number": 130,
+        "title": "Distribution: canonical non-authoritative mobile projection v0",
+        "reason": "Mobile/PWA; zero 'mobile' mentions in Preview tree; no Preview consumer (desktop Qt)."
+      },
+      {
+        "number": 165,
+        "title": "Experiment: Supabase consequence-custody Stage C v1",
+        "reason": "DRAFT + PROCESS HOLD, no provider credentials; Preview docs already record it as held."
+      },
+      {
+        "number": 198,
+        "title": "Red proof: hostile custodian rollback and fork v0",
+        "reason": "Diagnostic repro stacked on draft #197 \u2014 green means the vulnerability was reproduced, not fixed; nothing to port."
+      },
+      {
+        "number": 202,
+        "title": "Proof: govern capability-free plugin proposal admission",
+        "reason": "New capability (pulpo/mcp_admission.py absent); no Preview caller."
+      },
+      {
+        "number": 213,
+        "title": "Docs: reconcile current state and add Evidence Expansion Review v0",
+        "reason": "Docs-only; superseded \u2014 merged #337/#340 already refreshed CURRENT_STATE in main; Preview's is fork-maintained."
+      },
+      {
+        "number": 228,
+        "title": "Proof: bind remote effect authority and rolling consequence custody v0",
+        "reason": "DRAFT + PROCESS HOLD / DO NOT MERGE; new kernel semantics, no Preview consumer."
+      },
+      {
+        "number": 270,
+        "title": "Experiment: Pulpo x Amazon Bedrock AgentCore custody proof v0",
+        "reason": "DRAFT + PROCESS HOLD; external-provider proof; no Preview consumer."
+      },
+      {
+        "number": 271,
+        "title": "Adversarial proof: forked-state one-use permit replay",
+        "reason": "Draft test, not a fix. Note: the underlying equivocation gap is real (existing replay tests cover restart of the same durable state only), but Preview has no forked-state protection in either tree."
+      },
+      {
+        "number": 303,
+        "title": "Reconcile current main, held fixes, proof boundaries",
+        "reason": "Stale Oct-10 snapshot (closed unmerged); only live bit is a 1-line SOP label fix."
+      },
+      {
+        "number": 117,
+        "title": "Admission-hold required-status canary",
+        "reason": "Disposable canary; body says 'close after observation', purpose served, explicitly do-not-merge."
+      },
+      {
+        "number": 76,
+        "title": "Canonical orchestrator v0",
+        "reason": "Body's own disposition: superseded by current main; merging would risk regression."
+      },
+      {
+        "number": 136,
+        "title": "Reconcile current state after MCP admission",
+        "reason": "Stale Sep-era snapshot (base Sep 1); Preview's CURRENT_STATE.md is Sep-20. A fresh reconciliation would be needed, not this snapshot."
+      }
+    ]
+  },
+  "blocked_slices_2026_11_08": [
+    {
+      "port_preview_pr": 111,
+      "upstream": 250,
+      "slice": "state.py delta-audit projection + tests/test_delta_audit_performance.py",
+      "status": "BLOCKED \u2014 needs Mike/Austin design decision",
+      "detail": "The delta projection (_delta_for / _delta_state_root / _attach_delta, audit_integrity_token, three new audit-table columns) is the #246/#248/#251 token design. Adopting it means choosing between that token and the fork's incumbent restart checkpoint (0bd2b96) + digest cache (audit_parallel.py), and it changes canonical audit bytes/schema. The 567-line test_delta_audit_performance.py cannot pass without that slice. Also excluded with it: test_legacy_persisted_permit_without_expiry_fails_closed (Preview's fork treats NULL expires_at_ns as 'no expiry' on the bare state path; adopting the stricter invariant would change issue_permit semantics)."
+    },
+    {
+      "port_preview_pr": 109,
+      "upstream": 141,
+      "slice": "tests/test_accountability_context.py \u2014 test_context_activation_requires_existing_independent_approval_path",
+      "status": "BLOCKED \u2014 pre-existing upstream test defect",
+      "detail": "Fails identically against upstream base 6b3caac (verified in a scratch worktree): signed_envelope(..., signature='not-valid') is silently discarded because the helper always re-signs (signing_payload excludes the signature field), so the envelope is valid and the kernel allows. The test as written cannot produce the deny it asserts. Left as-is; fixing the helper/test is a separate upstream decision."
+    },
+    {
+      "port_preview_pr": 110,
+      "upstream": 300,
+      "slice": "custody-service/tests/test_sql_qos_benchmark.py",
+      "status": "FLAKY UNDER LOAD \u2014 re-run on a quiet machine before treating as a gate",
+      "detail": "Passes 4/4 in isolation (twice), fails intermittently when the whole custody suite runs while the VM is heavily loaded (load avg 7-10): effects 4-6/8 instead of 8/8 (1s QoS wait_ns expires under load \u2014 the gate rejecting is correct overload behaviour, not a logic error), once sql_connections 497 vs 488 across observer on/off runs. Timing/load-sensitive benchmark with exact-count assertions, not a port defect."
+    },
+    {
+      "port_preview_pr": [
+        102,
+        103
+      ],
+      "upstream": [
+        306,
+        314
+      ],
+      "slice": "prove-pulpo35 / tournament files carried by both ports",
+      "status": "OVERLAP \u2014 whichever merges first, the other needs a rebase",
+      "detail": "#306 and #314 both carry .agents/skills/prove-pulpo35/*, docs/PULPO35_CHAT_CONTRACT.md, scripts/run_gladiator_tournament.py and the ci.yml gladiator-proof job (same lineage from merged #318). Port #306 ONLY, not #318 as well."
+    },
+    {
+      "port_preview_pr": 86,
+      "upstream": 292,
+      "slice": "docs/Pulpo_User_Guide.pdf",
+      "status": "STALE \u2014 ported as-is for reference, do not present as current",
+      "detail": "Guide is scoped to Pulpo1.0 at d674dbb and predates the fork TTL/checkpoint work (permit TTL, restart checkpoint, later fork changes not covered). A refresh against current Preview behaviour is still needed. Upstream #292 itself fails unit-tests + test at its head (pre-existing on its base)."
+    },
+    {
+      "port_preview_pr": 107,
+      "upstream": 241,
+      "slice": "macOS Seatbelt enforcement",
+      "status": "UNVERIFIABLE on the Linux VM",
+      "detail": "The deny-by-default profile change is code-level only on Linux: the profile text is generated and unit-tested, but no Seatbelt enforcement was executed. macOS verification is still needed."
+    }
+  ],
+  "refresh_note_2026_11_05": "2026-11-05 refresh: upstream main and the 18 listed PRs were re-checked against Ironnember/Pulpo1.0 on 2026-11-05 (states, heads, check counts); the Oct 3 combined-preview record below is preserved as history. This refresh does NOT re-run the Oct 3 selection: the 3 closed PRs (#289, #293, #295) are no longer open candidates, 6 PRs have new heads, and the Oct 3 combined-preview list no longer stands as a combined set. New upstream PRs since Oct 3 were listed, not evaluated. The new validation is fork main as-is, not a fresh combined preview.",
+  "open_upstream_prs_2026_11_08": {
+    "count": 74,
+    "drafts": 7,
+    "count_source": "2026-11-08 triage (preview-needs-triage-2026-11-08.md); not re-listed in this refresh",
+    "closed_unmerged_examined": 28,
+    "total_examined": 102,
+    "classification": {
+      "already_in": 12,
+      "already_patched": 16,
+      "partially": 17,
+      "still_needed": 20,
+      "not_needed": 29,
+      "needs_decision": 8
+    },
+    "note": "Of the 102 examined, 37 were ported in this run (20 STILL NEEDED + 17 PARTIALLY = 34 port PRs; #250's remainder subsumes #241-#248 coverage and #333 covers #334's task-injection part). The 12 ALREADY IN + 16 ALREADY PATCHED needed no port. Upstream main unchanged at f084863."
   }
 }

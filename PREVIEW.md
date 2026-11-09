@@ -6,6 +6,30 @@ Explore upcoming features, share experiments, and help shape what comes next. Th
 
 This branch in **spikediegel-prog/Pulpo-Preview** is an unofficial preview for testers. It contains unreleased upstream PRs awaiting review. It is not an official Pulpo release or a production-readiness claim. Source PRs remain open upstream, and their review/admission status is unchanged.
 
+## Snapshot: 2026-11-08
+
+This is the current snapshot. It supersedes the 2026-11-05 section below as the current record; the 2026-11-05 and 2026-10-03 sections are preserved as history, untouched.
+
+**Fork main recorded:** `9c388e6f3bc674496f3fd6b3fa821fab54d1411a` (merge of PR #79, Nov 5 snapshot refresh). Upstream main re-verified at `f08486305736346750aba1c8c6ad1e3c16e061ca` on 2026-11-08 (still #342, merged 2026-11-05; 0 merges since).
+
+**Ancestry correction — read this first:** the merge-base of Preview main `9c388e6` and upstream main `f084863` is `d674dbb` (2026-09-26), **not** `f084863`. None of the 13 post-Oct-3 upstream main commits is an ancestor of Preview main as a git commit. Content from those commits is present only where the fork re-applied it under different SHAs (for example the ceremony check, present as the fork gate `2c31f78`, not as merged upstream #338). Genuinely absent content includes the Pulpo 3.5 tournament files (#318 / #306), the Phase 1 node proof (`561e64f`), and the incident-response proof (`6b3caac`) — the last of these is vendored inside port PR #93 so #333's fixture has its dependency. The Nov 5 refresh's "0 behind" ancestry claim is corrected here. See the triage record (`preview-needs-triage-2026-11-08.md`, §1).
+
+**What this snapshot records:** the 2026-11-08 port run — **34 open fork PRs (#80–#113)**, one per STILL NEEDED / PARTIALLY item from the triage of 102 upstream PRs (74 open + 28 closed-unmerged: ALREADY IN 12, ALREADY PATCHED 16, PARTIALLY 17, STILL NEEDED 20, NOT NEEDED 29, NEEDS DECISION 8). Band 1: #236→#99, #244→#94, #72→#89, #280→#98, #294→#90. Band 2: #239→#101, #333→#93, #327→#92, #299→#91, #241→#107, #300→#110, #304→#104, #147→#105, #141→#109, #232→#106. Band 3: #341→#80, #306→#102, #305→#82, #309→#83, #292→#86. Remainders: #250→#111, #258→#112, #267→#97, #219→#95, #316→#81, #311→#85, #314→#103, #287→#96, #297→#100, #302→#113, #325→#108, #212→#87, #171→#88. Side-project: #330→#84 (Autonomous/Pi, not Phase II core). Pre-existing fork PRs #48 and #52 remain open and are unrelated to the port run.
+
+**Validation scope — the most important part:** all 34 port PRs are OPEN and none is merged, so there is **NO combined head to validate and NO combined validation is claimed**. Validation is per-branch only, recorded per port in the [machine-readable manifest](PREVIEW_MANIFEST.json): 19 branches ran the full suite (1086–1118 tests, all OK), the rest ran focused tests or, for docs-only ports, tree/file checks. A combined validation run must be re-done after Mike merges, on the merged head, before any combined claim is made. The Nov 5 refresh said the Oct 3 combined set no longer stands; the same holds for any combined claim about this port run — the refreshed manifest stands on its own as a per-branch record.
+
+**Fork main as-is:** the last direct full-suite run of fork main was at `dc38bf2` (1086 tests OK, 66 skipped, 2026-11-05). The only commit between `dc38bf2` and `9c388e6` is the docs-only Nov 5 snapshot refresh (PR #79: `PREVIEW.md` + `PREVIEW_MANIFEST.json` only), so that validation still describes the code at `9c388e6`. No direct bare-main run at `9c388e6` was performed in this refresh — this is a docs-only change, so no test-suite run was needed for it.
+
+**Upstream check status, re-checked live 2026-11-08:** of the 34 upstream heads, 25 report all checks passing, 8 fail only on `admission-hold` (a process/admission gate, not a test failure: #141, #147, #171, #212, #232, #311, #314, #325), and 1 fails real tests upstream (#292: `unit-tests` + `test` fail at its head — pre-existing on its base, unrelated to the single-PDF port). Upstream states: 22 open, 12 closed-unmerged. The 18 PRs from the Oct 3 / Nov 5 lists were also re-checked live: heads unchanged since Nov 5, all checks passing.
+
+**Blocked slices (recorded, not silently dropped):** #250's delta-audit / `state.py` slice (port #111) needs a Mike/Austin design decision — token vs fork checkpoint, changes canonical audit bytes; #141 (port #109) has one pre-existing upstream test defect that fails identically on upstream base `6b3caac`; #300's benchmark (port #110) is flaky under load — re-run on a quiet machine before treating it as a gate; #306 vs #314 (ports #102/#103) both carry the prove-pulpo35 files — whichever merges first, the other needs a rebase; #292's PDF (port #86) is `d674dbb`-era stale — ported as-is for reference, do not present as current; #241 Seatbelt (port #107) is unverifiable on the Linux VM — macOS verification still needed.
+
+**Keep/drop decisions:** #289 DROP — its README section was already removed by fork rewrites; #293 KEEP and #295 KEEP — both load-bearing for the fork perf train (multi-core verification + setup path, and the opt-in audit-event index).
+
+**Not ported in this run:** the 8 NEEDS DECISION (#64, #262, #315, #334, #288, #291, #221, #131); the perf trio #246/#248/#251 (delta-audit / `data_version` token design decision — the fork checkpoint + digest cache is the incumbent); and the 29 NOT NEEDED — none ported. Details and per-PR reasons are in the manifest.
+
+**Boundaries:** the Windows full suite was not re-run; the Oct 3 Windows result (446 tests, 9 failures, 54 errors, 5 skips) stands as historical and still failing. Hosted validation of the new head is pending. Passing individual-branch checks do not prove interactions between PRs; unit tests do not replace all workflow proofs. Physical hardware performance, independent tester reproduction, and production containment remain **Unknown**.
+
 ## Snapshot: 2026-11-05
 
 This is the current snapshot. The 2026-10-03 snapshot below is preserved as history.
