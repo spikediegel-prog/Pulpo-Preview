@@ -80,7 +80,12 @@ class OllamaPreviewBoundaryTests(unittest.TestCase):
         now[0]=110
         before=list(kernel.audit)
         for _ in range(20):
-            self.assertEqual(asdict(intent),project_local_proposal(GOOD,snapshot,**kwargs)['intent'])
+            # Canonical intent payload omits provenance_hash when absent
+            # (upstream #239 _intent_payload); raw asdict() keeps the None.
+            expected = asdict(intent)
+            if expected.get("provenance_hash") is None:
+                expected.pop("provenance_hash", None)
+            self.assertEqual(expected,project_local_proposal(GOOD,snapshot,**kwargs)["intent"])
         self.assertEqual(before,kernel.audit)
         self.assertFalse(kernel.consume(permit,intent))
 
