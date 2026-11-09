@@ -732,7 +732,13 @@ class GovernanceKernel:
 
     def consume(self, permit: str, intent: Intent) -> bool:
         digest = self.intent_hash(intent)
-        return self._state.consume_permit(permit, digest, self._clock(), policy_hash=self.policy_hash, issuer_hash=self._permit_issuer)
+        # Ported from upstream #325: refuse consumption on an invalid clock
+        # instead of stamping the permit with an untrusted timestamp.
+        now_ns = self._trusted_now()
+        if now_ns is None:
+            self._state.append("permit_rejected", {"intent_hash": digest, "reason": "permit_clock_invalid"}, 0)
+            return False
+        return self._state.consume_permit(permit, digest, now_ns, policy_hash=self.policy_hash, issuer_hash=self._permit_issuer)
 
     def verify_audit(self) -> bool:
         engine = self._audit_verification_engine
