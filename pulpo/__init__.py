@@ -2,6 +2,8 @@
 
 __version__ = "0.1.0"
 
+from .accountability import AccountableContext, AccountableContextObservation, AccountableGovernance
+
 from .authority import (
     ApprovalEnvelope,
     ApprovalVerifier,
@@ -57,6 +59,9 @@ __all__ = [
     "StateRecoveryError",
     "ResourceScope",
     "AdaptiveAuditVerificationEngine",
+    "AccountableContext",
+    "AccountableContextObservation",
+    "AccountableGovernance",
     "AgentGrant",
     "ApprovalEnvelope",
     "ApprovalHandle",
