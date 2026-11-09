@@ -303,6 +303,10 @@ Pulpo provides capabilities across several governance domains.
 - Audit validation
 - Governance verification tooling
 
+## Learning library
+
+[Source-linked learning library](docs/learning/README.md): 18 annotated book sources, Python and financial-literacy curriculum, and a runnable **offline synthetic** input-verification lab. This material is educational and does not grant a permit, spending authority, access to production systems, or independent runtime custody. Books not available as authorized full text are linked by publisher excerpt or table of contents, not mirrored.
+
 ---
 
 # Performance Without Authority Expansion
