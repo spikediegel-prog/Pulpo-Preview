@@ -168,6 +168,31 @@ class RestartSafeStateTests(unittest.TestCase):
         ]
         self.assertEqual(1, len(replay_reads))
 
+    def test_iter_audit_streams_without_materializing(self):
+        state = self.make_state()
+        self.addCleanup(state.close)
+        for index, event in enumerate(("first", "second", "first")):
+            state.append(
+                event,
+                {"index": index, "authority_effect": "none"},
+                NOW + index,
+            )
+        streamed = state.iter_audit()
+        self.assertFalse(isinstance(streamed, list))
+        rows = list(streamed)
+        self.assertEqual(
+            ["first", "second", "first"], [row["event"] for row in rows]
+        )
+        self.assertEqual([0, 1, 2], [row["payload"]["index"] for row in rows])
+        self.assertEqual(
+            ["second"],
+            [row["event"] for row in state.iter_audit(event="second")],
+        )
+        self.assertEqual(
+            ["first", "second", "first"],
+            [row["event"] for row in state.iter_audit(reverse=True)],
+        )
+
     def test_verified_approval_and_permit_are_committed_with_one_transaction(self):
         state = self.make_state()
         self.addCleanup(state.close)
