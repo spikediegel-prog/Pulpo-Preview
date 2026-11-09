@@ -1,0 +1,106 @@
+IMPLEMENTED / PROPOSED / UNKNOWN
+
+Recorded source identity
+Canonical: Ironnember/Pulpo1.0
+  6b3caacbc28a7b40ebf5ea6295bc8058804de6e3
+Preview: spikediegel-prog/Pulpo-Preview
+  74aae79c4fd7410c610f281a00e00c6258881d60
+Control Center: spikediegel-prog/Pulpo-Control-Center
+  59541cc2bfd30ab8def89411d91a03b34d5e439f
+These were the remote main pins observed through the connected GitHub tool during
+this session. They can change later. Canonical was checked out from exact local
+Git objects. Preview and Control Center used local Git baselines plus every
+remote tree difference; bundled source blobs were checked against the remote
+tree. Source verification: 359 bundled files, zero mismatches after LF text
+normalization. SHA256 records the exact packaged bytes. No local working tree
+change in the user's prior checkouts was copied.
+
+Verified — unchanged source behavior under synthetic local tests
+The same GovernanceKernel owns policy, audit, permit and approval state.
+AgentGrant controls site worker and local operator namespaces. Existing
+DirectiveAuthorityController verifies activation/revocation approvals; existing
+GovernedDirectiveProjection binds permit consumption to current directive state,
+scope and time. Existing SQLiteKernelState preserves spent authority and local
+revocations across normal restart. No new router, executor, ledger or authority
+plane is introduced. The test fixture's in-memory inventory is only an observation
+sink; it is not a production WSUS integration or a separate canonical state.
+
+Both pins reject the demonstrated site/ring/update expansion, permit/approval
+replay, directive revocation and expiry cases. Preview additionally implements
+policy/issuer/time-bound ordinary permits and guarded SQLite recovery. Canonical
+at its pin does not match those protections: its bare permits have no general
+TTL, and its consume method does not supply Preview's policy/issuer context.
+The clinical proof exercises expiry through directive binding on both pins and
+separately demonstrates the difference in ordinary permit expiry.
+
+Verified — kit-specific local behavior
+evaluate.py assembles configuration into the existing policy and directive types,
+drives fixed synthetic scenarios, and exports canonical audit plus bounded test
+results. It accepts no endpoint/credential/data-import settings. It blocks socket
+creation in its own test process as a guard against accidental networking.
+This is not OS isolation or a defense against malicious replacement code.
+
+clinical_observer.py adds a Clinical lab page to the existing native Control
+Center using the existing shell, theme and navigation. It receives no kernel,
+state handle, signer or execution callback. Explicit report selection reads a
+bounded, validated projection; invalid replacement clears previous observations.
+No periodic read, automatic report restore or approval button is added. Existing
+System, Governance, Evidence and other pages remain available with their original
+observation semantics. Native Tk widget construction passed in Ubuntu WSL.
+Visible native rendering, comprehensive accessibility and desktop packaging are
+not proved by widget construction. The separate offline HTML evidence view was
+rendered and visually checked at wide and narrow sizes.
+
+Recorded — synthetic clinical data
+Optional FHIR-like Bundle JSON contains only a generated synthetic Patient ID and
+active flag. Optional DICOM simulation contains generated metadata with no pixel
+data. They travel through the same canonical directive/permit seam. Neither is
+validated for protocol conformance or clinical interoperability. There is no
+FHIR service, DICOM networking, worklist, image transfer, DICOM binary encoding,
+Athena/Phreesia/Carestream/PACS connector or Microsoft 365 integration.
+
+Verified limitation — offline behavior
+Missing approval verifier denies new directive activation. Already issued local
+permits may still be consumed within their valid local window. A site cannot
+learn about a remote revocation without a separately implemented trusted delivery
+path. This kit does not create such a path. It models multiple sites inside one
+local kernel state, not a replicated/distributed clinic control system.
+
+Verified limitation — trusted composition
+The test runner possesses the kernel as trusted test tooling. Bare kernel access
+is a capability; directive narrowing is not a universal enforcement boundary if
+an untrusted worker can invoke the raw kernel or state writer. No hostile worker
+process isolation or credential custody proof is provided. No human credential
+is created, read, derived or exported. The only signer is the upstream public
+same-process test double; it proves no independent human authority.
+
+Verified limitation — consequences and recovery
+Permit consumption and a real provider effect cannot be made atomic by this kit.
+The lost-receipt scenario records consequence Unknown and rejects permit replay.
+It does not persist a universal duplicate-operation fence or prevent a trusted
+caller from requesting fresh authority for a logically repeated operation.
+One-use permit protection is not global exactly-once patch execution.
+VM snapshot co-rollback can restore authority. Preview's explicit guard compares
+against a separately trusted current checkpoint; it does not validate freshness
+if the expected checkpoint is also stale. Its tests retain this limitation.
+No snapshot restore, disaster recovery or production reconciliation is automated.
+
+Proposed — requires separate design, implementation, review and evidence
+Real WSUS inventory/approval adapters; human authority service; clinic policy
+administration; independently held signing keys; staged pilot-to-broad promotion;
+clinic-critical-device exclusions; scheduled real maintenance windows; durable
+operation identity across retries; secure offline revocation synchronization;
+distributed site-state reconciliation; real FHIR/DICOM adapters; hypervisor
+deployment packaging; native desktop installer and guest qualification.
+No scope, authority or production connection for these is granted by this kit.
+
+Unknown
+Actual clinic network architecture and workload; ESXi/Hyper-V guest behavior;
+independent identity, approval and clock trust; real patch compatibility and
+clinical safety; remote revocation freshness; production performance and recovery;
+compliance status. No clinical, security or regulatory certification is claimed.
+
+Inferred
+An isolated Ubuntu guest with a local observer is a practical next evaluation
+environment given ESXi/Hyper-V availability and the recorded WSL results. This
+is a proposed evaluation sequence, not evidence those hypervisors were tested.

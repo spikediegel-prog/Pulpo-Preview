@@ -1,0 +1,73 @@
+TEST REPORT — 25 October 2026 — review candidate
+
+Verified final run: evidence/qualified-wsl-run/TEST-SUMMARY.json
+Host: Ubuntu WSL, Python 3.14.4, local isolated /tmp source copy.
+No network provider, installed Pulpo instance or production data used.
+
+Clinical workflow, canonical pin       43 / 43 assertions PASS
+Clinical workflow, Preview pin         43 / 43 assertions PASS
+Selected canonical upstream tests      51 tests PASS
+Selected Preview upstream tests        69 tests PASS
+Clinical configuration/observer tests  11 tests PASS
+Total in final validation              217 assertions/tests PASS
+
+Additional configuration smoke: evidence/configuration-smoke/report.json
+Preview, four synthetic sites, broad ring, 30-second window, optional clinical
+fixtures disabled: 41 / 41 assertions PASS. Platform setting was Hyper-V;
+execution was WSL. This does not constitute Hyper-V validation.
+
+Native Control Center: evidence/native-ui-wsl.log
+PASS constructing the existing Control Center, adding the Clinical lab observer,
+loading the report and closing Tk widgets under Ubuntu WSL. No visible native
+rendering, ESXi desktop, Hyper-V desktop or comprehensive accessibility claim.
+
+Standalone HTML evidence view: evidence/visual-check.json
+Rendered with local headless Edge; wide 1440px and narrow 390px. No page errors,
+no page-level horizontal overflow, 46 data rows (3 inventory + 43 assertions),
+details expansion checked. Wide/narrow screenshots were visually inspected.
+These screenshots show the offline report, not a captured native Tk window.
+
+Source verification: evidence/source-verification.json
+359 bundled upstream files match exact source Git blob hashes after LF text
+normalization; zero mismatches. SOURCE-PINS.json has exact-byte SHA256 records.
+No authority/state database, raw permit, ephemeral kernel secret or real human
+credential is included in evidence. Public upstream fixture secrets remain
+clearly labeled as test material and prove no independent authority.
+
+Scope of upstream suites
+Canonical: tests.test_kernel, tests.test_directives, tests.test_authority.
+Preview: those three plus tests.test_external_authority_boundaries,
+tests.test_permit_lifetime and tests.test_guarded_recovery.
+This is selected regression evidence, not the entire repository test suite,
+CI result, constitutional mutation suite, security audit or production assessment.
+
+Failures and corrections retained as evidence
+The initial Windows attempt ran 52 canonical tests with five errors: four
+upstream NamedTemporaryFile/SQLite sharing errors and one harness selection of a
+module absent from canonical. The absent module selection was corrected; it is
+not a canonical code defect. Preview ran 69 tests with five cleanup errors caused
+by open SQLite files on Windows. Logs are retained under evidence/windows-initial/.
+No upstream implementation/test assertion was changed to turn these into passes.
+The intended Ubuntu regression run passes. Windows is not qualified by this kit.
+
+The bundled Windows Tcl runtime could not initialize Tk. Ubuntu WSL widget
+construction passed; no Tk installation or system configuration was changed.
+A later reader-test refactor omitted fields from its synthetic HTML test fixture;
+that fixture was corrected, and all 11 reader/config tests then passed. Earlier
+logs are retained under evidence/development-history/. An intermediate harness
+assumed identical bare-permit expiry; the observed difference was investigated
+in code and replaced with explicit per-pin behavior assertions. The kernel code
+was not altered. This difference remains a prominent limitation.
+
+Interpretation
+PASS means expected local behavior at the stated pins, with a public same-process
+authority double and controlled clock. Some PASS assertions deliberately expose
+limitations, including offline preissued permits and canonical bare-permit TTL.
+The report records test expectations, not a uniform 'safe' verdict. Canonical
+audit export is verified locally; preflight projection denials may not create
+canonical audit events. Complete production history/source freshness is Unknown.
+
+No ESXi or Hyper-V guest was launched or qualified. No live WSUS, EHR/FHIR,
+DICOM/PACS, Microsoft 365, Phreesia or Carestream behavior was tested. No rollout,
+real patch installation, independent human approval, distributed offline safety,
+hostile process isolation, compliance or clinical safety claim follows.

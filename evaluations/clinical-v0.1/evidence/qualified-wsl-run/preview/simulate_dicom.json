@@ -1,0 +1,7 @@
+{
+  "Modality": "DX",
+  "PatientID": "SYNTHETIC-001",
+  "StudyInstanceUID": "2.25.10001",
+  "format": "DICOM-metadata-simulation",
+  "pixels": null
+}

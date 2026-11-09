@@ -1,0 +1,14 @@
+{
+  "scope": "Rendered standalone HTML evidence view; native Tk visible rendering not established by these screenshots",
+  "wide": {
+    "width": 1440,
+    "scrollWidth": 1440,
+    "rows": 46
+  },
+  "narrow": {
+    "width": 390,
+    "scrollWidth": 390,
+    "detailsOpen": true
+  },
+  "errors": []
+}
