@@ -760,6 +760,22 @@ class GovernanceKernel:
             self._state.append("permit_rejected", {"intent_hash": digest, "reason": "permit_clock_invalid"}, 0)
             return False
 
+    def revalidate_consumed_permit(self, permit: str, intent: Intent) -> str:
+        """Re-read permit/directive/policy/expiry state for an already-spent permit.
+
+        Call immediately before execution, after `consume`, to close the window
+        in which a revocation or expiry can land between consumption and the
+        consequential call. Returns "valid" or a fail-closed reason; never
+        mutates state and never re-issues. A NULL `expires_at_ns` means no
+        expiry (load-bearing fork semantics).
+        """
+
+        digest = self.intent_hash(intent)
+        now_ns = self._trusted_now()
+        if now_ns is None:
+            return "permit_clock_invalid"
+        return self._state.revalidate_consumed_permit(permit, digest, now_ns, policy_hash=self.policy_hash, issuer_hash=self._permit_issuer)
+
     def verify_audit(self) -> bool:
         engine = self._audit_verification_engine
         raw_reader = getattr(self._state, "audit_verification_rows", None)
