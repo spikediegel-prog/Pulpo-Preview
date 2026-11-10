@@ -1,10 +1,16 @@
+import hashlib
+import json
 import tempfile
 import secrets
 import unittest
+from dataclasses import asdict
 from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+from pulpo import AuthorityTrust, Policy, PolicyEnvelope
+from pulpo.kernel import policy_hash_for
 
 from pulpo_custody_service.runtime import (
     RuntimeConfig,
@@ -23,6 +29,8 @@ class CustodyRuntimeTests(unittest.TestCase):
             encoding=serialization.Encoding.Raw,
             format=serialization.PublicFormat.Raw,
         )
+        self.private = private
+        self.public = public
         self.env = {
             "PULPO_CUSTODY_STATE_PATH": str(self.state_path),
             "PULPO_KERNEL_SECRET_HEX": secrets.token_hex(32),
@@ -39,6 +47,48 @@ class CustodyRuntimeTests(unittest.TestCase):
             "NAMECOM_SANDBOX_EXECUTOR_TOKEN": "executor-sandbox-token",
             "NAMECOM_SANDBOX_OBSERVER_TOKEN": "observer-sandbox-token",
         }
+
+        self.env["PULPO_POLICY_ENVELOPE_JSON"] = self.policy_envelope_json()
+
+    def policy_envelope_json(self):
+        """Sign the service policy with the fixture authority key.
+
+        The service itself holds only the public key; the test plays the
+        authority that issues the envelope at deployment time.
+        """
+
+        trust = AuthorityTrust(
+            authority_id=self.env["PULPO_AUTHORITY_ID"],
+            verifier_id=self.env["PULPO_AUTHORITY_VERIFIER_ID"],
+            key_id=self.env["PULPO_AUTHORITY_KEY_ID"],
+            algorithm="ed25519",
+            key_fingerprint=hashlib.sha256(self.public).hexdigest(),
+            deployment_id=self.env["PULPO_AUTHORITY_DEPLOYMENT_ID"],
+            max_approval_ttl_ns=int(self.env["PULPO_AUTHORITY_MAX_TTL_SECONDS"]) * 1_000_000_000,
+        )
+        policy = Policy(
+            frozenset({"purchase_domain"}),
+            int(self.env["PULPO_PILOT_BUDGET_CENTS"]),
+            frozenset({"purchase_domain"}),
+            authority_trust=trust,
+        )
+        unsigned = PolicyEnvelope(
+            policy_hash=policy_hash_for(policy),
+            version=policy.version,
+            previous_policy_hash=policy.previous_policy_hash,
+            authority_id=trust.authority_id,
+            verifier_id=trust.verifier_id,
+            key_id=trust.key_id,
+            deployment_id=trust.deployment_id,
+            trust_hash=trust.trust_hash,
+            signature="",
+        )
+        from dataclasses import replace
+
+        envelope = replace(
+            unsigned, signature=self.private.sign(unsigned.signing_bytes()).hex()
+        )
+        return json.dumps(asdict(envelope), sort_keys=True)
 
     def test_build_is_hard_pinned_to_sandbox_and_external_approval(self):
         config = RuntimeConfig.from_environ(self.env)
@@ -63,6 +113,19 @@ class CustodyRuntimeTests(unittest.TestCase):
             self.assertFalse(hasattr(kernel._approval_verifier, "sign"))
         finally:
             kernel._state.close()
+
+    def test_missing_policy_envelope_fails_before_service_start(self):
+        env = dict(self.env)
+        env.pop("PULPO_POLICY_ENVELOPE_JSON")
+        config = RuntimeConfig.from_environ(env)
+        self.assertIsNone(config.policy_envelope)
+        with self.assertRaisesRegex(RuntimeConfigError, "policy envelope"):
+            build_service(config)
+
+    def test_malformed_policy_envelope_fails_before_service_start(self):
+        env = dict(self.env, PULPO_POLICY_ENVELOPE_JSON="{not json")
+        with self.assertRaisesRegex(RuntimeConfigError, "policy envelope"):
+            RuntimeConfig.from_environ(env)
 
     def test_unrelated_environment_variable_cannot_select_production(self):
         env = {**self.env, "NAMECOM_ENVIRONMENT": "production", "ALLOW_PRODUCTION": "1"}

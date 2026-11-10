@@ -25,7 +25,7 @@ from pulpo import (
     SQLiteKernelState,
 )
 from pulpo.orchestrator import PulpoOrchestrator
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 1_000_000
@@ -82,7 +82,7 @@ class CeremonyEvidenceTests(unittest.TestCase):
         return GovernanceKernel(
             configured_policy,
             secret=b"ceremony-proof-permit-secret",
-            approval_verifier=self.approval_verifier,
+            approval_verifier=self.approval_verifier, policy_envelope=signed_policy_envelope(configured_policy, self.approval_verifier),
             ceremony_verifier=ceremony_verifier,
             clock=lambda: self.clock[0],
             state=state,
@@ -262,7 +262,7 @@ class CeremonyEvidenceTests(unittest.TestCase):
         kernel = GovernanceKernel(
             self.policy,
             secret=b"ceremony-proof-permit-secret",
-            approval_verifier=self.approval_verifier,
+            approval_verifier=self.approval_verifier, policy_envelope=signed_policy_envelope(self.policy, self.approval_verifier),
             ceremony_verifier=None,
             clock=lambda: self.clock[0],
         )

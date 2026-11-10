@@ -43,7 +43,7 @@ if str(ROOT) not in sys.path:
 
 from pulpo import GovernanceKernel, SQLiteKernelState
 from pulpo.targets import evaluate_locked_target_with_approval
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 # The existing incident-response source supplies the synthetic intent and
 # process identity fixture. No second policy or authority kernel is introduced.
@@ -261,7 +261,7 @@ def custody_child(socket_path: str, db_path: str, secret_hex: str, provider_port
     )
     kernel = GovernanceKernel(
         policy, secret=bytes.fromhex(secret_hex),
-        approval_verifier=verifier, clock=clock, state=state
+        approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier), clock=clock, state=state
     )
     target = kernel.get_locked_target(TARGET_ID)
     if target is None:

@@ -3,7 +3,7 @@ import unittest
 from dataclasses import replace
 
 from pulpo import ApprovalEnvelope, AuthorityTrustError, GovernanceKernel, Intent, Policy
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 1_000_000
@@ -22,7 +22,7 @@ class VerifiedApprovalTests(unittest.TestCase):
         self.kernel = GovernanceKernel(
             self.policy,
             secret=b"permit-secret",
-            approval_verifier=self.verifier,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=lambda: NOW,
         )
         self.intent = Intent("agent:publisher", "push", "repo:origin/main", 0, SESSION)
@@ -122,7 +122,7 @@ class VerifiedApprovalTests(unittest.TestCase):
         kernel = GovernanceKernel(
             self.policy,
             secret=b"permit-secret",
-            approval_verifier=self.verifier,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=lambda: clock[0],
         )
         envelope = signed_envelope(kernel, self.intent, self.verifier, now_ns=NOW)
@@ -131,14 +131,21 @@ class VerifiedApprovalTests(unittest.TestCase):
 
     def test_verifier_exception_fails_closed(self):
         class BrokenVerifier(HmacTestVerifier):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.calls = 0
+
             def verify(self, payload, signature):
-                raise RuntimeError("signer unavailable")
+                self.calls += 1
+                if self.calls > 1:
+                    raise RuntimeError("signer unavailable")
+                return super().verify(payload, signature)
 
         verifier = BrokenVerifier()
         kernel = GovernanceKernel(
             self.policy,
             secret=b"permit-secret",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(self.policy, verifier),
             clock=lambda: NOW,
         )
         envelope = signed_envelope(kernel, self.intent, verifier, now_ns=NOW)
@@ -205,13 +212,20 @@ class VerifiedApprovalTests(unittest.TestCase):
 
     def test_truthy_non_boolean_verifier_result_is_rejected(self):
         class TruthyVerifier(HmacTestVerifier):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.calls = 0
+
             def verify(self, payload, signature):
+                self.calls += 1
+                if self.calls == 1:
+                    return super().verify(payload, signature)
                 return "yes"
 
         verifier = TruthyVerifier()
         kernel = GovernanceKernel(
             self.policy,
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(self.policy, verifier),
             clock=lambda: NOW,
         )
         envelope = signed_envelope(kernel, self.intent, verifier, now_ns=NOW)
@@ -254,9 +268,10 @@ class VerifiedApprovalTests(unittest.TestCase):
         advancing = AdvancingVerifier()
         kernel = GovernanceKernel(
             self.policy,
-            approval_verifier=advancing,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=lambda: clock[0],
         )
+        kernel._approval_verifier = advancing
         expiring = signed_envelope(kernel, self.intent, advancing, now_ns=NOW, ttl_ns=1_000)
         self.assertEqual(
             "approval_expired_during_verification",
@@ -271,7 +286,7 @@ class VerifiedApprovalTests(unittest.TestCase):
 
         kernel = GovernanceKernel(
             self.policy,
-            approval_verifier=self.verifier,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=broken_clock,
         )
         decision = kernel.evaluate_with_approval(self.intent, envelope)
@@ -289,9 +304,10 @@ class VerifiedApprovalTests(unittest.TestCase):
         rollback = RollbackVerifier()
         rollback_kernel = GovernanceKernel(
             self.policy,
-            approval_verifier=rollback,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=lambda: clock[0],
         )
+        rollback_kernel._approval_verifier = rollback
         rollback_envelope = signed_envelope(
             rollback_kernel,
             self.intent,
@@ -339,7 +355,7 @@ class VerifiedApprovalTests(unittest.TestCase):
         rotated_policy = replace(self.policy, authority_trust=rotated_trust)
         rotated_kernel = GovernanceKernel(
             rotated_policy,
-            approval_verifier=rotated_verifier,
+            approval_verifier=rotated_verifier, policy_envelope=signed_policy_envelope(rotated_policy, rotated_verifier),
             clock=lambda: NOW,
         )
         self.assertEqual(

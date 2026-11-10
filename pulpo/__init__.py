@@ -10,6 +10,7 @@ from .authority import (
     AuthorityTrust,
     Ed25519ApprovalVerifier,
     P256ApprovalVerifier,
+    PolicyEnvelope,
 )
 from .authority_client import AuthorityApprovalRequest, AuthorityClient, AuthorityPoll
 from .audit_parallel import AuditDigestCache, AuditVerificationEngine
@@ -29,8 +30,10 @@ from .kernel import (
     Intent,
     LockedTarget,
     Policy,
+    PolicyEnvelopeError,
     StateIntegrityError,
     TargetResolution,
+    policy_hash_for,
 )
 from .namecom import NameComCoreAdapter
 from .performance_tuning import (
@@ -96,7 +99,10 @@ __all__ = [
     "P256CeremonyVerifier",
     "PerformanceProfile",
     "Policy",
+    "PolicyEnvelope",
+    "PolicyEnvelopeError",
     "PulpoOrchestrator",
+    "policy_hash_for",
     "SQLiteBudgetAccount",
     "SQLiteKernelState",
     "SemanticProvenance",
