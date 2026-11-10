@@ -24,7 +24,7 @@ if str(ROOT) not in sys.path:
 
 from pulpo import GovernanceKernel, Intent, Policy, SQLiteKernelState
 from pulpo.targets import evaluate_locked_target_with_approval
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 ACTOR = "pulpo-node-test-operator"
 TARGET = "virtual-lamp:alpha"
@@ -77,7 +77,7 @@ def make_kernel(db_path: Path, clock: ManualClock, verifier: HmacTestVerifier, s
         approval_actions=frozenset({ACTION}),
         authority_trust=trust_for(verifier),
     )
-    return GovernanceKernel(policy, secret=secret, approval_verifier=verifier, clock=clock, state=state), state
+    return GovernanceKernel(policy, secret=secret, approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier), clock=clock, state=state), state
 
 
 def approve(kernel: GovernanceKernel, verifier: HmacTestVerifier, intent: Intent, approval_id: str, nonce: str, **changes: Any):

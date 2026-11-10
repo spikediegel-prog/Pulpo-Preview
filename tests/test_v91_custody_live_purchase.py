@@ -51,7 +51,12 @@ from pulpo.directives import (
 from pulpo.kernel import GovernanceKernel, Policy
 from pulpo.orchestrator import PulpoOrchestrator
 from pulpo.state import InMemoryKernelState, SQLiteKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import (
+    HmacTestVerifier,
+    signed_envelope,
+    signed_policy_envelope,
+    trust_for,
+)
 
 NOW = 8_000_000
 OPERATOR = "operator:owner"
@@ -238,15 +243,17 @@ class LivePurchaseCustodyTests(unittest.TestCase):
     # (b) Pre-purchase revalidation refuses state that changed after consume.
     def test_pre_purchase_revalidation_refuses_revoked_directive(self):
         verifier = HmacTestVerifier()
+        policy = Policy(
+            frozenset({"purchase_domain", "activate_directive", "revoke_directive"}),
+            3_000,
+            frozenset({"activate_directive", "revoke_directive"}),
+            authority_trust=trust_for(verifier),
+        )
         kernel = GovernanceKernel(
-            Policy(
-                frozenset({"purchase_domain", "activate_directive", "revoke_directive"}),
-                3_000,
-                frozenset({"activate_directive", "revoke_directive"}),
-                authority_trust=trust_for(verifier),
-            ),
+            policy,
             secret=b"test-secret",
             approval_verifier=verifier,
+            policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
         )
         order = self.order()

@@ -6,7 +6,7 @@ from pulpo.telegram import (
     TelegramOutboundMessage,
     TelegramSendRejected,
 )
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 7_100_000
@@ -48,7 +48,7 @@ class TelegramCapabilityActivationPrepTests(unittest.TestCase):
         self.kernel = GovernanceKernel(
             self.policy,
             secret=b"telegram-capability-activation-prep-secret",
-            approval_verifier=self.verifier,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=lambda: NOW,
         )
         self.read = Intent(

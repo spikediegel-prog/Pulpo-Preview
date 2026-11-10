@@ -15,7 +15,7 @@ from pulpo import (
     artifact_hash,
 )
 from pulpo.mcp_boundary import MCPBoundaryError, PulpoMCPProjection, freeze_mcp_snapshot
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 44_000_000
@@ -35,7 +35,13 @@ class SemanticProvenanceBindingTests(unittest.TestCase):
                 provenance_required_actions=frozenset({ACTION}),
             ),
             secret=b"semantic-provenance-kernel",
-            approval_verifier=self.verifier,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(Policy(
+                allowed_actions=frozenset({ACTION}),
+                max_cost=0,
+                approval_actions=frozenset({ACTION}),
+                authority_trust=trust_for(self.verifier),
+                provenance_required_actions=frozenset({ACTION}),
+            ), self.verifier),
             clock=lambda: NOW,
         )
 
@@ -184,7 +190,7 @@ class SemanticProvenanceBindingTests(unittest.TestCase):
         kernel = GovernanceKernel(
             policy,
             secret=b"semantic-provenance-restart-kernel",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
             state=state,
         )
@@ -208,7 +214,7 @@ class SemanticProvenanceBindingTests(unittest.TestCase):
         restarted = GovernanceKernel(
             policy,
             secret=b"semantic-provenance-restart-kernel",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
             state=restarted_state,
         )

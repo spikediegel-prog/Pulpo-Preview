@@ -1,7 +1,7 @@
 import unittest
 
 from pulpo import GovernanceKernel, Intent, Policy
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 1_000_000
@@ -20,7 +20,12 @@ class CeremonyProvenanceGapTests(unittest.TestCase):
                 authority_trust=trust_for(self.verifier),
             ),
             secret=b"ceremony-provenance-gap-proof",
-            approval_verifier=self.verifier,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(Policy(
+                frozenset({"push"}),
+                0,
+                frozenset({"push"}),
+                authority_trust=trust_for(self.verifier),
+            ), self.verifier),
             clock=lambda: NOW,
         )
         self.intent = Intent(

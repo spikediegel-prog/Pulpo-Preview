@@ -14,7 +14,7 @@ from pulpo.directive_memory_surface import (
 from pulpo.directive_memory_transport import build_directive_memory_request
 from pulpo.directives import Directive, DirectiveAuthorityController, GovernedDirectiveProjection
 from pulpo.state import InMemoryKernelState, SQLiteKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 2_000_000
@@ -51,7 +51,7 @@ class DirectiveMemorySkillHostTests(unittest.TestCase):
         kernel = GovernanceKernel(
             policy,
             secret=b"directive-memory-host-proof",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
             state=state,
         )

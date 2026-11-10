@@ -23,7 +23,7 @@ from pulpo.custody_reconcile import (
 from pulpo.directives import Directive, DirectiveAuthorityController, GovernedDirectiveProjection
 from pulpo.kernel import GovernanceKernel, Intent, Policy
 from pulpo.state import InMemoryKernelState, SQLiteKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 23_000_000
@@ -106,7 +106,7 @@ class Issue153ConsequenceReconciliationV0(unittest.TestCase):
         kernel = GovernanceKernel(
             self._commerce_policy(verifier),
             secret=KERNEL_SECRET,
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(self._commerce_policy(verifier), verifier),
             clock=lambda: NOW,
             state=state,
         )
@@ -271,7 +271,7 @@ class Issue153ConsequenceReconciliationV0(unittest.TestCase):
         kernel = GovernanceKernel(
             policy,
             secret=b"issue-153-freshness-kernel",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: now_box[0],
             state=state,
         )
@@ -419,7 +419,7 @@ class Issue153ConsequenceReconciliationV0(unittest.TestCase):
                 restarted_kernel = GovernanceKernel(
                     self._commerce_policy(restarted_verifier),
                     secret=KERNEL_SECRET,
-                    approval_verifier=restarted_verifier,
+                    approval_verifier=restarted_verifier, policy_envelope=signed_policy_envelope(self._commerce_policy(restarted_verifier), restarted_verifier),
                     clock=lambda: NOW,
                     state=restarted_state,
                 )

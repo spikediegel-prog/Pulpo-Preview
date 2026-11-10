@@ -23,7 +23,7 @@ from pulpo.directives import Directive, DirectiveAuthorityController
 from pulpo.kernel import GovernanceKernel, Intent, Policy
 from pulpo.orchestrator import PulpoOrchestrator
 from pulpo.state import InMemoryKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 9_000_000
@@ -91,7 +91,7 @@ def main() -> None:
     kernel = GovernanceKernel(
         policy,
         secret=b"orchestrator-demo",
-        approval_verifier=verifier,
+        approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
         clock=lambda: NOW,
         state=state,
     )

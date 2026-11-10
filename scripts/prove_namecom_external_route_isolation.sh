@@ -26,6 +26,25 @@ docker volume create "$volume" >/dev/null
 kernel_secret="$(docker run --rm --network none --entrypoint python "$image" -c 'import secrets; print(secrets.token_hex(32))')"
 custody_secret="$(docker run --rm --network none --entrypoint python "$image" -c 'import secrets; print(secrets.token_hex(32))')"
 
+# The sandbox authority is the script itself for one disposable run: it mints
+# a fresh Ed25519 issuer keypair and a signed policy envelope for the exact
+# sandbox policy, the same way it already mints fresh kernel/custody secrets.
+# The service holds only the authority public key and cannot sign a policy
+# itself, so the envelope must be supplied by the issuer (here: this script).
+# The fixed test-vector public key previously used here has no private key in
+# the repository, so no envelope could ever be minted for it.
+mint_output="$(
+  docker run --rm --network none "$image" python /opt/pulpo/custody-service/mint_policy_envelope.py \
+    --authority-id authority:external-route-test \
+    --verifier-id verifier:external-route-ed25519 \
+    --key-id key:external-route-v0 \
+    --deployment-id deployment:external-route-v0 \
+    --max-ttl-seconds 300 \
+    --budget-cents 3000
+)"
+authority_public_key="$(printf '%s' "$mint_output" | sed -n 's/^PULPO_AUTHORITY_PUBLIC_KEY_HEX=//p')"
+policy_envelope_json="$(printf '%s' "$mint_output" | sed -n 's/^PULPO_POLICY_ENVELOPE_JSON=//p')"
+
 # The remaining values are explicit non-secret sentinels. They satisfy local
 # runtime configuration only; no authenticated Name.com request is sent in
 # this proof.
@@ -40,7 +59,8 @@ docker run -d \
   -e PULPO_CUSTODY_STATE_PATH=/var/lib/pulpo/custody.sqlite3 \
   -e "PULPO_KERNEL_SECRET_HEX=${kernel_secret}" \
   -e "PULPO_CUSTODY_SECRET_HEX=${custody_secret}" \
-  -e PULPO_AUTHORITY_PUBLIC_KEY_HEX=d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a \
+  -e "PULPO_AUTHORITY_PUBLIC_KEY_HEX=${authority_public_key}" \
+  -e "PULPO_POLICY_ENVELOPE_JSON=${policy_envelope_json}" \
   -e PULPO_AUTHORITY_ID=authority:external-route-test \
   -e PULPO_AUTHORITY_VERIFIER_ID=verifier:external-route-ed25519 \
   -e PULPO_AUTHORITY_KEY_ID=key:external-route-v0 \
