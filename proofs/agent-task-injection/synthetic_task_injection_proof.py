@@ -484,7 +484,14 @@ def main() -> int:
                     "observation": evidence,
                     "synthetic_provider_effect_count": len(provider.snapshot()["effects"]),
                 })
-            frozen = asdict(INTENT)
+            # asdict(INTENT) carries provenance_hash (None here); the fixture
+            # custody allowlist admits exactly the five intent fields, so the
+            # candidate must not carry it.
+            frozen = {
+                key: value
+                for key, value in asdict(INTENT).items()
+                if key != "provenance_hash"
+            }
             def request(permit: str | None, **changes):
                 return {
                     "op": "execute", "permit": permit,

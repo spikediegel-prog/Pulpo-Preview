@@ -15,6 +15,7 @@ from pulpo import (
     Intent,
     Policy,
 )
+from tests.authority_support import signed_policy_envelope
 from pulpo_authority_service import (
     ApprovalRequest,
     AuthorityConfig,
@@ -96,9 +97,13 @@ class AuthorityServiceTests(unittest.TestCase):
             frozenset({"push"}),
             authority_trust=self.trust,
         )
+        self.signer = Ed25519TestSigner(self.private_key, self.approval_verifier)
         self.kernel = GovernanceKernel(
             self.policy,
             approval_verifier=self.approval_verifier,
+            policy_envelope=signed_policy_envelope(
+                self.policy, self.approval_verifier, sign=self.signer.sign
+            ),
             clock=lambda: NOW,
         )
         self.intent = Intent("agent:publisher", "push", "repo:origin/main", 0, "session:1")
@@ -113,7 +118,7 @@ class AuthorityServiceTests(unittest.TestCase):
             AuthorityConfig(self.service_trust, "example.com", "https://authority.example.com"),
             self.state,
             self.webauthn,
-            Ed25519TestSigner(self.private_key, self.approval_verifier),
+            self.signer,
             self.evidence,
             clock=lambda: NOW,
             random_token=lambda _: next(tokens),
