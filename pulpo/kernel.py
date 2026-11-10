@@ -13,7 +13,7 @@ from typing import Any, Callable
 from .authority import ApprovalEnvelope, ApprovalVerifier, AuthorityTrust, PolicyEnvelope
 from .audit_parallel import AuditVerificationEngine, audit_row_has_valid_types
 from .ceremony import CeremonyEvidence, CeremonyTrust, CeremonyVerifier
-from .state import ApprovalUse, InMemoryKernelState, KernelState
+from .state import ApprovalUse, InMemoryKernelState, KernelState, StateClockError
 
 
 # Reuse the unchanged encoder configuration; per-call state stays in encode().
@@ -840,15 +840,25 @@ class GovernanceKernel:
         payload = f"{digest}:{nonce}"
         signature = hmac.new(self._secret, payload.encode(), sha256).hexdigest()
         permit = f"{payload}:{signature}"
-        issued_at_ns = self._trusted_now() if timestamp_ns is None else timestamp_ns
+        # Only the kernel's own sample is re-sampled inside the state
+        # transaction. An explicitly supplied timestamp (the approval path's
+        # post-verification time) is a deliberate binding, not a race, and is
+        # passed through without a clock; the state still checks it against
+        # the audit tip.
+        sampled_here = timestamp_ns is None
+        issued_at_ns = self._trusted_now() if sampled_here else timestamp_ns
         if type(issued_at_ns) is not int or issued_at_ns <= 0:
             raise RuntimeError("permit_clock_invalid")
         expires_at_ns = issued_at_ns + self.policy.permit_ttl_ns
         if envelope is not None:
             expires_at_ns = min(expires_at_ns, envelope.expires_at_ns)
-        replay = self._state.issue_permit(permit, digest, reason, issued_at_ns, approval,
-            policy_hash=self.policy_hash, issuer_hash=self._permit_issuer,
-            expires_at_ns=expires_at_ns)
+        try:
+            replay = self._state.issue_permit(permit, digest, reason, issued_at_ns, approval,
+                policy_hash=self.policy_hash, issuer_hash=self._permit_issuer,
+                expires_at_ns=expires_at_ns, clock=self._clock if sampled_here else None)
+        except StateClockError as exc:
+            # The clock broke or regressed after the pre-lock sample.
+            raise RuntimeError("permit_clock_invalid") from exc
         if replay:
             if envelope is None:
                 raise RuntimeError("state rejected an approval-free permit")
@@ -901,7 +911,33 @@ class GovernanceKernel:
         if now_ns is None:
             self._state.append("permit_rejected", {"intent_hash": digest, "reason": "permit_clock_invalid"}, 0)
             return False
-        return self._state.consume_permit(permit, digest, now_ns, policy_hash=self.policy_hash, issuer_hash=self._permit_issuer)
+        try:
+            # The pre-lock sample is the fallback; the state re-samples the
+            # clock after BEGIN IMMEDIATE, so the expiry check inside the
+            # transaction runs on a post-lock timestamp.
+            return self._state.consume_permit(permit, digest, now_ns, policy_hash=self.policy_hash, issuer_hash=self._permit_issuer, clock=self._clock)
+        except StateClockError:
+            # The clock broke or regressed between the pre-lock sample and the
+            # locked transaction: fail closed without consuming, and record
+            # the refusal with the no-trusted-time sentinel.
+            self._state.append("permit_rejected", {"intent_hash": digest, "reason": "permit_clock_invalid"}, 0)
+            return False
+
+    def revalidate_consumed_permit(self, permit: str, intent: Intent) -> str:
+        """Re-read permit/directive/policy/expiry state for an already-spent permit.
+
+        Call immediately before execution, after `consume`, to close the window
+        in which a revocation or expiry can land between consumption and the
+        consequential call. Returns "valid" or a fail-closed reason; never
+        mutates state and never re-issues. A NULL `expires_at_ns` means no
+        expiry (load-bearing fork semantics).
+        """
+
+        digest = self.intent_hash(intent)
+        now_ns = self._trusted_now()
+        if now_ns is None:
+            return "permit_clock_invalid"
+        return self._state.revalidate_consumed_permit(permit, digest, now_ns, policy_hash=self.policy_hash, issuer_hash=self._permit_issuer)
 
     def verify_audit(self) -> bool:
         engine = self._audit_verification_engine
