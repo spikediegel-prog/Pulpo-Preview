@@ -22,7 +22,9 @@ from proofs.github_actions_custody.common import (
     b64,
     build_action,
     build_kernel,
+    build_policy,
     envelope_json,
+    sign_policy_envelope,
 )
 
 
@@ -51,7 +53,11 @@ def main() -> int:
         raise RuntimeError("authority only signs protected main")
 
     now_ns = time.time_ns()
-    kernel, trust = build_kernel(public_key, now_ns)
+    _verifier, trust, policy = build_policy(public_key)
+    policy_envelope = sign_policy_envelope(
+        policy, trust, lambda payload: private_key.sign(payload).hex()
+    )
+    kernel, trust = build_kernel(public_key, now_ns, policy_envelope=policy_envelope)
     unsigned = ApprovalEnvelope(
         approval_id=f"approval:github-actions:{os.environ['GITHUB_RUN_ID']}:{os.environ['GITHUB_RUN_ATTEMPT']}",
         authority_id=AUTHORITY_ID,
@@ -72,6 +78,7 @@ def main() -> int:
 
     outputs = {
         "approval_b64": b64(envelope_json(envelope)),
+        "policy_envelope_b64": b64(envelope_json(policy_envelope)),
         "payload_b64": b64(payload),
         "artifact_name": artifact_name,
     }

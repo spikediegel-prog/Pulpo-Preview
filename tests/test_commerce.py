@@ -23,7 +23,7 @@ from pulpo.commerce import (
 )
 from pulpo.kernel import GovernanceKernel, Policy
 from pulpo.profiles import ESSENTIAL_AGENT_GRANTS
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 1_000_000
@@ -97,7 +97,13 @@ class CommerceProofTests(unittest.TestCase):
                 authority_trust=trust_for(verifier),
             ),
             secret=b"test-secret",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(Policy(
+                actions,
+                3_000,
+                frozenset({"purchase_domain"}),
+                ESSENTIAL_AGENT_GRANTS,
+                authority_trust=trust_for(verifier),
+            ), verifier),
             clock=lambda: NOW,
         )
         budget = BudgetAccount()
@@ -127,7 +133,13 @@ class CommerceProofTests(unittest.TestCase):
                 authority_trust=trust_for(verifier),
             ),
             secret=b"test-secret",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(Policy(
+                actions,
+                3_000,
+                frozenset({"purchase_domain"}),
+                ESSENTIAL_AGENT_GRANTS,
+                authority_trust=trust_for(verifier),
+            ), verifier),
             clock=lambda: NOW,
         )
         intent = purchase_intent(order)

@@ -1,7 +1,7 @@
 import unittest
 
 from pulpo import GovernanceKernel, Intent, Policy
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 8_000_000
@@ -43,7 +43,7 @@ class CapabilityDerivationDuplicationTests(unittest.TestCase):
         self.kernel = GovernanceKernel(
             self.policy,
             secret=b"capability-derivation-proof-secret",
-            approval_verifier=self.verifier,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=lambda: NOW,
         )
         self.use_session = Intent(

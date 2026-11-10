@@ -12,13 +12,14 @@ HTTP API exposed by :mod:`pulpo_custody_service.api`.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import os
 import atexit
 from pulpo.performance_tuning import AdaptiveAuditVerificationEngine, AuditPerformanceTuner
 from pathlib import Path
 import time
 
-from pulpo.authority import AuthorityTrust, Ed25519ApprovalVerifier
+from pulpo.authority import AuthorityTrust, Ed25519ApprovalVerifier, PolicyEnvelope
 from pulpo.commerce import SQLiteBudgetAccount
 from pulpo.custody import SQLiteGovernanceCustody
 from pulpo.kernel import GovernanceKernel, Policy
@@ -98,12 +99,25 @@ class RuntimeConfig:
     namecom_executor_token: str
     namecom_observer_token: str
     audit_performance_profile: Path | None = None
+    policy_envelope: PolicyEnvelope | None = None
 
     @classmethod
     def from_environ(cls, environ: dict[str, str] | None = None) -> "RuntimeConfig":
         env = dict(os.environ if environ is None else environ)
         profile_raw = env.get("PULPO_AUDIT_PERFORMANCE_PROFILE")
         audit_performance_profile = Path(profile_raw).expanduser() if profile_raw else None
+        envelope_raw = env.get("PULPO_POLICY_ENVELOPE_JSON")
+        policy_envelope = None
+        if envelope_raw:
+            try:
+                envelope_data = json.loads(envelope_raw)
+                if not isinstance(envelope_data, dict):
+                    raise ValueError("policy envelope must be a JSON object")
+                policy_envelope = PolicyEnvelope(**envelope_data)
+            except (ValueError, TypeError) as exc:
+                raise RuntimeConfigError(
+                    f"PULPO_POLICY_ENVELOPE_JSON is not a valid signed policy envelope: {exc}"
+                ) from exc
         state_path = Path(_required("PULPO_CUSTODY_STATE_PATH", env))
         if not state_path.is_absolute():
             raise RuntimeConfigError("PULPO_CUSTODY_STATE_PATH must be absolute")
@@ -146,6 +160,7 @@ class RuntimeConfig:
             namecom_executor_token=executor_token,
             namecom_observer_token=observer_token,
             audit_performance_profile=audit_performance_profile,
+            policy_envelope=policy_envelope,
         )
 
 
@@ -159,6 +174,13 @@ def build_service(config: RuntimeConfig) -> DomainCustodyService:
         audit_engine = AdaptiveAuditVerificationEngine(AuditPerformanceTuner.load(config.audit_performance_profile), cache_size=0)
         atexit.register(audit_engine.close)
 
+    if config.policy_envelope is None:
+        raise RuntimeConfigError(
+            "PULPO_POLICY_ENVELOPE_JSON is required: the authority must issue a "
+            "signed policy envelope for the service policy before the service "
+            "can govern; the service holds only the authority public key and "
+            "cannot sign a policy itself"
+        )
     verifier = Ed25519ApprovalVerifier(
         authority_id=config.authority_id,
         verifier_id=config.verifier_id,
@@ -191,6 +213,7 @@ def build_service(config: RuntimeConfig) -> DomainCustodyService:
                 clock=time.time_ns,
                 state=state,
                 audit_verification_engine=audit_engine,
+                policy_envelope=config.policy_envelope,
             )
         except Exception:
             state.close()

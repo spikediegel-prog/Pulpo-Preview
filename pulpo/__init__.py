@@ -10,6 +10,7 @@ from .authority import (
     AuthorityTrust,
     Ed25519ApprovalVerifier,
     P256ApprovalVerifier,
+    PolicyEnvelope,
 )
 from .authority_client import AuthorityApprovalRequest, AuthorityClient, AuthorityPoll
 from .audit_parallel import AuditDigestCache, AuditVerificationEngine
@@ -29,8 +30,10 @@ from .kernel import (
     Intent,
     LockedTarget,
     Policy,
+    PolicyEnvelopeError,
     StateIntegrityError,
     TargetResolution,
+    policy_hash_for,
 )
 from .namecom import NameComCoreAdapter
 from .performance_tuning import (
@@ -47,7 +50,7 @@ from .orchestrator import (
     OrchestrationError,
     PulpoOrchestrator,
 )
-from .state import InMemoryKernelState, KernelState, SQLiteKernelState, StateRecoveryError
+from .state import InMemoryKernelState, KernelState, SQLiteKernelState, StateClockError, StateRecoveryError, capture_recovery_pin
 from .resources import ResourceScope
 from .target_reconcile import (
     ArtifactCompletionEvidence,
@@ -58,6 +61,8 @@ from .targets import evaluate_locked_target_with_approval
 
 __all__ = [
     "StateRecoveryError",
+    "StateClockError",
+    "capture_recovery_pin",
     "ResourceScope",
     "AdaptiveAuditVerificationEngine",
     "AccountableContext",
@@ -96,7 +101,10 @@ __all__ = [
     "P256CeremonyVerifier",
     "PerformanceProfile",
     "Policy",
+    "PolicyEnvelope",
+    "PolicyEnvelopeError",
     "PulpoOrchestrator",
+    "policy_hash_for",
     "SQLiteBudgetAccount",
     "SQLiteKernelState",
     "SemanticProvenance",

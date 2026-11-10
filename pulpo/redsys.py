@@ -17,7 +17,7 @@ import hmac
 import json
 from typing import Any, Callable, Mapping
 
-from .authority import ApprovalEnvelope, ApprovalVerifier, AuthorityTrust
+from .authority import ApprovalEnvelope, ApprovalVerifier, AuthorityTrust, PolicyEnvelope
 from .execution_context import (
     ExecutionContext,
     ExecutionContextCheck,
@@ -197,8 +197,15 @@ def authorize_payment_with_external_approval(
     verifier: ApprovalVerifier,
     clock: Callable[[], int],
     state: KernelState | None = None,
+    policy_envelope: PolicyEnvelope | None = None,
 ) -> tuple[GovernanceKernel, Intent, str]:
-    """Require independently verified approval before minting payment authority."""
+    """Require independently verified approval before minting payment authority.
+
+    ``policy_envelope`` is the signed, versioned envelope for the payment
+    policy, issued by the same authority that pinned ``trust``. The kernel
+    refuses the approval policy without it; callers obtain it from the
+    authority alongside the approval envelope.
+    """
 
     if not isinstance(payment, RedsysPayment):
         raise TypeError("payment must be RedsysPayment")
@@ -220,6 +227,7 @@ def authorize_payment_with_external_approval(
         approval_verifier=verifier,
         clock=clock,
         state=state,
+        policy_envelope=policy_envelope,
     )
     intent = payment_intent(payment)
     preapproval = kernel.evaluate(intent)

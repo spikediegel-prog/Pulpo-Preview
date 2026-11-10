@@ -43,7 +43,7 @@ if str(ROOT) not in sys.path:
 
 from pulpo import GovernanceKernel, SQLiteKernelState
 from pulpo.targets import evaluate_locked_target_with_approval
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 # The existing incident-response source supplies the synthetic intent and
 # process identity fixture. No second policy or authority kernel is introduced.
@@ -261,7 +261,7 @@ def custody_child(socket_path: str, db_path: str, secret_hex: str, provider_port
     )
     kernel = GovernanceKernel(
         policy, secret=bytes.fromhex(secret_hex),
-        approval_verifier=verifier, clock=clock, state=state
+        approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier), clock=clock, state=state
     )
     target = kernel.get_locked_target(TARGET_ID)
     if target is None:
@@ -484,7 +484,14 @@ def main() -> int:
                     "observation": evidence,
                     "synthetic_provider_effect_count": len(provider.snapshot()["effects"]),
                 })
-            frozen = asdict(INTENT)
+            # asdict(INTENT) carries provenance_hash (None here); the fixture
+            # custody allowlist admits exactly the five intent fields, so the
+            # candidate must not carry it.
+            frozen = {
+                key: value
+                for key, value in asdict(INTENT).items()
+                if key != "provenance_hash"
+            }
             def request(permit: str | None, **changes):
                 return {
                     "op": "execute", "permit": permit,

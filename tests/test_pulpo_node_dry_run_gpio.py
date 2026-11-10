@@ -13,7 +13,7 @@ from pulpo.node_dry_run import (
     reconcile_dry_run_output,
 )
 from pulpo.targets import evaluate_locked_target_with_approval
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 class DryRunGPIOContractTests(unittest.TestCase):
@@ -35,7 +35,7 @@ class DryRunGPIOContractTests(unittest.TestCase):
         self.state = SQLiteKernelState(self.path)
         self.kernel = GovernanceKernel(
             Policy(frozenset({ACTION}), 1, approval_actions=frozenset({ACTION}), authority_trust=trust_for(self.verifier)),
-            secret=self.secret, approval_verifier=self.verifier,
+            secret=self.secret, approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(Policy(frozenset({ACTION}), 1, approval_actions=frozenset({ACTION}), authority_trust=trust_for(self.verifier)), self.verifier),
             clock=lambda: 2_000_010, state=self.state,
         )
 

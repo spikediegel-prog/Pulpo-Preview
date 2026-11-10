@@ -39,12 +39,13 @@ def load(repo):
 
 def make_kernel(state):
     from pulpo import GovernanceKernel, Policy
-    from tests.authority_support import HmacTestVerifier, trust_for
+    from tests.authority_support import HmacTestVerifier, signed_policy_envelope, trust_for
     verifier = HmacTestVerifier()
     policy = Policy(frozenset({"fixture_write"}), 0, frozenset({"fixture_write"}),
                     authority_trust=trust_for(verifier))
     return GovernanceKernel(policy, secret=SECRET, approval_verifier=verifier,
-                            clock=lambda: NOW, state=state), verifier
+                            clock=lambda: NOW, state=state,
+                            policy_envelope=signed_policy_envelope(policy, verifier)), verifier
 
 
 def seed(path, history):

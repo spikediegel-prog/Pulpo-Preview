@@ -7,7 +7,7 @@ from pulpo.conversation_directives import (
     digest_conversation_source,
 )
 from pulpo.directives import Directive, DirectiveAuthorityController, GovernedDirectiveProjection
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 10_000_000
@@ -66,7 +66,7 @@ class ConversationDirectiveCandidateTests(unittest.TestCase):
         kernel = GovernanceKernel(
             policy,
             secret=b"conversation-directive-candidate-proof",
-            approval_verifier=self.verifier,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(policy, self.verifier),
             clock=lambda: NOW,
         )
         return kernel, DirectiveAuthorityController(kernel)

@@ -14,9 +14,13 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import sqlite3
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
+from .custody import CustodyViolation
 from .kernel import GovernanceKernel, Intent
+
+if TYPE_CHECKING:
+    from .custody_domain import GovernedDomainAttempt, GovernedDomainAttemptCoordinator
 
 
 PILOT_PURCHASE_CEILING_CENTS = 3_000
@@ -711,10 +715,66 @@ class CommerceOutcome:
 
 
 class DomainCommerceExecutor:
-    """Consume a Pulpo permit before invoking a registrar adapter exactly once."""
+    """Consume a Pulpo permit before invoking a registrar adapter exactly once.
 
-    def __init__(self, attempted_order_hashes: set[str] | None = None) -> None:
+    The live purchase path. When a `GovernedDomainAttemptCoordinator` is
+    supplied, consumption runs through it: exact locked-target resolution,
+    canonical consume, audit-tip verification, and one custody attempt, before
+    any transmission right is released. Without one, the same direct consume
+    runs, and both paths share the pre-purchase revalidation and the durable
+    unknown-outcome record below. No new executor, no second ledger: unknown
+    outcomes are events in the existing canonical audit.
+    """
+
+    def __init__(
+        self,
+        attempted_order_hashes: set[str] | None = None,
+        coordinator: GovernedDomainAttemptCoordinator | None = None,
+    ) -> None:
         self.attempted_order_hashes = attempted_order_hashes if attempted_order_hashes is not None else set()
+        self.coordinator = coordinator
+
+    def _record_purchase_event(
+        self,
+        kernel: GovernanceKernel,
+        event: str,
+        payload: dict[str, Any],
+        now_ns: int,
+    ) -> None:
+        # Best effort only: the spent permit, the attempted reservation, and
+        # the attempt set already block any retry, so a failed projection must
+        # never mask the outcome the caller has to reconcile. The failure mode
+        # is evidence-only, not a second execution right.
+        try:
+            kernel._state.append(event, payload, now_ns)  # noqa: SLF001 - existing canonical audit seam
+        except Exception:
+            pass
+
+    def _purchase_payload(
+        self,
+        kernel: GovernanceKernel,
+        order: DomainPurchaseOrder,
+        intent: Intent,
+        permit: str,
+        reservation_id: str,
+        *,
+        reason: str,
+        custody_attempt: GovernedDomainAttempt | None,
+        error: str | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "order_hash": order.order_hash,
+            "intent_hash": kernel.intent_hash(intent),
+            # The permit itself is authority material; only its hash is evidence.
+            "permit_hash": sha256(permit.encode()).hexdigest(),
+            "reservation_id": reservation_id,
+            "reason": reason,
+        }
+        if error is not None:
+            payload["error"] = error
+        if custody_attempt is not None:
+            payload["custody_attempt_id"] = custody_attempt.attempt_id
+        return payload
 
     def execute(
         self,
@@ -726,24 +786,82 @@ class DomainCommerceExecutor:
         reservation_id: str,
         *,
         now_ns: int,
+        target_id: str | None = None,
+        expected_target_hash: str | None = None,
+        target_version: int = 1,
     ) -> CommerceOutcome:
         if now_ns >= order.expires_at_ns:
             raise CommerceViolation("order_expired")
         if order.order_hash in self.attempted_order_hashes:
             raise CommerceViolation("duplicate_purchase_attempt")
 
-        budget.require_active(reservation_id, order, now_ns=now_ns)
-
         intent = purchase_intent(order)
-        if not kernel.consume(permit, intent):
-            raise CommerceViolation("permit_rejected")
+        custody_attempt: GovernedDomainAttempt | None = None
+        if self.coordinator is not None:
+            # The coordinator owns its budget account; a different account
+            # would mark the attempt on one store and reconcile on another.
+            if budget is not self.coordinator.budget:
+                raise CommerceViolation("custody_budget_mismatch")
+            if not target_id or not expected_target_hash:
+                raise CommerceViolation("custody_target_required")
+            try:
+                custody_attempt = self.coordinator.authorize(
+                    target_id=target_id,
+                    expected_target_hash=expected_target_hash,
+                    order=order,
+                    permit=permit,
+                    reservation_id=reservation_id,
+                    version=target_version,
+                )
+            except CustodyViolation as exc:
+                raise CommerceViolation(str(exc)) from exc
+        else:
+            budget.require_active(reservation_id, order, now_ns=now_ns)
+            if not kernel.consume(permit, intent):
+                raise CommerceViolation("permit_rejected")
 
-        # Mark before the external call.  An uncertain network outcome must be
-        # reconciled, not blindly retried with a new capability.
-        budget.mark_attempted(reservation_id)
+            # Mark before the external call.  An uncertain network outcome must be
+            # reconciled, not blindly retried with a new capability.
+            budget.mark_attempted(reservation_id)
+
         self.attempted_order_hashes.add(order.order_hash)
         outcome = CommerceOutcome(order_hash=order.order_hash, authorized=True, capability_revoked=True)
-        result = adapter.purchase(order, max_charge_cents=order.purchase_price_cents)
+
+        # Re-read permit/directive/policy/expiry state immediately before the
+        # provider call, under the same transaction discipline as consume.
+        # A revocation or expiry landing between consume and transmission
+        # refuses here, before any consequence exists.
+        revalidation = kernel.revalidate_consumed_permit(permit, intent)
+        if revalidation != "valid":
+            self._record_purchase_event(
+                kernel,
+                "purchase_revalidation_failed",
+                self._purchase_payload(
+                    kernel, order, intent, permit, reservation_id,
+                    reason=revalidation, custody_attempt=custody_attempt,
+                ),
+                now_ns,
+            )
+            raise CommerceViolation(revalidation)
+
+        try:
+            result = adapter.purchase(order, max_charge_cents=order.purchase_price_cents)
+        except Exception as exc:
+            # The provider call may already have changed reality. Record the
+            # unknown outcome as durable canonical evidence, then re-raise the
+            # original failure unchanged: no silent success, no blind retry.
+            self._record_purchase_event(
+                kernel,
+                "purchase_consequence_unknown",
+                self._purchase_payload(
+                    kernel, order, intent, permit, reservation_id,
+                    reason="external_consequence_not_yet_verified",
+                    custody_attempt=custody_attempt,
+                    error=type(exc).__name__,
+                ),
+                now_ns,
+            )
+            raise
 
         if result.payment_id is not None or result.charged_cents is not None or result.receipt_hash is not None:
             if None in (result.payment_id, result.charged_cents, result.receipt_hash):

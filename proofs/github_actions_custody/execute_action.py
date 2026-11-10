@@ -8,8 +8,13 @@ import os
 from pathlib import Path
 import time
 
-from pulpo import ApprovalEnvelope
+from pulpo import ApprovalEnvelope, PolicyEnvelope
 from proofs.github_actions_custody.common import build_action, build_kernel, unb64
+
+
+def decode_policy_envelope(value: str) -> PolicyEnvelope:
+    data = json.loads(unb64(value))
+    return PolicyEnvelope(**data)
 
 
 def decode_envelope(value: str) -> ApprovalEnvelope:
@@ -57,8 +62,22 @@ def main() -> int:
     elif tamper == "signature":
         envelope = replace(envelope, signature="00" * 64)
 
+    policy_envelope_b64 = os.environ.get("PULPO_POLICY_ENVELOPE_B64", "")
+    if not policy_envelope_b64:
+        if expect_deny:
+            print("DENY: policy_envelope_missing")
+            return 0
+        raise RuntimeError("policy_envelope_missing")
+    try:
+        policy_envelope = decode_policy_envelope(policy_envelope_b64)
+    except Exception as exc:
+        if expect_deny:
+            print(f"DENY: policy_envelope_malformed:{type(exc).__name__}")
+            return 0
+        raise
+
     now_ns = time.time_ns()
-    kernel, _ = build_kernel(public_key, now_ns)
+    kernel, _ = build_kernel(public_key, now_ns, policy_envelope=policy_envelope)
     decision = kernel.evaluate_with_approval(intent, envelope)
 
     if decision.outcome != "allow" or decision.permit is None:

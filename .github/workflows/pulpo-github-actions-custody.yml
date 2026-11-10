@@ -14,6 +14,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       approval_b64: ${{ steps.sign.outputs.approval_b64 }}
+      policy_envelope_b64: ${{ steps.sign.outputs.policy_envelope_b64 }}
       payload_b64: ${{ steps.sign.outputs.payload_b64 }}
       artifact_name: ${{ steps.sign.outputs.artifact_name }}
     steps:
@@ -50,6 +51,7 @@ jobs:
           PULPO_EXPECT_DENY: "1"
           PULPO_TAMPER: artifact
           PULPO_APPROVAL_B64: ${{ needs.authority.outputs.approval_b64 }}
+          PULPO_POLICY_ENVELOPE_B64: ${{ needs.authority.outputs.policy_envelope_b64 }}
           PULPO_PAYLOAD_B64: ${{ needs.authority.outputs.payload_b64 }}
         run: python -m proofs.github_actions_custody.execute_action
       - name: Deny signature substitution
@@ -57,6 +59,7 @@ jobs:
           PULPO_EXPECT_DENY: "1"
           PULPO_TAMPER: signature
           PULPO_APPROVAL_B64: ${{ needs.authority.outputs.approval_b64 }}
+          PULPO_POLICY_ENVELOPE_B64: ${{ needs.authority.outputs.policy_envelope_b64 }}
           PULPO_PAYLOAD_B64: ${{ needs.authority.outputs.payload_b64 }}
         run: python -m proofs.github_actions_custody.execute_action
       - name: Assert negative paths produced no consequence
@@ -78,6 +81,7 @@ jobs:
       - name: Consume one exact Pulpo permit
         env:
           PULPO_APPROVAL_B64: ${{ needs.authority.outputs.approval_b64 }}
+          PULPO_POLICY_ENVELOPE_B64: ${{ needs.authority.outputs.policy_envelope_b64 }}
           PULPO_PAYLOAD_B64: ${{ needs.authority.outputs.payload_b64 }}
         run: python -m proofs.github_actions_custody.execute_action
       - name: Upload governed consequence artifact

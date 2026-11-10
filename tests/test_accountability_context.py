@@ -3,7 +3,7 @@ from __future__ import annotations
 from pulpo import GovernanceKernel, Intent, Policy
 from pulpo.accountability import AccountableContext, AccountableGovernance
 
-from authority_support import HmacTestVerifier, signed_envelope, trust_for
+from authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 class Clock:
@@ -46,7 +46,7 @@ def make_governed_kernel():
         approval_actions=frozenset({"accountability.activate", "accountability.revoke"}),
         authority_trust=trust_for(verifier),
     )
-    kernel = GovernanceKernel(policy, approval_verifier=verifier, clock=clock)
+    kernel = GovernanceKernel(policy, approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier), clock=clock)
     governed = AccountableGovernance(kernel, clock=clock)
     return governed, kernel, verifier, clock
 
