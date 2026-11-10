@@ -11,7 +11,7 @@ import shutil
 import sqlite3
 import time
 
-from .evidence_observation import AIUsage, EvidenceEvent, EvidenceObservation, EVENT_NAMES
+from .evidence_observation import AIUsage, EvidenceEvent, EvidenceObservation, EVENT_NAMES, STATE_OUTCOMES
 from .mcp_boundary import _publish_snapshot
 from .orchestrator import PulpoOrchestrator
 from .state import SQLiteKernelState
@@ -80,6 +80,11 @@ def freeze_evidence_observation(orchestrator, *, check_database=False, ai=None):
                 counts["approval_expired"] += 1
             if payload.get("reason") in {"approval_id_replayed", "approval_nonce_replayed"}:
                 counts["approval_replayed"] += 1
+        if event in STATE_OUTCOMES:
+            # Attempt / unknown audit events project onto the canonical
+            # evidence outcomes; an unresolved consequence is recorded as
+            # "unknown", never coerced to success or failure.
+            outcome = STATE_OUTCOMES[event]
         # Only fixed event/outcome enums and existing hashes leave the owner.
         events.append(EvidenceEvent(record["timestamp_ns"], event if event in EVENT_NAMES else "other",
                                     outcome, record["hash"]))
