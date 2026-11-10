@@ -99,6 +99,7 @@ class KernelState(Protocol):
     def issue_permit(self, permit: str, intent_hash: str, decision_reason: str, timestamp_ns: int, approval: ApprovalUse | None = None, *, policy_hash: str | None = None, issuer_hash: str | None = None, expires_at_ns: int | None = None) -> str | None: ...
     def bind_permit_to_directive(self, permit: str, intent_hash: str, binding: DirectivePermitBinding, timestamp_ns: int) -> None: ...
     def consume_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> bool: ...
+    def revalidate_consumed_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> str: ...
     def directive_hash_status(self, directive_hash: str) -> str: ...
     def append(self, event: str, payload: dict[str, Any], timestamp_ns: int) -> None: ...
     def append_unique(self, event: str, identity_field: str, identity_value: Any, payload: dict[str, Any], timestamp_ns: int) -> dict[str, Any] | None: ...
@@ -186,6 +187,41 @@ class InMemoryKernelState:
             if valid: self._spent.add(permit)
             self.append("permit_consumed" if valid else "permit_rejected", payload, timestamp_ns)
             return valid
+
+    def revalidate_consumed_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> str:
+        # Read-only re-check of the exact state consume_permit validated, under
+        # the same lock, for the window between consumption and execution. It
+        # appends nothing: callers record the refusal or unknown outcome.
+        # A NULL expires_at_ns means no expiry (load-bearing fork semantics);
+        # this re-check must not re-impose a stricter expiry invariant.
+        with self._audit_lock:
+            if permit not in self._issued:
+                return "permit_not_found"
+            if self._issued.get(permit) != intent_hash:
+                return "permit_intent_mismatch"
+            if permit not in self._spent:
+                return "permit_not_consumed"
+            context = self._permit_context.get(permit)
+            if policy_hash is not None:
+                if context is None or context[0] != policy_hash:
+                    return "permit_policy_mismatch"
+                if context[3] != issuer_hash:
+                    return "permit_issuer_mismatch"
+            if context is not None:
+                if type(timestamp_ns) is not int or timestamp_ns < context[1]:
+                    return "permit_not_yet_valid"
+                if context[2] is not None and timestamp_ns >= context[2]:
+                    return "permit_expired"
+            binding = self._permit_directives.get(permit)
+            if binding is not None:
+                status = self.directive_status(binding.directive_id, binding.version, binding.directive_hash)
+                if status == "active" and binding.parent_directive_hash is not None:
+                    status = self.directive_hash_status(binding.parent_directive_hash)
+                if status == "active" and not (binding.issued_at_ns <= timestamp_ns < binding.expires_at_ns):
+                    status = "directive_inactive"
+                if status != "active":
+                    return status
+            return "valid"
 
     def activate_directive(self, directive, authority_evidence: dict[str, object], timestamp_ns: int) -> None:
         with self._audit_lock:
@@ -674,6 +710,46 @@ class SQLiteKernelState:
                 valid = cursor.rowcount == 1
             self._append("permit_consumed" if valid else "permit_rejected", payload, timestamp_ns)
         return valid
+
+    def revalidate_consumed_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> str:
+        # Read-only re-check of the exact state consume_permit validated, under
+        # the same BEGIN IMMEDIATE discipline, for the window between
+        # consumption and execution. It appends nothing: callers record the
+        # refusal or unknown outcome. A NULL expires_at_ns means no expiry
+        # (load-bearing fork semantics); this re-check must not re-impose a
+        # stricter expiry invariant.
+        with self._connection:
+            self._connection.execute("BEGIN IMMEDIATE")
+            permit_row = self._connection.execute("SELECT intent_hash, spent, policy_hash, issued_at_ns, expires_at_ns, issuer_hash FROM permits WHERE permit = ?", (permit,)).fetchone()
+            if permit_row is None:
+                return "permit_not_found"
+            if permit_row[0] != intent_hash:
+                return "permit_intent_mismatch"
+            if permit_row[1] != 1:
+                return "permit_not_consumed"
+            if policy_hash is not None:
+                if permit_row[2] != policy_hash:
+                    return "permit_policy_mismatch"
+                if permit_row[5] != issuer_hash:
+                    return "permit_issuer_mismatch"
+            if permit_row[3] is not None:
+                if type(timestamp_ns) is not int or timestamp_ns < permit_row[3]:
+                    return "permit_not_yet_valid"
+                if permit_row[4] is not None and timestamp_ns >= permit_row[4]:
+                    return "permit_expired"
+            row = self._connection.execute("SELECT directive_id, directive_version, directive_hash, directive_issued_at_ns, directive_expires_at_ns, parent_directive_hash FROM permit_directives WHERE permit = ?", (permit,)).fetchone()
+            if row is not None:
+                binding = DirectivePermitBinding(row[0], row[1], row[2], row[3], row[4], row[5])
+                directive = self._connection.execute("SELECT directive_hash, revoked FROM directives WHERE directive_id = ? AND version = ?", (binding.directive_id, binding.version)).fetchone()
+                if directive is None: status = "directive_not_authorized"
+                elif directive[0] != binding.directive_hash: status = "directive_version_mismatch"
+                elif directive[1] != 0: status = "directive_revoked"
+                elif binding.parent_directive_hash is not None: status = self.directive_hash_status(binding.parent_directive_hash)
+                else: status = "active"
+                if status == "active" and not (binding.issued_at_ns <= timestamp_ns < binding.expires_at_ns): status = "directive_inactive"
+                if status != "active":
+                    return status
+            return "valid"
 
     def activate_directive(self, directive, authority_evidence: dict[str, object], timestamp_ns: int) -> None:
         with self._connection:
