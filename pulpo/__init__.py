@@ -47,7 +47,7 @@ from .orchestrator import (
     OrchestrationError,
     PulpoOrchestrator,
 )
-from .state import InMemoryKernelState, KernelState, SQLiteKernelState, StateRecoveryError
+from .state import InMemoryKernelState, KernelState, SQLiteKernelState, StateClockError, StateRecoveryError, capture_recovery_pin
 from .resources import ResourceScope
 from .target_reconcile import (
     ArtifactCompletionEvidence,
@@ -58,6 +58,8 @@ from .targets import evaluate_locked_target_with_approval
 
 __all__ = [
     "StateRecoveryError",
+    "StateClockError",
+    "capture_recovery_pin",
     "ResourceScope",
     "AdaptiveAuditVerificationEngine",
     "AccountableContext",

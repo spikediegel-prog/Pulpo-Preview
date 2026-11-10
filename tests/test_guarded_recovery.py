@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from pulpo import GovernanceKernel, Intent, Policy, SQLiteKernelState, StateRecoveryError
+from pulpo import GovernanceKernel, Intent, Policy, SQLiteKernelState, StateRecoveryError, capture_recovery_pin
 import pulpo.state as state_module
 
 
@@ -138,6 +138,44 @@ class GuardedRecoveryTests(unittest.TestCase):
             self.make_kernel(state).evaluate(self.intent)
         with self.assertRaises(StateRecoveryError):
             SQLiteKernelState.recover(foreign, expected_checkpoint=pin)
+
+    def test_documented_pin_capture_step(self):
+        """End-to-end run of docs/RECOVERY_PIN_OPERATOR_STEP.md.
+
+        Capture the pin with capture_recovery_pin, back up, write more, and
+        show the old pin refuses the new backup while the current pin opens
+        it; a stale backup is refused by the current pin. Also show the
+        honest limit: the stale backup OPENS against its own stale pin, which
+        is why the pin must be kept current and independent of the backups.
+        """
+        decision = self.kernel.evaluate(self.intent)
+        self.assertTrue(self.kernel.consume(decision.permit, self.intent))
+        pin = capture_recovery_pin(self.path)
+        stale_backup = self.backup('pin-step-stale.sqlite3')
+        fresh = self.kernel.evaluate(self.intent)
+        self.assertTrue(self.kernel.consume(fresh.permit, self.intent))
+        current_pin = capture_recovery_pin(self.path)
+        self.assertNotEqual(pin, current_pin)
+        current_backup = self.backup('pin-step-current.sqlite3')
+        with self.assertRaises(StateRecoveryError):
+            SQLiteKernelState.recover(current_backup, expected_checkpoint=pin)
+        with self.assertRaises(StateRecoveryError):
+            SQLiteKernelState.recover(stale_backup, expected_checkpoint=current_pin)
+        with SQLiteKernelState.recover(current_backup, expected_checkpoint=current_pin) as recovered:
+            app = self.make_kernel(recovered)
+            self.assertTrue(app.verify_audit())
+            self.assertFalse(app.consume(decision.permit, self.intent))
+            self.assertFalse(app.consume(fresh.permit, self.intent))
+        with SQLiteKernelState.recover(stale_backup, expected_checkpoint=pin) as recovered:
+            self.assertTrue(self.make_kernel(recovered).verify_audit())
+
+    def test_pin_capture_refuses_broken_audit_chain(self):
+        decision = self.kernel.evaluate(self.intent)
+        self.assertTrue(self.kernel.consume(decision.permit, self.intent))
+        with closing(sqlite3.connect(self.path)) as connection, connection:
+            connection.execute("UPDATE audit SET payload_json = '{}' WHERE sequence = 1")
+        with self.assertRaises(StateRecoveryError):
+            capture_recovery_pin(self.path)
 
     def test_co_rolled_back_checkpoint_is_explicitly_outside_this_protection(self):
         decision = self.kernel.evaluate(self.intent)
