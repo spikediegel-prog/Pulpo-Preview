@@ -110,6 +110,9 @@ class IncidentRecordValidationTests(unittest.TestCase):
             "reason": "external_consequence_not_yet_verified",
             "resolution": "unresolved",
             "anchor_hash": "a" * 64,
+            "lifecycle": "open",
+            "lifecycle_at_ns": 100,
+            "lifecycle_actor": "",
         }
 
     def test_valid_record(self):

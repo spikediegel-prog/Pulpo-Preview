@@ -18,9 +18,13 @@ Definitions (from the audit's framing):
                  happened, or the effect is verified fine.
 
 Both are derived, read-only projections of the canonical audit chain and the
-custody store. There is NO lifecycle: no open/close states, no triage, no
-acknowledgement. Whether a record needs a lifecycle is an open question, not
-a decision this module makes.
+custody store. An incident record also carries a handling lifecycle -- open,
+acknowledged, resolved, closed -- recorded as `incident_lifecycle` audit
+events, never as a mutation: the current state is derived from the audit
+chain, so a reader can replay exactly who did what, when. Near-misses carry
+no lifecycle (`not_applicable`): refused before any effect, or an unknown
+that resolved cleanly, there is nothing to work. The state machine lives in
+docs/incident-channel.md.
 
 Feeds (see docs/incident-channel.md for the full table):
 
@@ -82,8 +86,20 @@ from .state import SQLiteKernelState
 KINDS = frozenset({"incident", "near_miss"})
 SOURCES = frozenset({"canonical_audit", "custody_store"})
 RESOLUTIONS = frozenset({"unresolved", "resolved_cleanly", "confirmed_wrong", "not_applicable"})
-INCIDENT_SCHEMA = "pulpo.incident-record.v1"
-REPORT_SCHEMA = "pulpo.incident-report.v1"
+# Handling lifecycle states. `not_applicable` is for near-misses only: a
+# record that is already terminal needs no handling state.
+LIFECYCLES = frozenset({"open", "acknowledged", "resolved", "closed", "not_applicable"})
+LIFECYCLE_EVENT = "incident_lifecycle"
+# transition -> {from_state: to_state}. `reopen` is the only way back, from
+# resolved or closed to open.
+_TRANSITION_TARGETS = {
+    "acknowledge": {"open": "acknowledged"},
+    "resolve": {"acknowledged": "resolved"},
+    "close": {"resolved": "closed"},
+    "reopen": {"resolved": "open", "closed": "open"},
+}
+INCIDENT_SCHEMA = "pulpo.incident-record.v2"
+REPORT_SCHEMA = "pulpo.incident-report.v2"
 
 # Audit events that are refusals: caught before any consequential effect.
 _AUDIT_NEAR_MISS_EVENTS = frozenset({"purchase_revalidation_failed", "permit_rejected", "approval_rejected"})
@@ -130,6 +146,9 @@ class IncidentRecord:
     reason: str
     resolution: str
     anchor_hash: str
+    lifecycle: str
+    lifecycle_at_ns: int
+    lifecycle_actor: str
     schema: str = INCIDENT_SCHEMA
 
     def __post_init__(self):
@@ -146,7 +165,11 @@ class IncidentRecord:
                 or self.resolution not in RESOLUTIONS or not _is_hash(self.anchor_hash)
                 or self.anchor_hash not in {anchor[1] for anchor in self.anchors}
                 or (self.record_id.startswith("incident:") != (self.kind == "incident"))
-                or (self.record_id.startswith("near-miss:") != (self.kind == "near_miss"))):
+                or (self.record_id.startswith("near-miss:") != (self.kind == "near_miss"))
+                or self.lifecycle not in LIFECYCLES
+                or (self.lifecycle == "not_applicable") != (self.kind == "near_miss")
+                or not _number(self.lifecycle_at_ns)
+                or type(self.lifecycle_actor) is not str):
             raise ValueError("invalid_incident_record")
 
 
@@ -198,6 +221,57 @@ def _custody_resolution(state):
     return _CUSTODY_OUTCOMES.get(state, ("incident", "unresolved"))
 
 
+def _lifecycle_states(audit):
+    """Fold `incident_lifecycle` audit events into current state per record.
+
+    Deterministic from the audit alone: events are applied in audit order,
+    and only a transition valid from the record's current derived state
+    takes effect. An event for an unknown record id, for a near-miss
+    (whose lifecycle is `not_applicable`), or with a from_state that does
+    not match the current state is ignored -- it stays in the audit as
+    history, but it cannot corrupt the derived state. Write-time validation
+    lives in `transition_incident`; this is the derivation's own guard.
+    Returns {record_id: (state, at_ns, actor)}.
+    """
+    states = {}
+    for record in audit:
+        if record["event"] != LIFECYCLE_EVENT:
+            continue
+        payload = record["payload"] if isinstance(record["payload"], dict) else {}
+        record_id = payload.get("record_id")
+        transition = payload.get("transition")
+        if (type(record_id) is not str or not record_id
+                or type(transition) is not str or transition not in _TRANSITION_TARGETS):
+            continue
+        if not record_id.startswith("incident:"):
+            continue
+        from_state = payload.get("from_state")
+        to_state = payload.get("to_state")
+        actor = payload.get("actor")
+        if (type(from_state) is not str or type(to_state) is not str
+                or type(actor) is not str):
+            continue
+        current = states.get(record_id, ("open", None, ""))
+        if (_TRANSITION_TARGETS[transition].get(current[0]) != to_state
+                or from_state != current[0]):
+            continue
+        states[record_id] = (to_state, record["timestamp_ns"], actor)
+    return states
+
+
+def _record_lifecycle(lifecycle_states, record_id, kind, first_seen_ns):
+    """Lifecycle fields for one derived record.
+
+    A record with no lifecycle events starts `open` (incident) or
+    `not_applicable` (near-miss), current since it was first seen.
+    """
+    state, at_ns, actor = lifecycle_states.get(record_id, (None, None, ""))
+    if state is None:
+        return (("open", first_seen_ns, "") if kind == "incident"
+                else ("not_applicable", first_seen_ns, ""))
+    return state, at_ns, actor
+
+
 def _derive_records(audit, custody):
     attempts = {}
     attempts_by_object = {}
@@ -208,6 +282,7 @@ def _derive_records(audit, custody):
             attempts_by_object[snapshot.object_hash] = snapshot
         custody_time_ns = custody.snapshot().custody_time_ns
     records = []
+    lifecycle_states = _lifecycle_states(audit)
     consumed_attempts = set()
     for record in audit:
         event = record["event"]
@@ -231,9 +306,13 @@ def _derive_records(audit, custody):
                 last_seen_ns = timestamp_ns
             reason = payload.get("reason") or "external_consequence_not_yet_verified"
             prefix = "incident" if kind == "incident" else "near-miss"
+            record_id = f"{prefix}:{record_hash}"
+            lifecycle, lifecycle_at_ns, lifecycle_actor = _record_lifecycle(
+                lifecycle_states, record_id, kind, timestamp_ns)
             records.append(IncidentRecord(
-                f"{prefix}:{record_hash}", kind, "canonical_audit", event,
-                timestamp_ns, last_seen_ns, anchors, reason, resolution, record_hash))
+                record_id, kind, "canonical_audit", event,
+                timestamp_ns, last_seen_ns, anchors, reason, resolution, record_hash,
+                lifecycle, lifecycle_at_ns, lifecycle_actor))
         elif event == "purchase_revalidation_failed":
             # A refusal is the terminal record for its custody attempt: no
             # effect happened, so the attempt must not also surface as an
@@ -258,22 +337,34 @@ def _derive_records(audit, custody):
                 anchors = _audit_anchors(record_hash, payload)
                 last_seen_ns = timestamp_ns
             reason = payload.get("reason") or event
+            record_id = f"near-miss:{record_hash}"
+            lifecycle, lifecycle_at_ns, lifecycle_actor = _record_lifecycle(
+                lifecycle_states, record_id, "near_miss", timestamp_ns)
             records.append(IncidentRecord(
-                f"near-miss:{record_hash}", "near_miss", "canonical_audit", event,
+                record_id, "near_miss", "canonical_audit", event,
                 timestamp_ns, last_seen_ns, anchors,
-                reason, "not_applicable", record_hash))
+                reason, "not_applicable", record_hash,
+                lifecycle, lifecycle_at_ns, lifecycle_actor))
         elif event in _AUDIT_NEAR_MISS_EVENTS:
             reason = payload.get("reason") or event
+            record_id = f"near-miss:{record_hash}"
+            lifecycle, lifecycle_at_ns, lifecycle_actor = _record_lifecycle(
+                lifecycle_states, record_id, "near_miss", timestamp_ns)
             records.append(IncidentRecord(
-                f"near-miss:{record_hash}", "near_miss", "canonical_audit", event,
+                record_id, "near_miss", "canonical_audit", event,
                 timestamp_ns, timestamp_ns, _audit_anchors(record_hash, payload),
-                reason, "not_applicable", record_hash))
+                reason, "not_applicable", record_hash,
+                lifecycle, lifecycle_at_ns, lifecycle_actor))
         elif event == "decision" and payload.get("outcome") == "deny":
             reason = payload.get("reason") or "denied"
+            record_id = f"near-miss:{record_hash}"
+            lifecycle, lifecycle_at_ns, lifecycle_actor = _record_lifecycle(
+                lifecycle_states, record_id, "near_miss", timestamp_ns)
             records.append(IncidentRecord(
-                f"near-miss:{record_hash}", "near_miss", "canonical_audit", event,
+                record_id, "near_miss", "canonical_audit", event,
                 timestamp_ns, timestamp_ns, _audit_anchors(record_hash, payload),
-                reason, "not_applicable", record_hash))
+                reason, "not_applicable", record_hash,
+                lifecycle, lifecycle_at_ns, lifecycle_actor))
     if custody is not None:
         for attempt_id, snapshot in attempts.items():
             if attempt_id in consumed_attempts:
@@ -288,11 +379,14 @@ def _derive_records(audit, custody):
                 ("target_hash", snapshot.target_hash),
                 ("permit_hash", snapshot.permit_hash),
             )
+            record_id = f"incident:custody:{attempt_id}"
+            lifecycle, lifecycle_at_ns, lifecycle_actor = _record_lifecycle(
+                lifecycle_states, record_id, kind, custody_time_ns)
             records.append(IncidentRecord(
-                f"incident:custody:{attempt_id}", kind, "custody_store", snapshot.state,
+                record_id, kind, "custody_store", snapshot.state,
                 custody_time_ns, custody_time_ns, anchors,
                 f"custody_attempt_{snapshot.state}", resolution,
-                snapshot.authorization_hash))
+                snapshot.authorization_hash, lifecycle, lifecycle_at_ns, lifecycle_actor))
     records.sort(key=lambda record: (record.first_seen_ns, record.record_id))
     return records
 
@@ -333,12 +427,14 @@ def export_incident_report(orchestrator, destination, *, custody=None):
     return _publish_snapshot(snapshot, destination)
 
 
-def list_incidents(orchestrator, *, kind=None, resolution=None, since_ns=None, until_ns=None, custody=None):
+def list_incidents(orchestrator, *, kind=None, resolution=None, lifecycle=None, since_ns=None, until_ns=None, custody=None):
     """Pure query over the frozen derivation; the time window applies to first_seen_ns."""
     if kind is not None and kind not in KINDS:
         raise ValueError("invalid incident kind")
     if resolution is not None and resolution not in RESOLUTIONS:
         raise ValueError("invalid incident resolution")
+    if lifecycle is not None and lifecycle not in LIFECYCLES:
+        raise ValueError("invalid incident lifecycle")
     if since_ns is not None and not _number(since_ns):
         raise ValueError("invalid since_ns")
     if until_ns is not None and not _number(until_ns):
@@ -350,9 +446,81 @@ def list_incidents(orchestrator, *, kind=None, resolution=None, since_ns=None, u
         record for record in report.records
         if (kind is None or record.kind == kind)
         and (resolution is None or record.resolution == resolution)
+        and (lifecycle is None or record.lifecycle == lifecycle)
         and (since_ns is None or record.first_seen_ns >= since_ns)
         and (until_ns is None or record.first_seen_ns <= until_ns)
     )
+
+
+def transition_incident(orchestrator, record_id, transition, *, actor, reason=None, custody=None):
+    """Append a lifecycle transition for one incident record to the canonical audit.
+
+    Handling status only: the transition changes how the record is reported,
+    never what the kernel, the custody coordinator, or any permit will do.
+    The transition is itself evidence -- it is appended to the hash-chained
+    audit (event `incident_lifecycle`), and the record's current lifecycle
+    state is derived from the audit on the next freeze, never stored beside
+    it. Returns the updated record, re-derived after the append.
+
+    `actor` is an explicit attribution string, conventionally
+    `operator:<name>` for a human or `process:<name>` for automation; it is
+    recorded, not authenticated -- there is no credential check here.
+    `reason` is optional, except when closing an incident whose resolution
+    is still `unresolved`: then it is required and the event is recorded as
+    an explicit override, so a permanently unknown outcome can still be
+    closed without pretending it was resolved. A failed append raises --
+    unlike the purchase-outcome record, which is best-effort so a failed
+    projection never masks the outcome the caller must reconcile, a
+    lifecycle transition is an explicit operator action, and silent failure
+    would leave the operator believing the incident is closed when it is not.
+    """
+    if type(orchestrator) is not PulpoOrchestrator:
+        raise TypeError("canonical PulpoOrchestrator required")
+    if type(record_id) is not str or not record_id:
+        raise ValueError("invalid incident record_id")
+    if type(transition) is not str or transition not in _TRANSITION_TARGETS:
+        raise ValueError("invalid incident transition")
+    if type(actor) is not str or not actor:
+        raise ValueError("invalid incident actor")
+    if reason is not None and type(reason) is not str:
+        raise ValueError("invalid incident reason")
+    if custody is not None and type(custody) is not SQLiteGovernanceCustody:
+        raise TypeError("invalid custody store")
+    report = freeze_incident_report(orchestrator, custody=custody)
+    record = next((item for item in report.records if item.record_id == record_id), None)
+    if record is None:
+        raise ValueError("incident_record_not_found")
+    if record.kind != "incident":
+        raise ValueError("incident_lifecycle_not_applicable")
+    targets = _TRANSITION_TARGETS[transition]
+    if record.lifecycle not in targets:
+        raise ValueError("invalid_incident_transition")
+    to_state = targets[record.lifecycle]
+    override = False
+    if transition == "close" and record.resolution == "unresolved":
+        if not reason:
+            raise ValueError("incident_close_requires_reason")
+        override = True
+    kernel = orchestrator.kernel
+    kernel._state.append(  # noqa: SLF001 - existing canonical audit seam
+        LIFECYCLE_EVENT,
+        {
+            "record_id": record_id,
+            "anchor_hash": record.anchor_hash,
+            "transition": transition,
+            "from_state": record.lifecycle,
+            "to_state": to_state,
+            "actor": actor,
+            "reason": reason or "",
+            "override": override,
+        },
+        time.time_ns(),
+    )
+    updated = freeze_incident_report(orchestrator, custody=custody)
+    for item in updated.records:
+        if item.record_id == record_id or item.anchor_hash == record.anchor_hash:
+            return item
+    raise ValueError("incident_record_not_found")
 
 
 def load_incident_report(path):
