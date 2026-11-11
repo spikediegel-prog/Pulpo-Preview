@@ -69,7 +69,11 @@ image's boot chain verbatim. The Control Center goes in from its
 existing `.deb` (preview.47); `pulpo` from this repo via
 `pip install --target`; `python3-tk` from its `.deb`s (it is not in
 the base image). First boot autologs into GNOME and autostarts the
-Control Center. Full details: the header of `build-iso.sh`.
+Control Center. Boot-test note (2026-11-11, QEMU + OVMF): under
+QEMU's `qemu64` CPU the Qt interface dies with `Illegal
+instruction (core dumped)` — the vendored Qt needs AVX, which
+`qemu64` lacks — while the Tkinter Control Center opens and runs.
+See BOOT-TEST.md. Full details: the header of `build-iso.sh`.
 
 ## Rules the installer must not break
 
@@ -92,7 +96,11 @@ Control Center. Full details: the header of `build-iso.sh`.
 - Nothing here has booted on real hardware. The Protectli Vault
   Pro VP6630 is the target; a boot test there is the gate before
   any "it installs" claim. The QEMU boot test (see BOOT-TEST.md)
-  proves the ISO boots under UEFI firmware, nothing more.
+  is done: the ISO boots under UEFI firmware, reaches the GNOME
+  desktop, and the Tkinter Control Center runs — but the GRUB menu
+  + splash screenshot was not captured (the 5s menu fell between
+  shots), and the Qt Control Center needs real hardware to be
+  checked (it SIGILLs under QEMU's `qemu64` CPU).
 - Secure Boot: the live ISO reuses Ubuntu's signed shim/grub
   unchanged, so it boots under Secure Boot via Microsoft's key.
   That has NOT been demonstrated under Secure Boot enforcement
@@ -107,8 +115,10 @@ Control Center. Full details: the header of `build-iso.sh`.
 
 ## Next steps, in order
 
-1. Boot-test the built ISO (QEMU + OVMF, then the VP6630) —
-   splash, GRUB menu, live boot, Control Center autostart.
+1. Boot-test the built ISO on the VP6630 — splash, GRUB menu,
+   live boot, Control Center (Qt) autostart. The QEMU part is
+   done (see BOOT-TEST.md); the GRUB menu screenshot and the Qt
+   interface still need real hardware.
 2. Boot under Secure Boot enforcement (OVMF `.secboot.fd` or real
    firmware) and record the result in BOOT-TEST.md.
 3. Decide the partitioner / disk installer.

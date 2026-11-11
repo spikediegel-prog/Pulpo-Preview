@@ -26,7 +26,10 @@
 #
 # Outputs in the work dir:
 #   boot.log        kernel + userspace serial log
-#   shot-*.png      monitor screendumps (GRUB menu, boot, desktop)
+#   shot-*.ppm      monitor screendumps (GRUB menu, boot, desktop).
+#                   PPM, not PNG: this QEMU writes PPM content whatever
+#                   the extension, so the files are named honestly.
+#                   shot-grub-* is a burst across the GRUB window.
 #   qemu.log        QEMU's own stderr
 #   RESULT.md       verdict: BOOT OK / BOOT FAILED / INCONCLUSIVE,
 #                   with the exact evidence file names.
@@ -75,6 +78,29 @@ echo "work   : $BTDIR"
 echo "timeout: ${TIMEOUT_MIN} min (TCG, no KVM — expect slow)"
 
 export LD_LIBRARY_PATH="$TOOLS/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+# Debian's QEMU is built for /usr and only relocates its module/data
+# paths when a directory named `qemu-bundle` sits next to the binary
+# (Debian qemu-bundle patch). Without it, TCG fails to load with:
+#   fatal: could not load module for type 'tcg-accel-ops'
+# The bundle dir mirrors the filesystem root: QEMU appends the
+# compiled-in paths (/usr/lib/x86_64-linux-gnu/qemu, /etc/qemu) to it.
+BUNDLE_DIR="$TOOLS/usr/bin/qemu-bundle"
+mkdir -p "$BUNDLE_DIR"
+ln -sfn ../.. "$BUNDLE_DIR/usr"
+ln -sfn ../../../etc "$BUNDLE_DIR/etc"
+
+# -cpu qemu64 is the default: it reaches the GNOME desktop and the
+# Tkinter Control Center runs. Two QEMU CPU notes, both verified
+# 2026-11-11:
+# - The vendored Qt in the Control Center .deb dies with "Illegal
+#   instruction (core dumped)" (SIGILL) under qemu64, which lacks
+#   the AVX instructions it uses. The Tkinter Control Center is the
+#   proof the app works in the live session; the Qt interface needs
+#   real hardware (or a CPU model with AVX) to be checked.
+# - `-cpu max` was tried: much slower under TCG, and gnome-shell
+#   itself crashed ("Oh no! Something has gone wrong") with no
+#   working desktop, so it is not the default either.
 "$QEMU" -machine q35 -m 2048 -smp 2 -cpu qemu64 \
   -drive if=pflash,format=raw,readonly=on,file="$OVMF_CODE" \
   -drive if=pflash,format=raw,file="$BTDIR/OVMF_VARS_4M.fd" \
@@ -87,22 +113,36 @@ QPID=$!
 echo "qemu pid $QPID"
 
 shot() { # shot <name>
-  printf 'screendump %s/%s.png png\n' "$BTDIR" "$1" | nc -w 5 127.0.0.1 "$MONITOR_PORT" >/dev/null 2>&1 || true
+  # NB: `screendump <file> [device]` — the 2nd argument is a DEVICE
+  # name, not a format; passing `png` fails with "Device 'png' not
+  # found". QEMU writes PPM here (see header), hence the .ppm name.
+  printf 'screendump %s/%s.ppm\n' "$BTDIR" "$1" | nc -w 5 127.0.0.1 "$MONITOR_PORT" >/dev/null 2>&1 || true
 }
 
 cleanup() { kill "$QPID" 2>/dev/null || true; wait "$QPID" 2>/dev/null || true; }
 trap cleanup EXIT
 
-# GRUB waits 5s; the splash + menu are up within the first minute.
-sleep 45; shot shot-01-grub
-# Then sample the boot every 60s until the serial log shows the
-# graphical target, or the timeout expires.
+# GRUB shows for 5s once OVMF hands over (~20-25s in under TCG);
+# a single early shot easily lands on either side of it (black
+# screen before, kernel log after). Take a burst across the window
+# so one shot catches the menu + splash, then sample the boot.
+sleep 15
+for t in 17 19 21 23 25 27 29; do
+  shot "shot-grub-$t"
+  sleep 2
+done
+shot shot-02-boot-early
+# Then sample the boot every 60s until the serial log shows gdm
+# started, or the timeout expires. The pass criterion is gdm, NOT
+# "Reached target Graphical Interface": that line never reaches the
+# serial log in this setup (the log goes quiet after the login
+# prompt even though the desktop comes up — verified 2026-11-11),
+# so waiting for it always ends INCONCLUSIVE on a good boot.
 DESKTOP=no
-for i in $(seq 2 1 "$TIMEOUT_MIN"); do
+for i in $(seq 3 1 "$TIMEOUT_MIN"); do
   sleep 60
   shot "shot-$(printf %02d "$i")-boot"
-  if grep -q "Reached target Graphical Interface" "$BTDIR/boot.log" 2>/dev/null \
-     || grep -q "gdm.service:.*Started\|Started GNOME Display Manager" "$BTDIR/boot.log" 2>/dev/null; then
+  if grep -qE "Started.*(gdm\.service|GNOME Display Manager)" "$BTDIR/boot.log" 2>/dev/null; then
     DESKTOP=yes
     break
   fi
@@ -114,9 +154,9 @@ sleep 60; shot shot-final-desktop
 sleep 30; shot shot-final-desktop-2
 
 if [ "$DESKTOP" = yes ]; then
-  VERDICT="BOOT OK — live session reached the graphical target (see boot.log)"
+  VERDICT="BOOT OK — live session reached the GNOME display manager (see boot.log) and the desktop screenshots"
 else
-  VERDICT="INCONCLUSIVE — graphical target not seen in boot.log within ${TIMEOUT_MIN} min; inspect shot-*.png before calling this a failure (TCG is slow)"
+  VERDICT="INCONCLUSIVE — gdm not seen in boot.log within ${TIMEOUT_MIN} min; inspect shot-*.ppm before calling this a failure (TCG is slow)"
 fi
 
 cat > "$BTDIR/RESULT.md" <<EOF
@@ -127,7 +167,7 @@ cat > "$BTDIR/RESULT.md" <<EOF
 - QEMU: 8.2.2 (TCG, no KVM), OVMF_CODE_4M.fd, 2048 MB RAM, 2 vCPUs
 - Verdict: $VERDICT
 - Serial log: boot.log
-- Screenshots: shot-*.png (shot-01-grub = GRUB menu + splash)
+- Screenshots: shot-*.ppm (PPM; shot-grub-* = GRUB menu + splash burst, one of them catches the 5s menu)
 - QEMU log: qemu.log
 
 Secure Boot was NOT enforced in this run (plain OVMF, Secure Boot
