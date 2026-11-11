@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from contextlib import contextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from .authority import ApprovalEnvelope
 from .authority_client import AuthorityApprovalRequest, AuthorityClient, AuthorityPoll
@@ -269,6 +269,7 @@ class PulpoOrchestrator:
         target_id: str | None = None,
         expected_target_hash: str | None = None,
         target_version: int = 1,
+        evidence_projector: Callable[[], None] | None = None,
     ) -> CommerceOutcome:
         """Delegate one exact purchase to the canonical bounded executor.
 
@@ -276,9 +277,15 @@ class PulpoOrchestrator:
         resolution, canonical consume, audit-tip check, custody attempt);
         without one, the executor's direct path runs with the same
         pre-purchase revalidation and durable unknown-outcome record.
+        `evidence_projector`, when supplied, is passed through so custody
+        transitions on the coordinator path reach the canonical audit
+        (SQLiteCustodyEvidenceConvergence.project_all); without one the
+        attempt still reconciles, but only the custody store sees it.
         """
 
-        return DomainCommerceExecutor(coordinator=coordinator).execute(
+        return DomainCommerceExecutor(
+            coordinator=coordinator, evidence_projector=evidence_projector,
+        ).execute(
             self.kernel,
             order,
             permit,
