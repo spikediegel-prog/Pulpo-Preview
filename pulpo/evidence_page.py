@@ -158,6 +158,14 @@ class EvidencePage:
             log_scroll.pack(side="right", fill="y")
             self.logs.configure(yscrollcommand=log_scroll.set)
             self.logs.pack(side="left", fill="both", expand=True)
+        center.text(page, "Incidents", "Heading.TLabel")
+        center.text(page, "Frozen incident report, derived from the canonical audit and the custody store. "
+                    "Read-only: this page never authorizes, never permits, never changes lifecycle state. "
+                    "Select a pulpo.incident-report.v2 JSON export produced by the trusted owner; "
+                    "the page re-reads it while visible. No lifecycle transition is offered here.",
+                    "Muted.TLabel")
+        from .evidence_incidents import EvidenceIncidents
+        self.incidents_view = EvidenceIncidents(self, page)
         center.section(page, "Observation setup",
                        "Choose an existing pulpo.evidence-observation.v1 JSON export produced by the trusted database owner. "
                        "The page re-reads it every 2 seconds while visible. The owner must publish new observations for activity to update. "
@@ -167,6 +175,10 @@ class EvidencePage:
         self.root.bind("<Map>", self.mapped, add="+")
         self.root.bind("<Unmap>", self.unmapped, add="+")
         self.render()
+
+    def _has_incident_source(self):
+        view = getattr(self, "incidents_view", None)
+        return view is not None and view.path is not None
 
     def set_range(self, seconds):
         self.seconds = seconds
@@ -196,7 +208,8 @@ class EvidencePage:
         if self.timer is not None:
             self.root.after_cancel(self.timer)
             self.timer = None
-        if not self.closed and self.active and self.path is not None and not self.reviewing and not self.awaiting_reread:
+        if (not self.closed and self.active and not self.reviewing and not self.awaiting_reread
+                and (self.path is not None or self._has_incident_source())):
             self.timer = self.root.after(2000, self.tick)
 
     def mapped(self, event):
@@ -256,30 +269,32 @@ class EvidencePage:
             self.refresh()
 
     def refresh(self):
-        if self.path is None or self.closed:
+        if self.closed:
             return
         self.awaiting_reread = False  # Explicit re-read unlocks normal visible polling.
-        previous = (self.snapshot.source_id if self.snapshot else None, bool(self.error))
-        try:
-            import stat
-            if not self.path.is_absolute() or not stat.S_ISREG(self.path.lstat().st_mode):
-                raise ValueError("not_regular_file")
-            snapshot = load_observation(self.path)
-            if freshness(snapshot) == "clock mismatch":
-                raise ValueError("source_clock_mismatch")
-            self.history.add(snapshot)
-            self.snapshot, self.error = snapshot, None
-        except (OSError, ValueError, TypeError, RecursionError):
-            self.snapshot = None
-            self.history.clear()
-            self.error = "Observation unavailable or invalid. Previous values cleared. Check the path, private-file permissions, format and owner clock."
-        self.center.record_source_read("Evidence", self.error is None)
-        current = (self.snapshot.source_id if self.snapshot else None, bool(self.error))
-        if current != previous and hasattr(self.center, "activity_view"):
-            self.center.record_activity("Evidence observation unavailable/invalid; inspect Evidence." if self.error else
-                "Evidence observation loaded. Source-reported references are bounded; enforcement remains Unknown.",
-                category="Evidence", action="source", outcome="Failed" if self.error else "Completed",
-                severity="Warning" if self.error else "Info")
+        if self.path is not None:
+            previous = (self.snapshot.source_id if self.snapshot else None, bool(self.error))
+            try:
+                import stat
+                if not self.path.is_absolute() or not stat.S_ISREG(self.path.lstat().st_mode):
+                    raise ValueError("not_regular_file")
+                snapshot = load_observation(self.path)
+                if freshness(snapshot) == "clock mismatch":
+                    raise ValueError("source_clock_mismatch")
+                self.history.add(snapshot)
+                self.snapshot, self.error = snapshot, None
+            except (OSError, ValueError, TypeError, RecursionError):
+                self.snapshot = None
+                self.history.clear()
+                self.error = "Observation unavailable or invalid. Previous values cleared. Check the path, private-file permissions, format and owner clock."
+            self.center.record_source_read("Evidence", self.error is None)
+            current = (self.snapshot.source_id if self.snapshot else None, bool(self.error))
+            if current != previous and hasattr(self.center, "activity_view"):
+                self.center.record_activity("Evidence observation unavailable/invalid; inspect Evidence." if self.error else
+                    "Evidence observation loaded. Source-reported references are bounded; enforcement remains Unknown.",
+                    category="Evidence", action="source", outcome="Failed" if self.error else "Completed",
+                    severity="Warning" if self.error else "Info")
+        self.incidents_view.refresh()
         self.render()
         self.schedule()
 
@@ -369,6 +384,8 @@ class EvidencePage:
                 "Resource graphs elsewhere describe this WSL Linux VM, not the machine that produced this export.")
             self.source.configure(text=self.source.cget("text") + definitions)
         self.render_logs()
+        if hasattr(self, "incidents_view"):
+            self.incidents_view.render()
         if hasattr(self.center, "decision_explorer"):
             self.center.decision_explorer.render()
         self.center.refresh_attention()
