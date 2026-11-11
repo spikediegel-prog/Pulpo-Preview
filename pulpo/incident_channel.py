@@ -27,7 +27,9 @@ Feeds (see docs/incident-channel.md for the full table):
     canonical audit -- purchase_consequence_unknown is an incident until a
         custody record for the same custody_attempt_id resolves it;
         purchase_revalidation_failed, permit_rejected, decision/deny and
-        approval_rejected are near-misses (refused before any effect).
+        approval_rejected are near-misses (refused before any effect). A
+        revalidation refusal consumes its custody attempt (by attempt id,
+        else by order hash), so a refusal yields exactly one near-miss.
     custody store  -- one record per attempt_id, from the attempt's latest
         state: unresolved / reconciliation_required / attempt_authorized /
         attempt_claimed / request_transmitted are incidents, unresolved;
@@ -35,11 +37,13 @@ Feeds (see docs/incident-channel.md for the full table):
         reconciled_success emits no record by itself -- it is a resolver
         for an earlier unknown.
 
-Custody transitions never reach the canonical audit in production: the
-TrustedDomainExecutor takes an evidence_projector callback that is only
-wired in tests. The custody feed therefore reads the custody store
-directly (SQLiteGovernanceCustody.attempts), and the channel says so on
-every record via its source field.
+Custody transitions reach the canonical audit only where an evidence
+projector is wired: DomainCommerceExecutor takes one and, when supplied,
+projects every transition (SQLiteCustodyEvidenceConvergence.project_all)
+into `custody_transition` audit events; the TrustedDomainExecutor's
+projector is only wired in tests. The custody feed therefore still reads
+the custody store directly (SQLiteGovernanceCustody.attempts), and the
+channel says so on every record via its source field.
 
 Integrity levels -- a record's anchor is only as strong as its source:
 
@@ -196,10 +200,12 @@ def _custody_resolution(state):
 
 def _derive_records(audit, custody):
     attempts = {}
+    attempts_by_object = {}
     custody_time_ns = None
     if custody is not None:
         for snapshot in custody.attempts():
             attempts[snapshot.attempt_id] = snapshot
+            attempts_by_object[snapshot.object_hash] = snapshot
         custody_time_ns = custody.snapshot().custody_time_ns
     records = []
     consumed_attempts = set()
@@ -228,6 +234,34 @@ def _derive_records(audit, custody):
             records.append(IncidentRecord(
                 f"{prefix}:{record_hash}", kind, "canonical_audit", event,
                 timestamp_ns, last_seen_ns, anchors, reason, resolution, record_hash))
+        elif event == "purchase_revalidation_failed":
+            # A refusal is the terminal record for its custody attempt: no
+            # effect happened, so the attempt must not also surface as an
+            # unresolved custody incident. Consume it here -- by attempt id
+            # when the payload carries one, else by order hash (the attempt
+            # object hash IS the order hash, unique per attempt) -- and
+            # anchor the near-miss on the custody authorization as well.
+            # The attempt itself stays attempt_authorized in the store: the
+            # custody vocabulary has no cancel/refuse transition, so the
+            # channel consumes it rather than the store resolving it.
+            attempt_id = payload.get("custody_attempt_id")
+            snapshot = attempts.get(attempt_id) if type(attempt_id) is str else None
+            if snapshot is None:
+                order_hash = payload.get("order_hash")
+                snapshot = attempts_by_object.get(order_hash) if type(order_hash) is str else None
+            if snapshot is not None:
+                consumed_attempts.add(snapshot.attempt_id)
+                anchors = _audit_anchors(record_hash, payload) + (
+                    ("custody_authorization", snapshot.authorization_hash),)
+                last_seen_ns = max(timestamp_ns, custody_time_ns)
+            else:
+                anchors = _audit_anchors(record_hash, payload)
+                last_seen_ns = timestamp_ns
+            reason = payload.get("reason") or event
+            records.append(IncidentRecord(
+                f"near-miss:{record_hash}", "near_miss", "canonical_audit", event,
+                timestamp_ns, last_seen_ns, anchors,
+                reason, "not_applicable", record_hash))
         elif event in _AUDIT_NEAR_MISS_EVENTS:
             reason = payload.get("reason") or event
             records.append(IncidentRecord(

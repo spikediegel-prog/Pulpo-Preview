@@ -625,12 +625,20 @@ class MergeTests(unittest.TestCase):
         return unknown["payload"]["custody_attempt_id"]
 
     def reconcile(self, custody, attempt_id, outcome):
-        epoch, root = custody.snapshot().epoch, custody.snapshot().state_root
-        custody.claim_attempt(expected_epoch=epoch, expected_state_root=root,
-                              attempt_id=attempt_id, executor_id="executor:test")
-        epoch, root = custody.snapshot().epoch, custody.snapshot().state_root
-        custody.authorize_transmission(expected_epoch=epoch, expected_state_root=root,
-                                       attempt_id=attempt_id)
+        # The live path already drove the attempt to
+        # reconciliation-required (claim + transmit around its own provider
+        # call), so reconcile from the attempt's current state: claim and
+        # transmit first only when it is still merely authorized.
+        state = custody.attempt(attempt_id).state
+        if state == "attempt_authorized":
+            epoch, root = custody.snapshot().epoch, custody.snapshot().state_root
+            custody.claim_attempt(expected_epoch=epoch, expected_state_root=root,
+                                  attempt_id=attempt_id, executor_id="executor:test")
+            epoch, root = custody.snapshot().epoch, custody.snapshot().state_root
+            custody.authorize_transmission(expected_epoch=epoch, expected_state_root=root,
+                                           attempt_id=attempt_id)
+        elif state not in ("request_transmitted", "reconciliation_required"):
+            raise AssertionError(f"cannot reconcile from {state}")
         epoch, root = custody.snapshot().epoch, custody.snapshot().state_root
         custody.reconcile_observed(expected_epoch=epoch, expected_state_root=root,
                                    attempt_id=attempt_id, outcome=outcome,
@@ -643,7 +651,11 @@ class MergeTests(unittest.TestCase):
             owner = PulpoOrchestrator(kernel)
             attempt_id = self.uncertain_purchase(kernel, custody, budget, coordinator,
                                                  self.order())
-            self.assertEqual("attempt_authorized", custody.attempt(attempt_id).state)
+            # The live path drives claim + transmit around its own provider
+            # call and require-reconciliation once the call raises, so the
+            # attempt lands in reconciliation-required: open for later
+            # independent reconciliation.
+            self.assertEqual("reconciliation_required", custody.attempt(attempt_id).state)
             report = freeze_incident_report(owner, custody=custody)
             self.assertEqual(1, len(report.records))
             (record,) = report.records
@@ -694,11 +706,15 @@ class MergeTests(unittest.TestCase):
             self.assertEqual("incident", record.kind)
             self.assertEqual("unresolved", record.resolution)
 
-    def test_unlinked_custody_attempt_and_refusal_are_separate_records(self):
-        # The merge rule consumes an attempt only for a purchase_consequence_
-        # unknown event carrying its id. A refusal leaves the attempt dangling
-        # and the channel reports it as its own unresolved custody incident:
-        # the live path never reconciles or cancels attempts today.
+    def test_refusal_consumes_its_custody_attempt_into_one_near_miss(self):
+        # Changed by the incident-reconciliation slice (PR #119 limit 2):
+        # the merge rule now consumes an attempt for a
+        # purchase_revalidation_failed event too -- by attempt id when the
+        # payload carries one, else by order hash (the attempt object hash
+        # IS the order hash). A refusal yields exactly one near-miss, not
+        # a near-miss plus a dangling unresolved custody incident. The
+        # attempt itself stays attempt_authorized in the store: the custody
+        # vocabulary has no cancel/refuse transition.
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "custody.sqlite3"
             kernel, custody, budget, coordinator = self.custody_stack(path)
@@ -711,16 +727,73 @@ class MergeTests(unittest.TestCase):
                 object_hash=order.order_hash, target_hash="b" * 64,
                 permit_hash="c" * 64, authorization_hash="d" * 64,
             )
+            # Linked by order hash only: no custody_attempt_id in the payload.
             kernel._state.append("purchase_revalidation_failed",
                                  {"order_hash": order.order_hash,
                                   "reason": "directive_revoked"}, NOW)
             report = freeze_incident_report(owner, custody=custody)
-            self.assertEqual(2, len(report.records))
-            by_source = {record.source: record for record in report.records}
-            self.assertEqual("near_miss", by_source["canonical_audit"].kind)
-            self.assertEqual("incident", by_source["custody_store"].kind)
-            self.assertEqual(f"incident:custody:{authorization.attempt_id}",
-                             by_source["custody_store"].record_id)
+            self.assertEqual(1, len(report.records))
+            (record,) = report.records
+            self.assertEqual("near_miss", record.kind)
+            self.assertEqual("canonical_audit", record.source)
+            self.assertEqual("purchase_revalidation_failed", record.source_detail)
+            self.assertEqual("not_applicable", record.resolution)
+            self.assertEqual("d" * 64, dict(record.anchors)["custody_authorization"])
+            self.assertEqual("attempt_authorized",
+                             custody.attempt(authorization.attempt_id).state)
+
+    def test_coordinator_refusal_yields_exactly_one_near_miss(self):
+        # The live path, end to end: the permit expires between consume
+        # and the provider call, the refusal event carries the custody
+        # attempt id, and the channel consumes the attempt into exactly
+        # one near-miss. (PR #119 limit 2, closed.)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "custody.sqlite3"
+            clock = [NOW]
+            custody = SQLiteGovernanceCustody(
+                path, signing_secret=b"test-only-custody-secret", clock=lambda: NOW)
+            budget = SQLiteBudgetAccount(path)
+            state = SQLiteKernelState(path)
+            kernel = GovernanceKernel(
+                Policy(frozenset({"purchase_domain"}), 3_000, permit_ttl_ns=100),
+                secret=b"test-only",
+                clock=lambda: clock[0],
+                state=state,
+            )
+            self.addCleanup(state.close)
+            hooked = HookedBudget(budget, lambda: clock.__setitem__(0, NOW + 1_000))
+            coordinator = GovernedDomainAttemptCoordinator(kernel, custody, hooked)
+            owner = PulpoOrchestrator(kernel)
+            order = self.order()
+            intent = purchase_intent(order)
+            target = kernel.lock_target("domain-merge", intent)
+            decision = kernel.evaluate(intent)
+            reservation = coordinator.reserve(order)
+            registrar = FakeRegistrar(
+                RegistrarResult("payment-1", 2_000, "a" * 64, "registration-1",
+                                order.domain, order.registrar)
+            )
+            with self.assertRaisesRegex(CommerceViolation, "permit_expired"):
+                DomainCommerceExecutor(coordinator=coordinator).execute(
+                    kernel, order, decision.permit, registrar, hooked,
+                    reservation.reservation_id, now_ns=NOW + 1_000,
+                    target_id=target.target_id, expected_target_hash=target.target_hash,
+                )
+            self.assertEqual(0, registrar.calls)
+            refusals = audit_events(kernel, "purchase_revalidation_failed")
+            self.assertEqual(1, len(refusals))
+            (attempt,) = custody.attempts()
+            self.assertEqual(attempt.attempt_id,
+                             refusals[0]["payload"]["custody_attempt_id"])
+            report = freeze_incident_report(owner, custody=custody)
+            self.assertEqual(1, len(report.records))
+            (record,) = report.records
+            self.assertEqual("near_miss", record.kind)
+            self.assertEqual("purchase_revalidation_failed", record.source_detail)
+            self.assertEqual("permit_expired", record.reason)
+            # Never claimed or transmitted; stays authorized in the store
+            # (no cancel transition exists), but the channel consumed it.
+            self.assertEqual("attempt_authorized", attempt.state)
 
 
 class ExportAndQueryTests(unittest.TestCase):

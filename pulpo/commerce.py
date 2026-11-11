@@ -14,7 +14,7 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import sqlite3
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Callable, Protocol
 
 from .custody import CustodyViolation
 from .kernel import GovernanceKernel, Intent
@@ -24,6 +24,15 @@ if TYPE_CHECKING:
 
 
 PILOT_PURCHASE_CEILING_CENTS = 3_000
+
+
+# Identity the live commerce path uses when it claims a custody attempt and
+# when it records its own first-party observation of the provider result.
+# This is the trusted in-process executor, not an independent observer: a
+# live-path reconciliation records what the provider synchronously returned
+# to this executor. It must never be mistaken for the independent
+# observation IndependentDomainReconciler requires.
+LIVE_CUSTODY_EXECUTOR_ID = "pulpo.commerce.live"
 
 
 def _canonical(value: Any) -> bytes:
@@ -714,6 +723,29 @@ class CommerceOutcome:
     capability_revoked: bool = False
 
 
+def _live_observation_hash(order: DomainPurchaseOrder, result: RegistrarResult, *, reason: str) -> str:
+    """Hash the provider result the live executor itself observed.
+
+    First-party observation material only: the synchronous return of the
+    provider call this executor made, plus the reason the outcome was
+    classified that way. This is NOT an IndependentDomainObservation --
+    there was no independent observer on the live path -- so the schema is
+    deliberately distinct and the observer recorded on the custody
+    transition is LIVE_CUSTODY_EXECUTOR_ID.
+    """
+    return _hash({
+        "schema": "pulpo.live-purchase-observation.v0",
+        "order_hash": order.order_hash,
+        "payment_id": result.payment_id,
+        "charged_cents": result.charged_cents,
+        "receipt_hash": result.receipt_hash,
+        "registration_id": result.registration_id,
+        "domain": result.domain,
+        "registrar": result.registrar,
+        "reason": reason,
+    })
+
+
 class DomainCommerceExecutor:
     """Consume a Pulpo permit before invoking a registrar adapter exactly once.
 
@@ -724,15 +756,46 @@ class DomainCommerceExecutor:
     runs, and both paths share the pre-purchase revalidation and the durable
     unknown-outcome record below. No new executor, no second ledger: unknown
     outcomes are events in the existing canonical audit.
+
+    Coordinator path, custody lifecycle: the attempt is claimed and its one
+    transmission right released before the provider call (executor
+    LIVE_CUSTODY_EXECUTOR_ID -- the trusted in-process executor, not a
+    worker), moved to reconciliation-required once the call returns or
+    raises, and reconciled from the executor's own observation when the
+    outcome is known: success on complete payment + complete delivery
+    evidence with settled budget, failure when the provider's own return
+    contradicts the authorization (charge outside the authorized amount).
+    Incomplete evidence stays reconciliation-required -- it is unresolved,
+    exactly as IndependentDomainReconciler classifies an incomplete
+    observation -- and a refused purchase never claims or transmits, so
+    the attempt stays authorized and the refusal event is its terminal
+    record. Driving claim/transmit for a purchase handed to a worker
+    would be fabrication; here the transmission IS this executor's own
+    provider call, recorded under its own id.
+
+    `evidence_projector`, when supplied, is called after every custody
+    transition (authorize, claim, transmit, require-reconciliation,
+    reconcile) so the convergence outbox drains before the next head
+    advance -- the trigger blocks the next transition until the previous
+    one is projected. `SQLiteCustodyEvidenceConvergence.project_all` is
+    the existing projector. Constructing that convergence against the
+    live store without wiring its projector here breaks the coordinator
+    path by design (custody cannot advance on unprojected evidence).
+    Before the provider call a projector failure refuses the purchase;
+    after it, custody failures never rewrite the provider outcome -- the
+    attempt stays in a non-terminal state and the incident channel
+    reports it unresolved.
     """
 
     def __init__(
         self,
         attempted_order_hashes: set[str] | None = None,
         coordinator: GovernedDomainAttemptCoordinator | None = None,
+        evidence_projector: Callable[[], None] | None = None,
     ) -> None:
         self.attempted_order_hashes = attempted_order_hashes if attempted_order_hashes is not None else set()
         self.coordinator = coordinator
+        self.evidence_projector = evidence_projector
 
     def _record_purchase_event(
         self,
@@ -775,6 +838,128 @@ class DomainCommerceExecutor:
         if custody_attempt is not None:
             payload["custody_attempt_id"] = custody_attempt.attempt_id
         return payload
+
+    def _project_custody_evidence(self) -> None:
+        """Project pending custody transitions into the canonical audit.
+
+        No-op without a wired projector. A failure raises
+        CommerceViolation: before the provider call that refuses the
+        purchase; after it, callers treat it as best-effort (see below).
+        """
+        if self.evidence_projector is not None:
+            try:
+                self.evidence_projector()
+            except Exception as exc:
+                raise CommerceViolation("custody_evidence_not_canonical") from exc
+
+    def _claim_and_transmit(
+        self,
+        kernel: GovernanceKernel,
+        order: DomainPurchaseOrder,
+        intent: Intent,
+        permit: str,
+        reservation_id: str,
+        custody_attempt: GovernedDomainAttempt,
+        now_ns: int,
+    ) -> None:
+        """Claim the attempt and release its one transmission right.
+
+        Runs before the provider call, while refusal is still clean: the
+        authorization is projected first (the convergence trigger blocks
+        the next head advance while an obligation is pending), then the
+        custody clock is checked, then claim, then transmission with the
+        live call's own provider request id. An expiry refusal records
+        `purchase_revalidation_failed` carrying the attempt id, so the
+        incident channel consumes the attempt into exactly one near-miss.
+        Any other custody failure refuses the purchase with no provider
+        call; the attempt stays in the non-terminal state it reached and
+        the channel reports it unresolved.
+        """
+        assert self.coordinator is not None
+        custody = self.coordinator.custody
+        attempt_id = custody_attempt.attempt_id
+        try:
+            self._project_custody_evidence()
+            head = custody.snapshot()
+            if custody._custody_now(head) >= order.expires_at_ns:  # noqa: SLF001 - same trusted-clock seam TrustedDomainExecutor uses
+                raise CustodyViolation("order_expired")
+            custody.claim_attempt(
+                expected_epoch=head.epoch,
+                expected_state_root=head.state_root,
+                attempt_id=attempt_id,
+                executor_id=LIVE_CUSTODY_EXECUTOR_ID,
+            )
+            self._project_custody_evidence()
+            head = custody.snapshot()
+            custody.authorize_transmission(
+                expected_epoch=head.epoch,
+                expected_state_root=head.state_root,
+                attempt_id=attempt_id,
+                provider_request_id=f"domain:{attempt_id}:live",
+                expires_at_ns=order.expires_at_ns,
+            )
+            self._project_custody_evidence()
+        except CustodyViolation as exc:
+            if str(exc) == "order_expired":
+                self._record_purchase_event(
+                    kernel,
+                    "purchase_revalidation_failed",
+                    self._purchase_payload(
+                        kernel, order, intent, permit, reservation_id,
+                        reason="order_expired", custody_attempt=custody_attempt,
+                    ),
+                    now_ns,
+                )
+                raise CommerceViolation("order_expired") from exc
+            raise CommerceViolation(str(exc)) from exc
+
+    def _require_custody_reconciliation(self, custody_attempt: GovernedDomainAttempt) -> None:
+        """Move a transmitted attempt to reconciliation-required, then project."""
+        assert self.coordinator is not None
+        custody = self.coordinator.custody
+        head = custody.snapshot()
+        try:
+            custody.require_reconciliation(
+                expected_epoch=head.epoch,
+                expected_state_root=head.state_root,
+                attempt_id=custody_attempt.attempt_id,
+            )
+        except CustodyViolation as exc:
+            raise CommerceViolation(str(exc)) from exc
+        self._project_custody_evidence()
+
+    def _reconcile_custody_attempt(
+        self,
+        custody_attempt: GovernedDomainAttempt,
+        *,
+        outcome: str,
+        observation_hash: str,
+    ) -> None:
+        """Best-effort terminal reconciliation from the live observation.
+
+        A custody or projection failure here must never mask the purchase
+        outcome the caller has to act on -- the same principle as
+        _record_purchase_event. The attempt stays in a non-terminal state
+        (reconciliation-required, or request-transmitted if even that
+        failed) and the incident channel reports it unresolved; a
+        transition that did commit stays durably pending in the
+        convergence outbox until projected.
+        """
+        assert self.coordinator is not None
+        custody = self.coordinator.custody
+        try:
+            head = custody.snapshot()
+            custody.reconcile_observed(
+                expected_epoch=head.epoch,
+                expected_state_root=head.state_root,
+                attempt_id=custody_attempt.attempt_id,
+                outcome=outcome,
+                observation_hash=observation_hash,
+                observer_id=LIVE_CUSTODY_EXECUTOR_ID,
+            )
+            self._project_custody_evidence()
+        except (CustodyViolation, CommerceViolation):
+            pass
 
     def execute(
         self,
@@ -844,12 +1029,26 @@ class DomainCommerceExecutor:
             )
             raise CommerceViolation(revalidation)
 
+        if custody_attempt is not None:
+            self._claim_and_transmit(
+                kernel, order, intent, permit, reservation_id, custody_attempt, now_ns,
+            )
         try:
             result = adapter.purchase(order, max_charge_cents=order.purchase_price_cents)
         except Exception as exc:
             # The provider call may already have changed reality. Record the
             # unknown outcome as durable canonical evidence, then re-raise the
             # original failure unchanged: no silent success, no blind retry.
+            if custody_attempt is not None:
+                # The transmission happened: leave the attempt open for
+                # independent reconciliation instead of stranded in
+                # attempt_authorized, where no reconciler could touch it.
+                # Best-effort -- the unknown record below is the safety
+                # boundary if custody itself failed.
+                try:
+                    self._require_custody_reconciliation(custody_attempt)
+                except CommerceViolation:
+                    pass
             self._record_purchase_event(
                 kernel,
                 "purchase_consequence_unknown",
@@ -863,10 +1062,36 @@ class DomainCommerceExecutor:
             )
             raise
 
+        if custody_attempt is not None:
+            # The transmission happened and the provider answered: the
+            # attempt must leave request_transmitted for
+            # reconciliation-required before any outcome is settled, so a
+            # later independent observation can resolve it however
+            # validation below goes. Best-effort -- a custody failure must
+            # not rewrite the provider outcome (see _record_purchase_event).
+            try:
+                self._require_custody_reconciliation(custody_attempt)
+            except CommerceViolation:
+                pass
+
         if result.payment_id is not None or result.charged_cents is not None or result.receipt_hash is not None:
             if None in (result.payment_id, result.charged_cents, result.receipt_hash):
                 raise CommerceViolation("incomplete_payment_evidence")
             if result.charged_cents < 0 or result.charged_cents > order.purchase_price_cents:
+                if custody_attempt is not None:
+                    # Known-wrong on the provider's own return: the charge
+                    # it reports contradicts the authorization. This matches
+                    # IndependentDomainReconciler's
+                    # observed_charge_exceeded_authorization failure; a
+                    # negative charge is malformed the same way.
+                    reason = ("charge_exceeded_authorized_amount"
+                              if result.charged_cents > order.purchase_price_cents
+                              else "charge_invalid")
+                    self._reconcile_custody_attempt(
+                        custody_attempt,
+                        outcome="failure",
+                        observation_hash=_live_observation_hash(order, result, reason=reason),
+                    )
                 raise CommerceViolation("charge_exceeded_authorized_amount")
             outcome.payment = PaymentEvidence(result.payment_id, result.charged_cents, result.receipt_hash)
             outcome.reconciliation = budget.reconcile(reservation_id, outcome.payment)
@@ -875,6 +1100,22 @@ class DomainCommerceExecutor:
             if None in (result.registration_id, result.domain, result.registrar):
                 raise CommerceViolation("incomplete_delivery_evidence")
             outcome.delivery = DeliveryEvidence(result.registration_id, result.domain, result.registrar)
+
+        if (custody_attempt is not None and outcome.payment is not None
+                and outcome.delivery is not None):
+            # Complete payment evidence with settled budget, complete
+            # delivery evidence: the live executor's own synchronous
+            # observation verifies the purchase. First-party, not
+            # independent -- see LIVE_CUSTODY_EXECUTOR_ID. A purchase with
+            # payment but no delivery evidence stays
+            # reconciliation-required: delivery is unverified, and the
+            # independent reconciler may still observe it later.
+            self._reconcile_custody_attempt(
+                custody_attempt,
+                outcome="success",
+                observation_hash=_live_observation_hash(
+                    order, result, reason="external_consequence_verified"),
+            )
 
         return outcome
 

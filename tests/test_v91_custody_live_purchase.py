@@ -19,10 +19,14 @@ These tests prove the slice-1 fix in `DomainCommerceExecutor.execute`:
 The coordinator route is covered too: when a `GovernedDomainAttemptCoordinator`
 is supplied, consumption runs through it (locked-target resolution, canonical
 consume, audit-tip check, custody attempt) and the unknown-outcome record
-carries the custody attempt id. The custody attempt itself stays
-`attempt_authorized`: the custody state machine has no
-`attempt_authorized -> reconciliation_required` edge, so the canonical audit
-event is the reconciliation-required record for the live path.
+carries the custody attempt id. The incident-reconciliation slice drives the
+attempt through the custody lifecycle on the live path: claim + transmit
+around the executor's own provider call (executor `pulpo.commerce.live`),
+require-reconciliation once the call returns or raises, and reconcile from
+the executor's own observation when the outcome is known -- success on
+complete payment + delivery evidence with settled budget, failure when the
+provider's return contradicts the authorization. Incomplete evidence stays
+reconciliation-required, and a refused purchase never claims or transmits.
 """
 
 import sqlite3
@@ -43,11 +47,13 @@ from pulpo.commerce import (
 )
 from pulpo.custody import SQLiteGovernanceCustody
 from pulpo.custody_domain import GovernedDomainAttemptCoordinator
+from pulpo.custody_evidence import SQLiteCustodyEvidenceConvergence
 from pulpo.directives import (
     Directive,
     DirectiveAuthorityController,
     GovernedDirectiveProjection,
 )
+from pulpo.incident_channel import freeze_incident_report
 from pulpo.kernel import GovernanceKernel, Policy
 from pulpo.orchestrator import PulpoOrchestrator
 from pulpo.state import InMemoryKernelState, SQLiteKernelState
@@ -526,11 +532,203 @@ class LivePurchaseCustodyTests(unittest.TestCase):
             self.assertEqual(1, len(unknown))
             attempt_id = unknown[0]["payload"]["custody_attempt_id"]
             self.assertIsNotNone(attempt_id)
-            # No attempt_authorized -> reconciliation_required edge exists in
-            # the custody state machine, so the custody attempt stays
-            # authorized and the canonical audit event is the
-            # reconciliation-required record for the live path.
-            self.assertEqual("attempt_authorized", custody.attempt(attempt_id).state)
+            # The live path drives claim + transmit around its own provider
+            # call and require-reconciliation once the call raises, so the
+            # attempt lands in reconciliation-required: open for later
+            # independent reconciliation, and the canonical audit event is
+            # the merged record for it.
+            self.assertEqual("reconciliation_required", custody.attempt(attempt_id).state)
+            self.assertTrue(kernel.verify_audit())
+
+    # Incident-reconciliation slice: the coordinator path drives the custody
+    # lifecycle instead of stranding attempts in attempt_authorized.
+    def test_coordinator_route_success_reconciles_attempt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "custody.sqlite3"
+            kernel, custody, budget, coordinator = self.custody_stack(path)
+            order = self.order()
+            intent = purchase_intent(order)
+            target = kernel.lock_target("domain-v91", intent)
+            decision = kernel.evaluate(intent)
+            reservation = coordinator.reserve(order)
+            registrar = FakeRegistrar(
+                RegistrarResult("payment-1", 2_000, "a" * 64, "registration-1", order.domain, order.registrar)
+            )
+            outcome = DomainCommerceExecutor(coordinator=coordinator).execute(
+                kernel, order, decision.permit, registrar, budget,
+                reservation.reservation_id, now_ns=NOW,
+                target_id=target.target_id, expected_target_hash=target.target_hash,
+            )
+            self.assertTrue(outcome.authorized)
+            self.assertEqual("payment-1", outcome.payment.payment_id)
+            self.assertEqual("registration-1", outcome.delivery.registration_id)
+            (attempt,) = custody.attempts()
+            self.assertEqual("reconciled_success", attempt.state)
+            self.assertEqual("success", attempt.reconciliation_outcome)
+            self.assertEqual("pulpo.commerce.live", attempt.executor_id)
+            self.assertEqual(f"domain:{attempt.attempt_id}:live", attempt.provider_request_id)
+            self.assertIsNotNone(attempt.observation_hash)
+            # No custody_transition events without a wired projector, and
+            # the incident channel is silent: the success left no incident.
+            self.assertEqual([], audit_events(kernel, "custody_transition"))
+            owner = PulpoOrchestrator(kernel)
+            self.assertEqual((), freeze_incident_report(owner, custody=custody).records)
+            self.assertTrue(kernel.verify_audit())
+
+    def test_coordinator_route_success_projects_custody_transitions_to_audit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "custody.sqlite3"
+            kernel, custody, budget, coordinator = self.custody_stack(path)
+            evidence = SQLiteCustodyEvidenceConvergence(custody)
+            order = self.order()
+            intent = purchase_intent(order)
+            target = kernel.lock_target("domain-v91", intent)
+            decision = kernel.evaluate(intent)
+            reservation = coordinator.reserve(order)
+            registrar = FakeRegistrar(
+                RegistrarResult("payment-1", 2_000, "a" * 64, "registration-1", order.domain, order.registrar)
+            )
+            outcome = DomainCommerceExecutor(
+                coordinator=coordinator, evidence_projector=evidence.project_all,
+            ).execute(
+                kernel, order, decision.permit, registrar, budget,
+                reservation.reservation_id, now_ns=NOW,
+                target_id=target.target_id, expected_target_hash=target.target_hash,
+            )
+            self.assertTrue(outcome.authorized)
+            self.assertEqual("reconciled_success", custody.attempts()[0].state)
+            self.assertEqual(0, evidence.pending_count())
+            transitions = audit_events(kernel, "custody_transition")
+            self.assertEqual(
+                ["attempt_authorized", "attempt_claimed", "request_transmitted",
+                 "reconciliation_required", "reconciled_success"],
+                [record["payload"]["receipt"]["transition_type"] for record in transitions])
+            for record in transitions:
+                self.assertEqual("pulpo.custody-evidence-projection.v0",
+                                 record["payload"]["schema"])
+            self.assertEqual((), freeze_incident_report(
+                PulpoOrchestrator(kernel), custody=custody).records)
+            self.assertTrue(kernel.verify_audit())
+
+    def test_coordinator_route_charge_exceeded_reconciles_as_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "custody.sqlite3"
+            kernel, custody, budget, coordinator = self.custody_stack(path)
+            order = self.order()
+            intent = purchase_intent(order)
+            target = kernel.lock_target("domain-v91", intent)
+            decision = kernel.evaluate(intent)
+            reservation = coordinator.reserve(order)
+            registrar = FakeRegistrar(
+                RegistrarResult("payment-1", 2_001, "a" * 64, "registration-1", order.domain, order.registrar)
+            )
+            with self.assertRaisesRegex(CommerceViolation, "charge_exceeded_authorized_amount"):
+                DomainCommerceExecutor(coordinator=coordinator).execute(
+                    kernel, order, decision.permit, registrar, budget,
+                    reservation.reservation_id, now_ns=NOW,
+                    target_id=target.target_id, expected_target_hash=target.target_hash,
+                )
+            (attempt,) = custody.attempts()
+            self.assertEqual("reconciled_failure", attempt.state)
+            self.assertEqual("failure", attempt.reconciliation_outcome)
+            report = freeze_incident_report(PulpoOrchestrator(kernel), custody=custody)
+            self.assertEqual(1, len(report.records))
+            (record,) = report.records
+            self.assertEqual("incident", record.kind)
+            self.assertEqual("confirmed_wrong", record.resolution)
+
+    def test_coordinator_route_incomplete_payment_evidence_stays_reconciliation_required(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "custody.sqlite3"
+            kernel, custody, budget, coordinator = self.custody_stack(path)
+            order = self.order()
+            intent = purchase_intent(order)
+            target = kernel.lock_target("domain-v91", intent)
+            decision = kernel.evaluate(intent)
+            reservation = coordinator.reserve(order)
+            registrar = FakeRegistrar(
+                RegistrarResult("payment-1", None, "a" * 64, "registration-1", order.domain, order.registrar)
+            )
+            with self.assertRaisesRegex(CommerceViolation, "incomplete_payment_evidence"):
+                DomainCommerceExecutor(coordinator=coordinator).execute(
+                    kernel, order, decision.permit, registrar, budget,
+                    reservation.reservation_id, now_ns=NOW,
+                    target_id=target.target_id, expected_target_hash=target.target_hash,
+                )
+            (attempt,) = custody.attempts()
+            self.assertEqual("reconciliation_required", attempt.state)
+            # Incomplete evidence is unresolved, not failure -- the same
+            # classification IndependentDomainReconciler applies.
+            report = freeze_incident_report(PulpoOrchestrator(kernel), custody=custody)
+            self.assertEqual(1, len(report.records))
+            (record,) = report.records
+            self.assertEqual("incident", record.kind)
+            self.assertEqual("custody_store", record.source)
+            self.assertEqual("unresolved", record.resolution)
+
+    def test_coordinator_route_unknown_outcome_is_reconcilable_later(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "custody.sqlite3"
+            kernel, custody, budget, coordinator = self.custody_stack(path)
+            order = self.order()
+            intent = purchase_intent(order)
+            target = kernel.lock_target("domain-v91", intent)
+            decision = kernel.evaluate(intent)
+            reservation = coordinator.reserve(order)
+            uncertain = UncertainRegistrar()
+            with self.assertRaisesRegex(ConnectionError, "unknown"):
+                DomainCommerceExecutor(coordinator=coordinator).execute(
+                    kernel, order, decision.permit, uncertain, budget,
+                    reservation.reservation_id, now_ns=NOW,
+                    target_id=target.target_id, expected_target_hash=target.target_hash,
+                )
+            (attempt,) = custody.attempts()
+            self.assertEqual("reconciliation_required", attempt.state)
+            owner = PulpoOrchestrator(kernel)
+            report = freeze_incident_report(owner, custody=custody)
+            self.assertEqual(1, len(report.records))
+            self.assertEqual("unresolved", report.records[0].resolution)
+            # The state is open for reconciliation now: a later trusted
+            # observation resolves the same attempt the live path left
+            # open. (Before this slice the attempt sat in
+            # attempt_authorized, which no reconciler accepts.)
+            head = custody.snapshot()
+            custody.reconcile_observed(
+                expected_epoch=head.epoch, expected_state_root=head.state_root,
+                attempt_id=attempt.attempt_id, outcome="success",
+                observation_hash="e" * 64, observer_id="observer:test",
+            )
+            report = freeze_incident_report(owner, custody=custody)
+            self.assertEqual(1, len(report.records))
+            (record,) = report.records
+            self.assertEqual("near_miss", record.kind)
+            self.assertEqual("resolved_cleanly", record.resolution)
+
+    def test_coordinator_route_success_via_orchestrator_with_projector(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "custody.sqlite3"
+            kernel, custody, budget, coordinator = self.custody_stack(path)
+            evidence = SQLiteCustodyEvidenceConvergence(custody)
+            orchestrator = PulpoOrchestrator(kernel)
+            order = self.order()
+            intent = purchase_intent(order)
+            target = kernel.lock_target("domain-v91", intent)
+            decision = kernel.evaluate(intent)
+            reservation = coordinator.reserve(order)
+            registrar = FakeRegistrar(
+                RegistrarResult("payment-1", 2_000, "a" * 64, "registration-1", order.domain, order.registrar)
+            )
+            outcome = orchestrator.execute_domain_purchase(
+                order, decision.permit, registrar, budget,
+                reservation.reservation_id, now_ns=NOW,
+                coordinator=coordinator,
+                target_id=target.target_id, expected_target_hash=target.target_hash,
+                evidence_projector=evidence.project_all,
+            )
+            self.assertTrue(outcome.authorized)
+            self.assertEqual("reconciled_success", custody.attempts()[0].state)
+            self.assertEqual(0, evidence.pending_count())
+            self.assertEqual(5, len(audit_events(kernel, "custody_transition")))
             self.assertTrue(kernel.verify_audit())
 
     def test_coordinator_route_requires_target_and_matching_budget(self):
