@@ -173,13 +173,53 @@ Rules:
   from the live path, and its results are never persisted. There is no
   durable mismatch feed to derive from. If effect-reconciliation results
   become durable, they belong here as a third feed.
-- No CLI subcommand and no Control Center page yet. Evidence export today
-  is library API + Control Center Evidence page, not a CLI subcommand; this
-  channel matches that shape (library API only).
+- No external reporting or sharing (see Surfaces, below, for what reads
+  the frozen report locally).
 - No custody-transition projection into the audit on the
   `TrustedDomainExecutor` path: its projector is still only wired in tests,
   so worker-driven attempts are visible here only because the channel reads
   the store directly. The live commerce path does project (see above).
+
+
+## Surfaces (slice (d))
+
+Two read-only surfaces read a frozen `pulpo.incident-report.v2` snapshot
+(produced by `export_incident_report`); neither opens a database, appends
+to the audit, or offers a lifecycle transition.
+
+### CLI: `pulpo incidents`
+
+- `pulpo incidents list [--report PATH] [--kind incident|near_miss]
+  [--resolution ...] [--lifecycle ...] [--since ISO] [--until ISO]` --
+  one line per matching record. `--report` defaults to
+  `evidence/incident_report.json`; the time window applies to
+  `first_seen_ns`, as in `list_incidents`.
+- `pulpo incidents show [--report PATH] <record_id>` -- full record
+  detail (source, reason, resolution, lifecycle with actor, anchors).
+- `pulpo incidents summary [--report PATH]` -- counts from the report
+  header (incidents, near-misses, unresolved, resolved cleanly,
+  confirmed wrong) plus audit validity.
+- Exit codes follow the existing CLI: 0 on success; a missing or invalid
+  report, an unknown record id, or a bad `--since`/`--until` is a
+  `ValueError` and exits through `parser.error`, as `pulpo verify` and
+  `pulpo setup` already do. An empty report lists zero records, not an
+  error.
+
+### Control Center Evidence page (Tkinter)
+
+An "Incidents" section on the existing Evidence page, in the
+`EvidenceEvents` pattern: the operator selects a frozen incident-report
+file ("Select incident report…"), the page re-reads it on its 2-second
+visible tick, and a Treeview lists records with kind / resolution /
+lifecycle filters, a counts summary, row details, and a copy-record-id
+button. Read-only: no transition, acknowledgement, or authority action
+is offered, and the section keeps its own source state -- incident reads
+are not registered in the center's source-health registry, whose keys
+are (`Governance`, `Evidence`, providers).
+
+The Qt Control Center lives in a separate repo (this repo's Control
+Center is Tkinter); the Qt Evidence page is a follow-on there, not in
+this slice.
 
 ## The live path now reconciles (incident-reconciliation slice)
 
@@ -245,8 +285,9 @@ on either side.
 
 - Human report path: who reads the frozen report, and what (if anything)
   is sent where? Nothing in this module answers that.
-- CLI subcommand (`pulpo incidents`?) and/or a Control Center Evidence
-  page for the report.
+- Human report path: who reads the frozen report, and what (if anything)
+  is sent where? Nothing in this module answers that. (The CLI and the
+  Evidence page are the local reading surfaces; sending is still open.)
 - Evidence-projector wiring on the `TrustedDomainExecutor` path, so
   worker-driven custody transitions reach the canonical audit too (the live
   commerce path already projects when a projector is wired). Constructing
