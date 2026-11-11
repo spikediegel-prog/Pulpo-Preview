@@ -91,13 +91,18 @@ ln -sfn ../.. "$BUNDLE_DIR/usr"
 ln -sfn ../../../etc "$BUNDLE_DIR/etc"
 
 # -cpu qemu64 is the default: it reaches the GNOME desktop and the
-# Tkinter Control Center runs. Two QEMU CPU notes, both verified
+# Qt Control Center runs. Two QEMU CPU notes, both verified
 # 2026-11-11:
-# - The vendored Qt in the Control Center .deb dies with "Illegal
-#   instruction (core dumped)" (SIGILL) under qemu64, which lacks
-#   the AVX instructions it uses. The Tkinter Control Center is the
-#   proof the app works in the live session; the Qt interface needs
-#   real hardware (or a CPU model with AVX) to be checked.
+# - qemu64 provides SSE3 but none of SSSE3/SSE4.1/SSE4.2/POPCNT
+#   (x86-64-v2). The vendored Qt 6.12 in the preview.47 .deb required
+#   v2 and died with "Illegal instruction" (SIGILL) while importing
+#   under qemu64 — the fault was the v2 baseline, not AVX (adding
+#   only the v2 features, no AVX, makes Qt load). The preview.48
+#   .deb vendors PySide6 6.9.3, which starts on v1, so the Qt
+#   interface is exercised by this very boot test; the launcher
+#   also probes Qt in a child and falls back to Tkinter if Qt
+#   cannot start. The Tkinter Control Center remains the fallback
+#   proof the app works in the live session.
 # - `-cpu max` was tried: much slower under TCG, and gnome-shell
 #   itself crashed ("Oh no! Something has gone wrong") with no
 #   working desktop, so it is not the default either.
@@ -149,9 +154,19 @@ for i in $(seq 3 1 "$TIMEOUT_MIN"); do
   kill -0 "$QPID" 2>/dev/null || { echo "QEMU exited early (see qemu.log)" >&2; break; }
 done
 
-# Let the desktop settle, then take the final evidence shots.
-sleep 60; shot shot-final-desktop
-sleep 30; shot shot-final-desktop-2
+# gdm starting is not the desktop: under TCG the autologin session,
+# GNOME Shell and the autostarted Control Center need several more
+# minutes (the first qt48 run's final shots, 90 s after gdm, were a
+# black screen; the PR #124 run needed ~6 min after gdm before the
+# desktop appeared). Sample every minute for 8 minutes; sendkey ctrl
+# before each shot so an idle-blanked screen wakes instead of staying
+# black. A shot that catches the desktop up is the evidence — a later
+# blanked screen does not erase the earlier one.
+for wait in 60 120 180 240 300 360 420 480; do
+  sleep 60
+  printf 'sendkey ctrl\n' | nc -w 5 127.0.0.1 "$MONITOR_PORT" >/dev/null 2>&1 || true
+  shot "shot-final-$(printf %03d "$wait")s"
+done
 
 if [ "$DESKTOP" = yes ]; then
   VERDICT="BOOT OK — live session reached the GNOME display manager (see boot.log) and the desktop screenshots"

@@ -43,13 +43,15 @@
 #     --base-iso   Ubuntu 24.04 desktop ISO (default: $WORK/ubuntu-*.iso)
 #     --work-dir   scratch dir, needs ~20G free (default: ~/pulpo-workspace/iso-build)
 #     --out        output ISO path (default: $WORK/pulpo-preview-0.1.0-live-amd64.iso)
-#     --cc-deb     Control Center .deb (default: the preview.47 .deb)
+#     --cc-deb     Control Center .deb (default: the preview.48 .deb)
 #
 # Inputs (all from the repo / already-built artefacts — nothing invented):
-#   - Control Center .deb: the preview.47 .deb, built from Control Center
-#     main (945706c); CC origin/main has not moved past it, so the .deb
-#     IS the current main build. Rebuild it with scripts/build_ubuntu_deb.py
-#     in the Control Center repo if main moves.
+#   - Control Center .deb: the preview.48 .deb, built from Control Center
+#     PR #66 branch qt-sigill-fallback (b17b654) — pre-merge, so it is
+#     NOT yet a main build. It vendors PySide6 6.9.3 (the newest PySide6
+#     that still starts on x86-64-v1) and a launcher that probes Qt in a
+#     child and falls back to Tkinter if Qt cannot start. Rebuild it from
+#     merged Control Center main before cutting a release from this ISO.
 #   - pulpo package: installed from this worktree with
 #     pip install --target=<rootfs>/usr/local/lib/python3.12/dist-packages
 #     --no-deps --no-build-isolation .  plus the entry-point scripts
@@ -72,7 +74,7 @@ WORK="${WORK:-$HOME/pulpo-workspace/iso-build}"
 TOOLS="${TOOLS:-$HOME/pulpo-workspace/iso-tools}"
 BASE_ISO=""
 OUT=""
-CC_DEB="${CC_DEB:-$HOME/pulpo-workspace/Pulpo-Control-Center-Preview47/dist/pulpo-control-center_0.1.0~ubuntu.preview.47+e3.945706c_amd64.deb}"
+CC_DEB="${CC_DEB:-$HOME/pulpo-workspace/Pulpo-Control-Center-Preview48/dist/pulpo-control-center_0.1.0~ubuntu.preview.48+e3.b17b654_amd64.deb}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 while [ $# -gt 0 ]; do
