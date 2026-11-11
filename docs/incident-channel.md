@@ -33,6 +33,7 @@ below), not a decision this module makes.
 | canonical audit | `purchase_consequence_unknown` + custody attempt `reconciled_failure` | incident | confirmed_wrong | audit record hash + custody authorization hash | hash chain + HMAC receipt |
 | canonical audit | `purchase_consequence_unknown` + custody attempt in any other state | incident | unresolved | audit record hash + custody authorization hash | hash chain + HMAC receipt |
 | canonical audit | `purchase_revalidation_failed` | near-miss | not_applicable | audit record hash | hash chain |
+| canonical audit | `purchase_revalidation_failed` + custody attempt (by attempt id, else order hash) | near-miss | not_applicable | audit record hash + custody authorization hash | hash chain + HMAC receipt |
 | canonical audit | `permit_rejected` | near-miss | not_applicable | audit record hash | hash chain |
 | canonical audit | `decision` with outcome `deny` | near-miss | not_applicable | audit record hash | hash chain |
 | canonical audit | `approval_rejected` | near-miss | not_applicable | audit record hash | hash chain |
@@ -50,8 +51,12 @@ Rules:
 - Merge: when a custody attempt has a `purchase_consequence_unknown` audit
   event carrying its `custody_attempt_id`, exactly one record is emitted,
   anchored on the audit event, with resolution taken from the attempt's
-  latest state. An attempt with no such audit event gets its own
-  custody-anchored record. A `reconciled_success` attempt with no audit
+  latest state. A `purchase_revalidation_failed` event consumes its attempt
+  the same way -- by `custody_attempt_id` when the payload carries one,
+  else by `order_hash` (the attempt object hash IS the order hash) -- so a
+  refusal yields exactly one near-miss, anchored on the audit event and
+  the custody authorization. An attempt with no such audit event gets its
+  own custody-anchored record. A `reconciled_success` attempt with no audit
   event referencing it emits nothing.
 - Records sort by (`first_seen_ns`, `record_id`). There is no cap on
   records: incidents are rare, and silently dropping one would be worse
@@ -76,9 +81,13 @@ its `source` so a reader can tell which anchor backs it:
   the canonical audit. Do not present custody-derived records as
   audit-backed.
 
-Custody transitions never reach the canonical audit in production: the
-`TrustedDomainExecutor` takes an `evidence_projector` callback that is only
-wired in tests. The custody feed therefore reads the custody store directly
+Custody transitions reach the canonical audit wherever an evidence
+projector is wired: `DomainCommerceExecutor` takes an `evidence_projector`
+and, when supplied, projects every transition
+(`SQLiteCustodyEvidenceConvergence.project_all`) into `custody_transition`
+audit events -- authorize, claim, transmit, require-reconciliation,
+reconcile. The `TrustedDomainExecutor`'s projector is still only wired in
+tests. The custody feed therefore still reads the custody store directly
 (`SQLiteGovernanceCustody.attempts()`, a read-only SELECT-only enumeration),
 and the channel says so on every record via its `source` field.
 
@@ -108,24 +117,57 @@ timestamp and the custody head time.
 - No CLI subcommand and no Control Center page yet. Evidence export today
   is library API + Control Center Evidence page, not a CLI subcommand; this
   channel matches that shape (library API only).
-- No custody-transition projection into the audit. Until the
-  evidence-projector wiring exists, custody state is visible here only
-  because the channel reads the store directly.
+- No custody-transition projection into the audit on the
+  `TrustedDomainExecutor` path: its projector is still only wired in tests,
+  so worker-driven attempts are visible here only because the channel reads
+  the store directly. The live commerce path does project (see above).
+
+## The live path now reconciles (incident-reconciliation slice)
+
+The live commerce path drives the custody lifecycle on the coordinator
+path (`pulpo/commerce.py`, `DomainCommerceExecutor`):
+
+- **Success**: claim + transmit around the executor's own provider call,
+  require-reconciliation once it returns, then `reconciled_success` from
+  the executor's own observation -- complete payment evidence with settled
+  budget plus complete delivery evidence. The channel emits no record: a
+  successful coordinator purchase is no longer an unresolved incident.
+  The observation is first-party (`pulpo.commerce.live`), not independent:
+  it records what the provider synchronously returned to the trusted
+  in-process executor, under the schema
+  `pulpo.live-purchase-observation.v0`. It must never be mistaken for the
+  independent observation `IndependentDomainReconciler` requires.
+- **Known failure**: the provider returns a charge outside the authorized
+  amount (or a negative charge) -- `reconciled_failure` on the provider's
+  own return, matching the independent reconciler's
+  `observed_charge_exceeded_authorization` failure. The channel reports
+  one incident, `confirmed_wrong`.
+- **Unknown**: the provider call raises, or returns incomplete evidence --
+  the attempt stays `reconciliation_required` (never `attempt_authorized`,
+  which no reconciler accepts), and the channel reports one unresolved
+  incident, open for later independent reconciliation.
+- **Refusal**: a purchase refused at revalidation never claims or
+  transmits. The refusal event carries the attempt id and the channel
+  consumes the attempt into exactly one near-miss. The attempt itself
+  stays `attempt_authorized` in the store: the custody vocabulary has no
+  cancel/refuse transition, so the channel consumes it rather than the
+  store resolving it. A cancel transition is still an open vocabulary
+  decision (see below).
+
+The claim/transmit steps are not fabrication: the transmission they record
+IS this executor's own provider call, under its own id
+(`domain:<attempt_id>:live`) -- not a worker handoff that never happened.
+Driving claim/transmit for a purchase handed to a worker would be
+fabrication, and the live path does not do that.
 
 ## Two consequences to know about
 
-1. **The live path never reconciles custody attempts.** Nothing on the live
-   path calls `reconcile_observed` (or cancels an attempt), so a coordinator
-   purchase leaves its custody attempt in `attempt_authorized` even when the
-   purchase succeeded. The channel reports such an attempt as an unresolved
-   incident — correctly, by its own definition (an authorized attempt with
-   no terminal state has an unknown outcome), but noisily: every
-   unreconciled coordinator attempt shows up until reconciliation (or
-   cancellation) is wired into the trusted path. Likewise, a
-   `purchase_revalidation_failed` refusal leaves its custody attempt
-   dangling: the merge rule consumes an attempt only for a
-   `purchase_consequence_unknown` event, so a refused purchase yields two
-   records — the near-miss and the unresolved custody incident.
+1. **A refused attempt still dangles in the store.** The channel consumes
+   it, so the report is clean, but the custody store still holds an
+   `attempt_authorized` attempt that can never execute (its permit is spent
+   and its reservation attempted). Only a cancel/refuse transition in the
+   custody vocabulary would resolve the store state; that is a decision for
+   Mike/Austin, not taken here.
 2. **Unknown custody states fail closed toward reporting.** An attempt in a
    state the channel does not recognise is reported as an unresolved
    incident, never silently dropped.
@@ -147,9 +189,14 @@ on either side.
 - Lifecycle: do records need open/close states, triage, acknowledgement?
 - CLI subcommand (`pulpo incidents`?) and/or a Control Center Evidence
   page for the report.
-- Evidence-projector wiring so custody transitions reach the canonical
-  audit (then the custody feed could be audit-derived instead of
-  store-derived).
-- Reconciliation / cancellation wiring on the live path, so successful or
-  refused coordinator attempts reach a terminal custody state instead of
-  lingering as unresolved incidents.
+- Evidence-projector wiring on the `TrustedDomainExecutor` path, so
+  worker-driven custody transitions reach the canonical audit too (the live
+  commerce path already projects when a projector is wired). Constructing
+  `SQLiteCustodyEvidenceConvergence` against a production store also needs
+  an owner: whoever constructs it must wire its `project_all` as the
+  executor's projector, or the convergence trigger blocks the coordinator
+  path by design.
+- A cancel/refuse transition in the custody vocabulary, so a refused
+  attempt reaches a terminal state in the store instead of lingering as
+  `attempt_authorized` (the channel already consumes it; only the store
+  state is open).
