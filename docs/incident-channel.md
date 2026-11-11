@@ -20,9 +20,10 @@ step — reads the frozen report and decides what leaves the machine.
   the effect is verified fine.
 
 Both are derived, read-only projections of the canonical audit chain and the
-custody store. There is **no lifecycle**: no open/close states, no triage, no
-acknowledgement. Whether a record needs a lifecycle is an open question (see
-below), not a decision this module makes.
+custody store. An incident record also carries a handling lifecycle -- open,
+acknowledged, resolved, closed -- recorded as `incident_lifecycle` audit
+events (see Lifecycle, below). Near-misses carry no lifecycle
+(`not_applicable`).
 
 ## Feed table
 
@@ -104,10 +105,68 @@ attempt's own time. A merged record keeps the audit timestamp as
 `first_seen_ns` and takes `last_seen_ns` as the later of the audit
 timestamp and the custody head time.
 
+## Lifecycle
+
+An incident record carries a handling lifecycle, derived from the canonical
+audit -- never stored beside the record. Every transition is an
+`incident_lifecycle` audit event, so the current state is replayable from
+the chain: who did what, when.
+
+| Transition | From | To | Rule |
+|---|---|---|---|
+| `acknowledge` | `open` | `acknowledged` | -- |
+| `resolve` | `acknowledged` | `resolved` | -- |
+| `close` | `resolved` | `closed` | If the record's resolution is still `unresolved`, a reason is required and the event is recorded as an explicit override (`override: true`). |
+| `reopen` | `resolved`, `closed` | `open` | -- |
+
+Rules:
+
+- The transition API is library-level:
+  `transition_incident(orchestrator, record_id, transition, *, actor,
+  reason=None, custody=None)`. `actor` is an explicit attribution string,
+  conventionally `operator:<name>` for a human or `process:<name>` for
+  automation; it is recorded, not authenticated -- there is no credential
+  check here.
+- Lifecycle is handling status only. Acknowledging, resolving, or closing a
+  record changes how it is reported, never what the kernel, the custody
+  coordinator, or any permit will do.
+- Near-misses carry lifecycle `not_applicable` and accept no transitions:
+  refused before any effect, or an unknown that resolved cleanly, there is
+  nothing to work.
+- Closing an incident whose resolution is still `unresolved` is allowed
+  only with a reason, recorded as an override. The alternative -- refusing
+  the close -- would leave a permanently unknown outcome open forever; the
+  override makes the decision visible instead of pretending the outcome was
+  resolved. A failed append raises: unlike the purchase-outcome record,
+  which is best-effort so a failed projection never masks the outcome the
+  caller must reconcile, a lifecycle transition is an explicit operator
+  action, and silent failure would leave the operator believing the
+  incident is closed when it is not.
+- Reopening a closed incident is always possible: a wrongly-closed incident
+  is itself a governance failure, and the reopen is audit-visible.
+- Derivation: `freeze_incident_report` folds `incident_lifecycle` events in
+  audit order, applying only transitions valid from the record's current
+  derived state. An event for an unknown record id, for a near-miss, or
+  with a from_state that does not match is ignored -- it stays in the audit
+  as history but cannot corrupt the derived state.
+- A kind flip retires the incident record and its lifecycle: an unknown
+  that later resolves cleanly becomes a near-miss (`not_applicable`) under
+  a new record id, and the earlier lifecycle events remain in the audit as
+  history. A custody-anchored record that reconciles to success vanishes
+  the same way.
+- Schema: records and reports are now v2 (`pulpo.incident-record.v2`,
+  `pulpo.incident-report.v2`): each record carries `lifecycle`,
+  `lifecycle_at_ns` (when the current state began; the record's
+  `first_seen_ns` when never transitioned) and `lifecycle_actor` (who made
+  the latest transition; empty when never transitioned). v1 snapshots are
+  not loadable -- the channel is days old and library-only, so no durable
+  v1 reports exist.
+- `list_incidents` accepts a `lifecycle=` filter alongside `kind=` and
+  `resolution=`.
+
 ## What the channel does not do
 
 - No authorization, no permits, no keys. Freezing a report grants nothing.
-- No lifecycle / open-close states (open question, below).
 - No external reporting or sharing, no network calls, no notification.
 - No mismatch feed beyond custody `reconciled_failure`: `reconcile_effects`
   (`pulpo/effect_reconcile.py`) runs only from scripts/proofs/tests, never
@@ -186,7 +245,6 @@ on either side.
 
 - Human report path: who reads the frozen report, and what (if anything)
   is sent where? Nothing in this module answers that.
-- Lifecycle: do records need open/close states, triage, acknowledgement?
 - CLI subcommand (`pulpo incidents`?) and/or a Control Center Evidence
   page for the report.
 - Evidence-projector wiring on the `TrustedDomainExecutor` path, so
