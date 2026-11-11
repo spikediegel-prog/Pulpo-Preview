@@ -396,8 +396,11 @@ rm -rf "$ISO_ROOT"
 
 # 7. Rebuild the ISO: replay the base image's boot chain verbatim
 #    (BIOS eltorito + appended EFI system partition), replace only
-#    the changed files, relabel the volume.
+#    the changed files, relabel the volume. xorriso refuses to
+#    write -outdev over a file that already holds data, so a previous
+#    build's output is removed first.
 echo "== [7/8] rebuilding ISO =="
+rm -f "$OUT" "$OUT.sha256"
 xorriso -indev "$BASE_ISO" -outdev "$OUT" \
   -volid "$VOLID" -boot_image any replay \
   -rm /casper/minimal.standard.live.squashfs -- \
