@@ -131,9 +131,10 @@ Notes:
   Secure Boot on, is a separate, still outstanding check.
 - **Real hardware.** No boot on the Protectli Vault Pro VP6630
   (or any physical machine) has happened yet.
-- **Disk installation.** There is no disk installer in this
-  milestone; the ISO is live-only. Booting the live session says
-  nothing about installing to disk.
+- **Disk installation.** Booting the live session says nothing
+  about installing to disk. That is proven separately by the
+  install test — see `INSTALL-TEST.md` (Calamares erase-disk
+  install, then boot the installed system).
 - **Control Center function.** The autostart only proves the app
   launches in the live session; its governance behaviour is
   covered by the repo's own test suite, not by this boot test.

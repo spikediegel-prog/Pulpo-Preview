@@ -43,15 +43,18 @@
 #     --base-iso   Ubuntu 24.04 desktop ISO (default: $WORK/ubuntu-*.iso)
 #     --work-dir   scratch dir, needs ~20G free (default: ~/pulpo-workspace/iso-build)
 #     --out        output ISO path (default: $WORK/pulpo-preview-0.1.0-live-amd64.iso)
-#     --cc-deb     Control Center .deb (default: the preview.48 .deb)
+#     --cc-deb     Control Center .deb (default: the preview.48 release .deb from merged CC main 2077631)
 #
 # Inputs (all from the repo / already-built artefacts — nothing invented):
-#   - Control Center .deb: the preview.48 .deb, built from Control Center
-#     PR #66 branch qt-sigill-fallback (b17b654) — pre-merge, so it is
-#     NOT yet a main build. It vendors PySide6 6.9.3 (the newest PySide6
-#     that still starts on x86-64-v1) and a launcher that probes Qt in a
-#     child and falls back to Tkinter if Qt cannot start. Rebuild it from
-#     merged Control Center main before cutting a release from this ISO.
+#   - Control Center .deb: the preview.48 RELEASE .deb, built from
+#     merged Control Center main 2077631 (PR #66 merged) and
+#     installed + signed + verified on the VM. It vendors PySide6
+#     6.9.3 (the newest PySide6 that still starts on x86-64-v1) and
+#     a launcher that probes Qt in a child and falls back to
+#     Tkinter if Qt cannot start. SHA-256
+#     60e65c1048493b57701497f028788ddf23f0a9c74d65965d5743537f29cc4921.
+#     The pre-merge branch .deb must NOT be used; the default
+#     below points at the release .deb.
 #   - pulpo package: installed from this worktree with
 #     pip install --target=<rootfs>/usr/local/lib/python3.12/dist-packages
 #     --no-deps --no-build-isolation .  plus the entry-point scripts
@@ -61,11 +64,15 @@
 #     validate_config.py, example config.
 #
 # Outputs:
-#   - pulpo-preview-0.1.0-live-amd64.iso + .sha256
-#   - Live session only: first boot autologs into GNOME and autostarts
+#   - pulpo-preview-0.1.0-live-amd64.iso + .sha256 (default name;
+#     pass --out for a distinct build, e.g. the disk-install ISO)
+#   - Live session: first boot autologs into GNOME and autostarts
 #     Pulpo Control Center; Guided Setup is the button on the System
-#     page (Diagnostics tab). There is NO disk installer in this
-#     milestone — the partitioner is still open.
+#     page (Diagnostics tab). The live session also carries the
+#     Calamares disk installer (desktop icon "Install Pulpo
+#     Preview"): erase-disk install, UEFI GRUB + Ubuntu shim, and
+#     the wizard's config carried through to the installed system.
+#     See installer/DISK-INSTALLER.md.
 set -euo pipefail
 
 VERSION="0.1.0"
@@ -74,7 +81,7 @@ WORK="${WORK:-$HOME/pulpo-workspace/iso-build}"
 TOOLS="${TOOLS:-$HOME/pulpo-workspace/iso-tools}"
 BASE_ISO=""
 OUT=""
-CC_DEB="${CC_DEB:-$HOME/pulpo-workspace/Pulpo-Control-Center-Preview48/dist/pulpo-control-center_0.1.0~ubuntu.preview.48+e3.b17b654_amd64.deb}"
+CC_DEB="${CC_DEB:-$HOME/pulpo-workspace/Pulpo-Control-Center-Preview48-release/dist/pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 while [ $# -gt 0 ]; do
@@ -215,7 +222,8 @@ mkdir -p "$ROOTFS/usr/share/pulpo-installer"
 cp -r "$REPO_ROOT/installer/assets" "$ROOTFS/usr/share/pulpo-installer/assets"
 for f in grub.cfg installer-manifest.json validate_config.py \
          pulpo-preview-config.example.json README.md build-iso.sh \
-         boot-test.sh make_live_grub_cfg.py BOOT-TEST.md; do
+         boot-test.sh install-test.sh make_live_grub_cfg.py BOOT-TEST.md \
+         DISK-INSTALLER.md INSTALL-TEST.md; do
   cp "$REPO_ROOT/installer/$f" "$ROOTFS/usr/share/pulpo-installer/$f"
 done
 
@@ -241,8 +249,12 @@ here writes to your hard drive unless you choose to.
 - Guided Setup is the button on the Control Center System page
   (Diagnostics tab). It writes the customer config
   (pulpo.control-center-customer-config.v1).
-- There is NO disk installer in this image. The partitioner is
-  still open work; this ISO is live-only.
+- Disk installer: the "Install Pulpo Preview" icon on the desktop
+  installs to disk (erase-disk install, UEFI). It carries the
+  Guided Setup config you made here through to the installed
+  system — run Guided Setup first if you want the installed
+  system configured, or install without a config and use Guided
+  Setup on the installed system instead.
 - Network: no gateway is configured by default. An unset gateway
   (no default route, no internet) is a valid, deliberate choice.
 - Storage honesty: local evidence is kept at most 24 hours, and
@@ -260,12 +272,24 @@ EOF
 #     overwritten. Fetched with apt-get download if not already in
 #     $WORK/extra-debs or the apt cache.
 echo "  [4e] missing CC dependencies from .debs"
+# The .deb fetch helpers are shared with step 4f (Calamares).
+EXTRA_DEBS="$WORK/extra-debs"
+mkdir -p "$EXTRA_DEBS"
+APT_GET="apt-get -o Dir::State=/tmp/apt-state -o Dir::Cache=/tmp/apt-cache -o Dir::Etc::sourcelist=/dev/null -o Dir::Etc::sourceparts=/etc/apt/sources.list.d"
+APT_CACHE="apt-cache -o Dir::State=/tmp/apt-state -o Dir::Cache=/tmp/apt-cache -o Dir::Etc::sourcelist=/dev/null -o Dir::Etc::sourceparts=/etc/apt/sources.list.d"
+# The closure computations below need package lists in the build's
+# custom state dir. Those lists live in /tmp, so a reboot wipes them;
+# a build that assumes a previous run populated them dies silently
+# at step 4f (empty closure -> grep finds nothing -> pipefail under
+# set -e). Populate them here when missing instead of assuming.
+if [ ! -d /tmp/apt-state/lists ] || [ -z "$(ls -A /tmp/apt-state/lists 2>/dev/null)" ]; then
+  echo "  [apt] populating package lists (apt-get update)"
+  mkdir -p /tmp/apt-state/lists/partial /tmp/apt-cache/archives/partial
+  $APT_GET update > /tmp/apt-update.log 2>&1 || { echo "apt-get update failed; see /tmp/apt-update.log" >&2; exit 1; }
+fi
 if [ -n "$MISSING" ]; then
-  EXTRA_DEBS="$WORK/extra-debs"
-  mkdir -p "$EXTRA_DEBS"
-  APT_GET="apt-get -o Dir::State=/tmp/apt-state -o Dir::Cache=/tmp/apt-cache -o Dir::Etc::sourcelist=/dev/null -o Dir::Etc::sourceparts=/etc/apt/sources.list.d"
-  APT_CACHE="apt-cache -o Dir::State=/tmp/apt-state -o Dir::Cache=/tmp/apt-cache -o Dir::Etc::sourcelist=/dev/null -o Dir::Etc::sourceparts=/etc/apt/sources.list.d"
   CLOSURE=$($APT_CACHE depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances $MISSING 2>/dev/null | grep "^[a-z0-9]" | sort -u)
+  [ -n "$CLOSURE" ] || { echo "apt closure for $MISSING is empty -- package lists missing?" >&2; exit 1; }
   UNPACKED=""
   for pkg in $CLOSURE; do
     if grep -q "^${pkg}:\?\(amd64\)\?$(printf '\t')" "$ISO_ROOT/casper/filesystem.manifest"; then
@@ -283,6 +307,12 @@ if [ -n "$MISSING" ]; then
     UNPACKED="$UNPACKED $deb"
   done
   # Verify every file all the .debs claim to install landed. This
+  # accepts a symlink entry even if its target does not resolve
+  # inside this single live layer: a .deb may link into a package
+  # already in the base image whose files live in another squashfs
+  # layer (e.g. dbus-x11/AUTHORS.gz -> ../libdbus-1-3/AUTHORS.gz).
+  # The link itself is installed correctly and the target exists
+  # in the composed live system; only a genuinely absent entry fails.
   # runs AFTER all of them are unpacked: packages cross-reference
   # each other (e.g. blt's changelog is a symlink into
   # tk8.6-blt2.5), so a per-package check would fail on entries
@@ -292,7 +322,7 @@ if [ -n "$MISSING" ]; then
   for deb in $UNPACKED; do
     dpkg-deb -c "$deb" | awk '{print $6}' | sed 's|^\./||' > "$WORK/.deb-files.txt"
     while read -r f; do
-      [ -e "$ROOTFS/$f" ] || { echo "missing after unpack: $f ($deb)" >&2; exit 1; }
+      [ -e "$ROOTFS/$f" ] || [ -L "$ROOTFS/$f" ] || { echo "missing after unpack: $f ($deb)" >&2; exit 1; }
     done < "$WORK/.deb-files.txt"
   done
   # The tkinter extension must be importable: the live session's
@@ -303,6 +333,92 @@ if [ -n "$MISSING" ]; then
 else
   echo "  [4e] nothing missing"
 fi
+
+# 4f. Calamares disk installer (see installer/DISK-INSTALLER.md):
+#     the calamares package + its missing dependencies from their
+#     .debs (same dpkg-deb -x pattern as 4e; the calamares .deb has
+#     no maintainer scripts), plus the Pulpo settings, branding,
+#     module configs, the pulpo-config install script, and the
+#     desktop launcher. The -gles Qt variants are excluded: the
+#     desktop uses GLX, and unpacking both variants would
+#     overwrite the same files.
+echo "  [4f] Calamares disk installer"
+CAL_CLOSURE=$($APT_CACHE depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances calamares 2>/dev/null | grep "^[a-z0-9]" | sort -u)
+[ -n "$CAL_CLOSURE" ] || { echo "apt closure for calamares is empty -- package lists missing?" >&2; exit 1; }
+CAL_UNPACKED=""
+for pkg in $CAL_CLOSURE; do
+  case "$pkg" in
+    libqt5gui5-gles|libqt5quick5-gles) continue ;;  # GLX variant wins; see above
+  esac
+  if grep -q "^${pkg}:\?\(amd64\)\?$(printf '\t')" "$ISO_ROOT/casper/filesystem.manifest"; then
+    continue  # already in the base image
+  fi
+  deb=$(ls "$EXTRA_DEBS/${pkg}_"*.deb /tmp/apt-cache/archives/${pkg}_*.deb 2>/dev/null | head -1 || true)
+  if [ -z "$deb" ]; then
+    (cd "$EXTRA_DEBS" && $APT_GET download "$pkg" > /dev/null 2>&1) \
+      || { echo "could not fetch $pkg .deb (needs network + apt lists)" >&2; exit 1; }
+    deb=$(ls "$EXTRA_DEBS/${pkg}_"*.deb 2>/dev/null | head -1)
+  fi
+  [ -n "$deb" ] || { echo "missing .deb for $pkg" >&2; exit 1; }
+  dpkg-deb -x "$deb" "$ROOTFS"
+  CAL_UNPACKED="$CAL_UNPACKED $deb"
+done
+# Verify every file all the .debs claim to install landed (same
+# reason as 4e: packages cross-reference each other, so the check
+# runs after all of them are unpacked).
+for deb in $CAL_UNPACKED; do
+  dpkg-deb -c "$deb" | awk '{print $6}' | sed 's|^\./||' > "$WORK/.deb-files.txt"
+  while read -r f; do
+    [ -e "$ROOTFS/$f" ] || [ -L "$ROOTFS/$f" ] || { echo "missing after unpack: $f ($deb)" >&2; exit 1; }
+  done < "$WORK/.deb-files.txt"
+done
+[ -x "$ROOTFS/usr/bin/calamares" ] || { echo "calamares binary missing after unpack" >&2; exit 1; }
+echo "  [4f] calamares closure unpacked ($(echo $CAL_UNPACKED | wc -w) .debs)"
+
+# Pulpo Calamares settings + branding + module configs.
+echo "  [4f] Pulpo Calamares config + branding"
+mkdir -p "$ROOTFS/etc/calamares"
+cp "$REPO_ROOT/installer/calamares/settings.conf" "$ROOTFS/etc/calamares/settings.conf"
+cp -r "$REPO_ROOT/installer/calamares/modules" "$ROOTFS/etc/calamares/modules"
+cp -r "$REPO_ROOT/installer/calamares/branding" "$ROOTFS/etc/calamares/branding"
+# Branding images are copies of installer/assets/ (the manifest
+# is the source of truth; the welcome mockup is NOT used — see
+# installer/calamares/branding/pulpo/branding.desc).
+cp "$REPO_ROOT/installer/assets/pulpo-uefi-boot-logo-1024x1024.png" \
+   "$ROOTFS/etc/calamares/branding/pulpo/logo.png"
+cp "$REPO_ROOT/installer/assets/pulpo-uefi-boot-logo-1024x1024.png" \
+   "$ROOTFS/etc/calamares/branding/pulpo/icon.png"
+cp "$REPO_ROOT/installer/assets/pulpo-uefi-boot-splash-1920x1080.png" \
+   "$ROOTFS/etc/calamares/branding/pulpo/welcome.png"
+# The pulpo-config install script (run by the shellprocess module).
+mkdir -p "$ROOTFS/usr/share/pulpo-installer/calamares"
+cp "$REPO_ROOT/installer/calamares/pulpo-config-install.sh" \
+   "$ROOTFS/usr/share/pulpo-installer/calamares/pulpo-config-install.sh"
+chmod +x "$ROOTFS/usr/share/pulpo-installer/calamares/pulpo-config-install.sh"
+# Desktop launcher (live session): "Install Pulpo Preview".
+mkdir -p "$ROOTFS/usr/share/applications" "$ROOTFS/etc/skel/Desktop"
+cp "$REPO_ROOT/installer/calamares/install-pulpo.desktop" \
+   "$ROOTFS/usr/share/applications/install-pulpo.desktop"
+cp "$REPO_ROOT/installer/calamares/install-pulpo.desktop" \
+   "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop"
+# Verify the pieces Calamares needs are all in place.
+for f in etc/calamares/settings.conf \
+         etc/calamares/modules/partition.conf \
+         etc/calamares/modules/unpackfs.conf \
+         etc/calamares/modules/shellprocess_pulpo-config.conf \
+         etc/calamares/branding/pulpo/branding.desc \
+         etc/calamares/branding/pulpo/logo.png \
+         etc/calamares/branding/pulpo/welcome.png \
+         etc/calamares/branding/pulpo/show.qml \
+         usr/share/pulpo-installer/calamares/pulpo-config-install.sh \
+         usr/share/applications/install-pulpo.desktop; do
+  [ -f "$ROOTFS/$f" ] || { echo "calamares file missing: $f" >&2; exit 1; }
+done
+grep -q "branding: pulpo" "$ROOTFS/etc/calamares/settings.conf" \
+  || { echo "settings.conf does not select the pulpo branding" >&2; exit 1; }
+grep -q "shellprocess@pulpo-config" "$ROOTFS/etc/calamares/settings.conf" \
+  || { echo "settings.conf does not run the pulpo-config module" >&2; exit 1; }
+echo "  [4f] Calamares config + branding in place"
 
 # 5. Repack the live layer and refresh the size / checksum records.
 echo "== [5/8] repacking live layer =="
@@ -435,5 +551,6 @@ echo "== done =="
 ls -la "$OUT" "$OUT.sha256"
 cat "$OUT.sha256"
 echo "Next: installer/boot-test.sh --iso $OUT"
+echo "Then: installer/install-test.sh --iso $OUT (disk-install test; see installer/INSTALL-TEST.md)"
 echo "Note: the base ISO is kept at $BASE_ISO for rebuilds;"
 echo "delete it by hand when the built ISO is no longer needed."
