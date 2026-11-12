@@ -431,6 +431,15 @@ class BuildIntegrationTests(unittest.TestCase):
         text = _read(INSTALLER / "install-test.sh")
         self.assertIn('[A-Z]) key="shift-${ch,,}"', text)
 
+    def test_install_test_type_uses_single_monitor_connection(self):
+        # Regression: one nc per character let connections
+        # overlap when the monitor was slow, and the guest
+        # received the characters scrambled. --type must send
+        # all keys through a single nc connection, in order.
+        text = _read(INSTALLER / "install-test.sh")
+        self.assertIn("printf 'sendkey %s\\n'", text)
+        self.assertIn("} | nc -w", text)
+
     def test_build_populates_apt_lists_and_guards_empty_closure(self):
         # Regression: the build died silently at step 4f after a
         # reboot wiped /tmp/apt-state/lists, because the closure

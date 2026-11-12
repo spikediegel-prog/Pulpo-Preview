@@ -114,9 +114,13 @@ case "$SUBCMD" in
     echo "sent key: $SUBARG"
     exit 0;;
   type)
-    # Type a string by sending each character as a key. Slow under
-    # TCG (one monitor round-trip per char) but reliable; the
-    # installer fields are short (name, password, hostname).
+    # Type a string by sending each character as a key. All keys go
+    # through ONE monitor connection, in order: a separate nc per
+    # character lets connections overlap when the monitor is slow,
+    # and the guest then receives the characters scrambled. Slow
+    # under TCG, but reliable; the installer fields are short (name,
+    # password, hostname).
+    {
     for (( i=0; i<${#SUBARG}; i++ )); do
       ch="${SUBARG:$i:1}"
       case "$ch" in
@@ -156,9 +160,10 @@ case "$SUBCMD" in
         '}') key="shift-bracket_right";;
         *) key="$ch";;
       esac
-      mon "sendkey $key"
+      printf 'sendkey %s\n' "$key"
       sleep 0.2
     done
+    } | nc -w 5 127.0.0.1 "$(cat "$BTDIR/monitor.port" 2>/dev/null || echo "$MONITOR_PORT")" >/dev/null 2>&1 || true
     echo "typed: $SUBARG"
     exit 0;;
   mouse)
