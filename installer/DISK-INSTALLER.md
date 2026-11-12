@@ -94,6 +94,44 @@ VM, against the Ubuntu 24.04.5.1 base ISO):
   "Connect to internet" copy that conflicts with the
   no-internet-by-default gateway principle.
 
+## The partitionLayout requirement (the first install-test failure)
+
+`partition.conf` MUST carry a `partitionLayout` entry for the
+root partition:
+
+```yaml
+partitionLayout:
+    - name: "pulpo_root"
+      filesystem: unknown
+      mountPoint: "/"
+      size: 100%
+```
+
+(`filesystem: unknown` means "use `defaultFileSystemType`",
+ext4; `size: 100%` is 100% of the remaining space after the EFI
+system partition, which is created separately from
+`efiSystemPartition` / `efiSystemPartitionSize` and is NOT part
+of the layout.)
+
+Without it, erase-disk creates ONLY the 300 MiB EFI system
+partition and leaves the rest of the disk as free space. The
+failure mode is silent and misleading: the partition step's
+"After" preview shows only "EFI system 300.0 MiB FAT32 + Free
+Space", the mount module has no root partition to mount so the
+target (`/tmp/calamares-root-*`) stays a plain directory on the
+live session's RAM overlay, unpackfs rsyncs the squashfs layers
+into RAM, and the install dies part-way through unpackfs with
+"Failed to unpack image ... rsync failed with error code 13"
+once the overlay fills. The first install test (2026-11-12)
+failed exactly this way: the session log showed only the jobs
+"Create new 300MiB partition on /dev/vda" and "Set flags on
+partition /dev/vda1", `/dev/vda2` never appeared anywhere in the
+log, and `lsblk` confirmed the disk held only vda1. The
+`partitionLayout` shape is copied from
+`calamares-settings-lubuntu` (same Calamares 3.3.5, same base),
+whose root entry is the proven reference. Guarded by
+`test_partition_layout_has_root_taking_remaining_space`.
+
 ## The layered squashfs problem (the one real surprise)
 
 Ubuntu 24.04.5 desktop has NO single `casper/filesystem.squashfs`:

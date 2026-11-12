@@ -222,6 +222,41 @@ class ModuleConfigTests(unittest.TestCase):
         self.assertIn('initialPartitioningChoice: "erase"', text)
         self.assertIn('defaultFileSystemType: "ext4"', text)
 
+    def test_partition_layout_has_root_taking_remaining_space(self):
+        # Regression: without a partitionLayout entry for "/",
+        # erase-disk creates only the EFI system partition and
+        # leaves the rest as free space — the mount module then has
+        # no root partition, unpackfs rsyncs into a directory on
+        # the live session's RAM overlay, and the install fails
+        # (rsync error 13 once the overlay fills).
+        # See installer/DISK-INSTALLER.md.
+        text = _read(CALAMARES / "modules" / "partition.conf")
+        self.assertIn("partitionLayout:", text)
+        # Parse just the layout block: entries start with
+        # "    - name:" and end at the next top-level key.
+        entries = []
+        current = None
+        in_layout = False
+        for line in text.splitlines():
+            if line.startswith("partitionLayout:"):
+                in_layout = True
+                continue
+            if in_layout:
+                if re.match(r"^[a-zA-Z]", line):
+                    break
+                m = re.match(r'^\s+- name: "([^"]+)"', line)
+                if m:
+                    current = {"name": m.group(1)}
+                    entries.append(current)
+                    continue
+                m = re.match(r"^\s+(mountPoint|size|filesystem):\s*(\S+)",
+                             line)
+                if m and current is not None:
+                    current[m.group(1)] = m.group(2).strip('"')
+        roots = [e for e in entries if e.get("mountPoint") == "/"]
+        self.assertEqual(len(roots), 1, entries)
+        self.assertEqual(roots[0].get("size"), "100%")
+
     def test_welcome_has_no_internet_check(self):
         text = _read(CALAMARES / "modules" / "welcome.conf")
         self.assertIn("requiredStorage:    16", text)
