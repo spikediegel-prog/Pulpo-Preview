@@ -440,6 +440,17 @@ class BuildIntegrationTests(unittest.TestCase):
         self.assertIn("printf 'sendkey %s\\n'", text)
         self.assertIn("} | nc -w", text)
 
+    def test_install_test_attaches_usb_tablet(self):
+        # Regression: with only the PS/2 mouse, QEMU monitor
+        # mouse_move is relative to the guest pointer's last
+        # known position, so clicks landed in the wrong place
+        # (one opened Firefox from the dock) and the Calamares
+        # Next button could not be clicked. A usb-tablet is
+        # absolute, so monitor coordinates map 1:1 to the
+        # screen. Both phases need it.
+        text = _read(INSTALLER / "install-test.sh")
+        self.assertEqual(text.count("-device usb-tablet"), 2)
+
     def test_build_populates_apt_lists_and_guards_empty_closure(self):
         # Regression: the build died silently at step 4f after a
         # reboot wiped /tmp/apt-state/lists, because the closure

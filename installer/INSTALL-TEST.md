@@ -23,6 +23,15 @@ by minutes — so the script holds the VM up and the operator
 drives it, taking a screenshot at each step. The evidence is
 the screenshots + the logs, not a script verdict.
 
+The QEMU command attaches a USB tablet (`-device usb-tablet`)
+so monitor mouse coordinates are absolute. With only the
+default PS/2 mouse they are relative to the guest pointer's
+last known position and clicks land in the wrong place.
+Keyboard is the reliable path through the wizard regardless:
+`Alt+N` advances (Next), `Alt+I` starts the install from the
+summary, `Enter` confirms the install dialog, `Tab` moves
+between fields, and `--type` fills them.
+
 ### Phase install
 
 1. Boot the ISO with the blank disk attached. Wait for the live
