@@ -126,6 +126,34 @@ case "$SUBCMD" in
         '.' ) key="dot";;
         '/' ) key="slash";;
         '@' ) key="shift-2";;
+        [A-Z]) key="shift-${ch,,}";;
+        '~') key="shift-grave";;
+        '`') key="grave";;
+        '!') key="shift-1";;
+        '#') key="shift-3";;
+        '$') key="shift-4";;
+        '%') key="shift-5";;
+        '^') key="shift-6";;
+        '&') key="shift-7";;
+        '*') key="shift-8";;
+        '(') key="shift-9";;
+        ')') key="shift-0";;
+        ':') key="shift-semicolon";;
+        ';') key="semicolon";;
+        ',') key="comma";;
+        '?') key="shift-slash";;
+        '"') key="shift-apostrophe";;
+        "'") key="apostrophe";;
+        '\') key="backslash";;
+        '|') key="shift-backslash";;
+        '<') key="shift-comma";;
+        '>') key="shift-dot";;
+        '=') key="equal";;
+        '+') key="shift-equal";;
+        '[') key="bracket_left";;
+        ']') key="bracket_right";;
+        '{') key="shift-bracket_left";;
+        '}') key="shift-bracket_right";;
         *) key="$ch";;
       esac
       mon "sendkey $key"

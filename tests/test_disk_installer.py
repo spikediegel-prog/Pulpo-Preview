@@ -422,6 +422,15 @@ class BuildIntegrationTests(unittest.TestCase):
         self.assertIn('"$QEMU_IMG"', text)
         self.assertIn('for f in "$QEMU" "$QEMU_IMG"', text)
 
+    def test_install_test_type_handles_uppercase(self):
+        # Regression: --type passed uppercase through as a
+        # literal QEMU key name, which QEMU rejects, so
+        # "PulpoPreview" was typed as "ulporeview" and the
+        # config copy landed in a wrong-case directory. Uppercase
+        # must map to shift-<lower>.
+        text = _read(INSTALLER / "install-test.sh")
+        self.assertIn('[A-Z]) key="shift-${ch,,}"', text)
+
     def test_build_populates_apt_lists_and_guards_empty_closure(self):
         # Regression: the build died silently at step 4f after a
         # reboot wiped /tmp/apt-state/lists, because the closure
