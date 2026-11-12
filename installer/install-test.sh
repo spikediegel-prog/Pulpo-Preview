@@ -157,7 +157,7 @@ QEMU_IMG="$TOOLS/usr/bin/qemu-img"
 OVMF_CODE="$TOOLS/usr/share/OVMF/OVMF_CODE_4M.fd"
 OVMF_VARS_SRC="$TOOLS/usr/share/OVMF/OVMF_VARS_4M.fd"
 
-for f in "$QEMU" "$OVMF_CODE" "$OVMF_VARS_SRC"; do
+for f in "$QEMU" "$QEMU_IMG" "$OVMF_CODE" "$OVMF_VARS_SRC"; do
   [ -f "$f" ] || { echo "missing input: $f" >&2; exit 1; }
 done
 command -v nc >/dev/null 2>&1 || { echo "missing: nc" >&2; exit 1; }

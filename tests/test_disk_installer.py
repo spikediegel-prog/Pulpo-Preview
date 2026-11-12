@@ -414,6 +414,14 @@ class BuildIntegrationTests(unittest.TestCase):
         self.assertIn("user", text)  # user-mode NIC, not -net none
         self.assertIn("pulpo-test.qcow2", text)
 
+    def test_install_test_checks_qemu_img_up_front(self):
+        # Regression: qemu-img was missing from the tools prefix
+        # and the run died at disk creation instead of failing
+        # fast. The pre-flight check must cover qemu-img.
+        text = _read(INSTALLER / "install-test.sh")
+        self.assertIn('"$QEMU_IMG"', text)
+        self.assertIn('for f in "$QEMU" "$QEMU_IMG"', text)
+
     def test_build_populates_apt_lists_and_guards_empty_closure(self):
         # Regression: the build died silently at step 4f after a
         # reboot wiped /tmp/apt-state/lists, because the closure
