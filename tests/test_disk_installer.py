@@ -414,6 +414,18 @@ class BuildIntegrationTests(unittest.TestCase):
         self.assertIn("user", text)  # user-mode NIC, not -net none
         self.assertIn("pulpo-test.qcow2", text)
 
+    def test_build_populates_apt_lists_and_guards_empty_closure(self):
+        # Regression: the build died silently at step 4f after a
+        # reboot wiped /tmp/apt-state/lists, because the closure
+        # computation assumed a previous run had populated them and
+        # an empty closure killed the script via pipefail with no
+        # message. The build must populate the lists itself and
+        # fail loudly on an empty closure.
+        text = _read(INSTALLER / "build-iso.sh")
+        self.assertIn("apt-get update", text)
+        self.assertIn("/tmp/apt-state/lists", text)
+        self.assertIn("apt closure for calamares is empty", text)
+        self.assertIn("apt closure for $MISSING is empty", text)
 
 if __name__ == "__main__":
     unittest.main()

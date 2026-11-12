@@ -277,8 +277,19 @@ EXTRA_DEBS="$WORK/extra-debs"
 mkdir -p "$EXTRA_DEBS"
 APT_GET="apt-get -o Dir::State=/tmp/apt-state -o Dir::Cache=/tmp/apt-cache -o Dir::Etc::sourcelist=/dev/null -o Dir::Etc::sourceparts=/etc/apt/sources.list.d"
 APT_CACHE="apt-cache -o Dir::State=/tmp/apt-state -o Dir::Cache=/tmp/apt-cache -o Dir::Etc::sourcelist=/dev/null -o Dir::Etc::sourceparts=/etc/apt/sources.list.d"
+# The closure computations below need package lists in the build's
+# custom state dir. Those lists live in /tmp, so a reboot wipes them;
+# a build that assumes a previous run populated them dies silently
+# at step 4f (empty closure -> grep finds nothing -> pipefail under
+# set -e). Populate them here when missing instead of assuming.
+if [ ! -d /tmp/apt-state/lists ] || [ -z "$(ls -A /tmp/apt-state/lists 2>/dev/null)" ]; then
+  echo "  [apt] populating package lists (apt-get update)"
+  mkdir -p /tmp/apt-state/lists/partial /tmp/apt-cache/archives/partial
+  $APT_GET update > /tmp/apt-update.log 2>&1 || { echo "apt-get update failed; see /tmp/apt-update.log" >&2; exit 1; }
+fi
 if [ -n "$MISSING" ]; then
   CLOSURE=$($APT_CACHE depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances $MISSING 2>/dev/null | grep "^[a-z0-9]" | sort -u)
+  [ -n "$CLOSURE" ] || { echo "apt closure for $MISSING is empty -- package lists missing?" >&2; exit 1; }
   UNPACKED=""
   for pkg in $CLOSURE; do
     if grep -q "^${pkg}:\?\(amd64\)\?$(printf '\t')" "$ISO_ROOT/casper/filesystem.manifest"; then
@@ -327,6 +338,7 @@ fi
 #     overwrite the same files.
 echo "  [4f] Calamares disk installer"
 CAL_CLOSURE=$($APT_CACHE depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances calamares 2>/dev/null | grep "^[a-z0-9]" | sort -u)
+[ -n "$CAL_CLOSURE" ] || { echo "apt closure for calamares is empty -- package lists missing?" >&2; exit 1; }
 CAL_UNPACKED=""
 for pkg in $CAL_CLOSURE; do
   case "$pkg" in
