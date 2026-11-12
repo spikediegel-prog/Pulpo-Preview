@@ -483,8 +483,13 @@ class BuildIntegrationTests(unittest.TestCase):
         # Next button could not be clicked. A usb-tablet is
         # absolute, so monitor coordinates map 1:1 to the
         # screen. Both phases need it.
+        # The tablet also needs a USB bus: -machine q35 creates
+        # none by default, so a bare -device usb-tablet makes
+        # QEMU exit immediately with "No 'usb-bus' bus found".
+        # A qemu-xhci controller provides the bus, in both phases.
         text = _read(INSTALLER / "install-test.sh")
         self.assertEqual(text.count("-device usb-tablet"), 2)
+        self.assertEqual(text.count("-device qemu-xhci"), 2)
 
     def test_build_populates_apt_lists_and_guards_empty_closure(self):
         # Regression: the build died silently at step 4f after a

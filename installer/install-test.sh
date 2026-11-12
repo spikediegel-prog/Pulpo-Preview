@@ -233,6 +233,7 @@ if [ "$PHASE" = install ]; then
     -serial "file:$BTDIR/boot.log" \
     -netdev user,id=net0 -device virtio-net-pci,netdev=net0 \
     -device VGA,vgamem_mb=64 \
+    -device qemu-xhci \
     -device usb-tablet \
     >"$BTDIR/qemu.log" 2>&1 &
   QPID=$!
@@ -256,6 +257,7 @@ elif [ "$PHASE" = verify ]; then
     -serial "file:$BTDIR/boot-verify.log" \
     -netdev user,id=net0 -device virtio-net-pci,netdev=net0 \
     -device VGA,vgamem_mb=64 \
+    -device qemu-xhci \
     -device usb-tablet \
     >"$BTDIR/qemu-verify.log" 2>&1 &
   QPID=$!
