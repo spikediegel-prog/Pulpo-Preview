@@ -26,6 +26,18 @@ no lifecycle (`not_applicable`): refused before any effect, or an unknown
 that resolved cleanly, there is nothing to work. The state machine lives in
 docs/incident-channel.md.
 
+A human can also file a report of their own (slice (e)): a claim, in their
+words, about an effect they say happened. The claim is filed as a
+`human_incident_report` audit event (envelope
+`pulpo.incident-human-report.v1`) and derived into an IncidentRecord with
+source `human_report`, exactly like a machine feed -- same lifecycle, same
+audit trail, same frozen report. A claim never alters, reclassifies, or
+overwrites a machine-derived record; it may reference machine record ids,
+never rewrite them. The record carries who said it (`reporter`, recorded
+as given, not authenticated) and when they say it happened
+(`claimed_at_ns`, a claimed time, not a trusted timestamp); the record's
+`first_seen_ns` is when the claim was filed, never the claimed time.
+
 Feeds (see docs/incident-channel.md for the full table):
 
     canonical audit -- purchase_consequence_unknown is an incident until a
@@ -84,7 +96,7 @@ from .orchestrator import PulpoOrchestrator
 from .state import SQLiteKernelState
 
 KINDS = frozenset({"incident", "near_miss"})
-SOURCES = frozenset({"canonical_audit", "custody_store"})
+SOURCES = frozenset({"canonical_audit", "custody_store", "human_report"})
 RESOLUTIONS = frozenset({"unresolved", "resolved_cleanly", "confirmed_wrong", "not_applicable"})
 # Handling lifecycle states. `not_applicable` is for near-misses only: a
 # record that is already terminal needs no handling state.
@@ -98,8 +110,16 @@ _TRANSITION_TARGETS = {
     "close": {"resolved": "closed"},
     "reopen": {"resolved": "open", "closed": "open"},
 }
-INCIDENT_SCHEMA = "pulpo.incident-record.v2"
-REPORT_SCHEMA = "pulpo.incident-report.v2"
+INCIDENT_SCHEMA = "pulpo.incident-record.v3"
+REPORT_SCHEMA = "pulpo.incident-report.v3"
+# v2 snapshots still load (see load_incident_report): the record gains
+# claimed_at_ns and reporter in v3, both defaulted, and the schema
+# normalises to v3. v1 stays unloadable.
+LOADABLE_REPORT_SCHEMAS = frozenset({REPORT_SCHEMA, "pulpo.incident-report.v2"})
+# The human report envelope, filed as an audit event and derived into an
+# IncidentRecord with source `human_report` (see file_human_incident_report).
+HUMAN_REPORT_EVENT = "human_incident_report"
+HUMAN_REPORT_SCHEMA = "pulpo.incident-human-report.v1"
 
 # Audit events that are refusals: caught before any consequential effect.
 _AUDIT_NEAR_MISS_EVENTS = frozenset({"purchase_revalidation_failed", "permit_rejected", "approval_rejected"})
@@ -149,6 +169,13 @@ class IncidentRecord:
     lifecycle: str
     lifecycle_at_ns: int
     lifecycle_actor: str
+    # A human report only: the time the reporter says the incident
+    # happened, and who said it. Both are 0 / empty on machine-derived
+    # records -- a claimed time exists exactly when a reporter exists, and
+    # neither is ever a trusted timestamp. The record's first_seen_ns is
+    # when the claim was filed, never the claimed time.
+    claimed_at_ns: int = 0
+    reporter: str = ""
     schema: str = INCIDENT_SCHEMA
 
     def __post_init__(self):
@@ -169,7 +196,10 @@ class IncidentRecord:
                 or self.lifecycle not in LIFECYCLES
                 or (self.lifecycle == "not_applicable") != (self.kind == "near_miss")
                 or not _number(self.lifecycle_at_ns)
-                or type(self.lifecycle_actor) is not str):
+                or type(self.lifecycle_actor) is not str
+                or not _number(self.claimed_at_ns) or type(self.reporter) is not str
+                or (self.source == "human_report") != (self.claimed_at_ns > 0)
+                or (self.source == "human_report") != (self.reporter != "")):
             raise ValueError("invalid_incident_record")
 
 
@@ -365,6 +395,46 @@ def _derive_records(audit, custody):
                 timestamp_ns, timestamp_ns, _audit_anchors(record_hash, payload),
                 reason, "not_applicable", record_hash,
                 lifecycle, lifecycle_at_ns, lifecycle_actor))
+        elif event == HUMAN_REPORT_EVENT:
+            # A human claim, filed as an envelope and derived like any
+            # audit feed. The claim is validated strictly here: a malformed
+            # human event is not projected -- the claim stays in the audit
+            # as history, but an untrustworthy payload must not become a
+            # record. The filing function is the only writer and it
+            # validates, so a malformed event means tampering or a bug.
+            # The claimed time is recorded as claimed; first_seen_ns is
+            # the filing time (the audit timestamp), never the claim.
+            kind = payload.get("kind")
+            description = payload.get("description")
+            reporter = payload.get("reporter")
+            claimed_at_ns = payload.get("claimed_at_ns")
+            related = payload.get("related_record_ids")
+            if (payload.get("schema") != HUMAN_REPORT_SCHEMA
+                    or kind not in KINDS
+                    or type(description) is not str or not description.strip()
+                    or type(reporter) is not str or not reporter
+                    or type(claimed_at_ns) is not int or claimed_at_ns <= 0
+                    or type(related) is not list
+                    or any(type(item) is not str or not item for item in related)):
+                continue
+            anchors = [("audit_record", record_hash)]
+            for related_id in related:
+                # Only hashes cross into a record as anchors: the hash
+                # embedded in the related record id (its trailing
+                # component), when it is one.
+                candidate = related_id.rsplit(":", 1)[-1]
+                if _is_hash(candidate) and ("related_record", candidate) not in anchors:
+                    anchors.append(("related_record", candidate))
+            resolution = "unresolved" if kind == "incident" else "not_applicable"
+            prefix = "incident" if kind == "incident" else "near-miss"
+            human_record_id = f"{prefix}:{record_hash}"
+            lifecycle, lifecycle_at_ns, lifecycle_actor = _record_lifecycle(
+                lifecycle_states, human_record_id, kind, timestamp_ns)
+            records.append(IncidentRecord(
+                human_record_id, kind, "human_report", HUMAN_REPORT_EVENT,
+                timestamp_ns, timestamp_ns, tuple(anchors), description, resolution, record_hash,
+                lifecycle, lifecycle_at_ns, lifecycle_actor,
+                claimed_at_ns=claimed_at_ns, reporter=reporter))
     if custody is not None:
         for attempt_id, snapshot in attempts.items():
             if attempt_id in consumed_attempts:
@@ -427,7 +497,7 @@ def export_incident_report(orchestrator, destination, *, custody=None):
     return _publish_snapshot(snapshot, destination)
 
 
-def list_incidents(orchestrator, *, kind=None, resolution=None, lifecycle=None, since_ns=None, until_ns=None, custody=None):
+def list_incidents(orchestrator, *, kind=None, resolution=None, lifecycle=None, source=None, since_ns=None, until_ns=None, custody=None):
     """Pure query over the frozen derivation; the time window applies to first_seen_ns."""
     if kind is not None and kind not in KINDS:
         raise ValueError("invalid incident kind")
@@ -435,6 +505,8 @@ def list_incidents(orchestrator, *, kind=None, resolution=None, lifecycle=None, 
         raise ValueError("invalid incident resolution")
     if lifecycle is not None and lifecycle not in LIFECYCLES:
         raise ValueError("invalid incident lifecycle")
+    if source is not None and source not in SOURCES:
+        raise ValueError("invalid incident source")
     if since_ns is not None and not _number(since_ns):
         raise ValueError("invalid since_ns")
     if until_ns is not None and not _number(until_ns):
@@ -447,6 +519,7 @@ def list_incidents(orchestrator, *, kind=None, resolution=None, lifecycle=None, 
         if (kind is None or record.kind == kind)
         and (resolution is None or record.resolution == resolution)
         and (lifecycle is None or record.lifecycle == lifecycle)
+        and (source is None or record.source == source)
         and (since_ns is None or record.first_seen_ns >= since_ns)
         and (until_ns is None or record.first_seen_ns <= until_ns)
     )
@@ -523,14 +596,93 @@ def transition_incident(orchestrator, record_id, transition, *, actor, reason=No
     raise ValueError("incident_record_not_found")
 
 
+def file_human_incident_report(orchestrator, *, kind, reporter, description, claimed_at_ns, related_record_ids=(), custody=None):
+    """File a human report: a claim, in the reporter's words, about an effect
+    they say happened.
+
+    The claim enters the channel as a `human_incident_report` audit event
+    (envelope `pulpo.incident-human-report.v1`) and is derived into an
+    IncidentRecord with source `human_report`, exactly like a machine feed:
+    the same lifecycle, the same audit trail, the same frozen report. A
+    claim never alters, reclassifies, or overwrites a machine-derived
+    record -- it may reference machine record ids, never rewrite them.
+
+    `reporter` is recorded as given, conventionally `operator:<name>`; it
+    is attribution, not authentication -- there is no credential check
+    here. `claimed_at_ns` is the time the reporter says the incident
+    happened: a claimed time, not a trusted timestamp, recorded as claimed
+    even if it is in the past, the distant past, or the future. The
+    record's `first_seen_ns` is when the claim was filed, never the
+    claimed time. `related_record_ids` must name records in the current
+    frozen report; they are carried as anchors (hashes only) and in the
+    audit payload. A failed append raises -- like a lifecycle transition,
+    filing is an explicit operator action, and silent failure would leave
+    the operator believing the report was filed when it was not. Returns
+    the derived record.
+    """
+    if type(orchestrator) is not PulpoOrchestrator:
+        raise TypeError("canonical PulpoOrchestrator required")
+    if kind not in KINDS:
+        raise ValueError("invalid incident kind")
+    if type(reporter) is not str or not reporter:
+        raise ValueError("invalid incident reporter")
+    if type(description) is not str or not description.strip():
+        raise ValueError("invalid incident description")
+    if type(claimed_at_ns) is not int or claimed_at_ns <= 0:
+        raise ValueError("invalid incident claimed_at_ns")
+    if type(related_record_ids) not in (tuple, list):
+        raise ValueError("invalid incident related_record_ids")
+    related = []
+    for record_id in related_record_ids:
+        if type(record_id) is not str or not record_id:
+            raise ValueError("invalid incident related_record_ids")
+        if record_id not in related:
+            related.append(record_id)
+    if custody is not None and type(custody) is not SQLiteGovernanceCustody:
+        raise TypeError("invalid custody store")
+    report = freeze_incident_report(orchestrator, custody=custody)
+    known = {record.record_id for record in report.records}
+    for record_id in related:
+        if record_id not in known:
+            raise ValueError("incident_related_record_not_found")
+    kernel = orchestrator.kernel
+    kernel._state.append(  # noqa: SLF001 - existing canonical audit seam
+        HUMAN_REPORT_EVENT,
+        {
+            "schema": HUMAN_REPORT_SCHEMA,
+            "kind": kind,
+            "reporter": reporter,
+            "description": description,
+            "claimed_at_ns": claimed_at_ns,
+            "related_record_ids": related,
+        },
+        time.time_ns(),
+    )
+    # The append is synchronous and the audit is append-only: the last
+    # record is the event just filed, and its hash is the new record's
+    # anchor and id.
+    filed_hash = kernel.audit[-1]["hash"]
+    updated = freeze_incident_report(orchestrator, custody=custody)
+    for item in updated.records:
+        if item.anchor_hash == filed_hash:
+            return item
+    raise ValueError("incident_record_not_found")
+
+
 def load_incident_report(path):
     from .mcp_plugin import read_snapshot_document
     value = read_snapshot_document(path)
     if set(value) != {field.name for field in fields(IncidentReport)}:
         raise ValueError("snapshot_fields_invalid")
+    if value["schema"] not in LOADABLE_REPORT_SCHEMAS:
+        raise ValueError("snapshot_fields_invalid")
+    # v2 snapshots load: the record gains claimed_at_ns and reporter in v3,
+    # both defaulted, and the schema normalises to v3. v1 stays unloadable.
+    value["schema"] = REPORT_SCHEMA
+    record_fields = {field.name for field in fields(IncidentRecord)}
     if (type(value["records"]) is not list
             or any(type(record) is not dict
-                   or set(record) != {field.name for field in fields(IncidentRecord)}
+                   or set(record) not in (record_fields, record_fields - {"claimed_at_ns", "reporter"})
                    for record in value["records"])):
         raise ValueError("snapshot_nested_invalid")
     records = []
@@ -539,6 +691,11 @@ def load_incident_report(path):
         if (type(anchors) is not list
                 or any(type(anchor) is not list or len(anchor) != 2 for anchor in anchors)):
             raise ValueError("snapshot_nested_invalid")
+        if record.get("schema") not in (INCIDENT_SCHEMA, "pulpo.incident-record.v2"):
+            raise ValueError("snapshot_nested_invalid")
+        record["schema"] = INCIDENT_SCHEMA
+        record.setdefault("claimed_at_ns", 0)
+        record.setdefault("reporter", "")
         records.append(IncidentRecord(
             **{**record, "anchors": tuple((anchor[0], anchor[1]) for anchor in anchors)}))
     value["records"] = tuple(records)

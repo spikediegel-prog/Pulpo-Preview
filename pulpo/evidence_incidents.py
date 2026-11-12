@@ -1,7 +1,7 @@
 """Bounded cached incident browser over a frozen incident report.
 
 Read-only, in the EvidenceEvents pattern: the component loads one frozen
-`pulpo.incident-report.v2` JSON export produced by the trusted owner and
+`pulpo.incident-report.v3` JSON export produced by the trusted owner and
 renders its records. It never opens a database, never appends to the audit,
 and offers no lifecycle transition -- acknowledging, resolving or closing
 an incident stays a library-level operator action, not a button here.

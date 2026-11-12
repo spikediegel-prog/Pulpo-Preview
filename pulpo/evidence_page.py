@@ -161,7 +161,7 @@ class EvidencePage:
         center.text(page, "Incidents", "Heading.TLabel")
         center.text(page, "Frozen incident report, derived from the canonical audit and the custody store. "
                     "Read-only: this page never authorizes, never permits, never changes lifecycle state. "
-                    "Select a pulpo.incident-report.v2 JSON export produced by the trusted owner; "
+                    "Select a pulpo.incident-report.v3 JSON export produced by the trusted owner; "
                     "the page re-reads it while visible. No lifecycle transition is offered here.",
                     "Muted.TLabel")
         from .evidence_incidents import EvidenceIncidents

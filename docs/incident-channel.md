@@ -6,6 +6,9 @@ assessed have stable arrangements here, and Pulpo had none — it recorded the
 unknown an incident report would cite, but had no reporting channel and no
 near-miss log. This module (`pulpo/incident_channel.py`) is that channel's
 first half: the record, derived from outcomes Pulpo already records.
+Slice (e) adds the second half: a person can file a report of their own
+(see Human report path, below) -- a claim, in their words, about an
+effect they say happened.
 
 It reports to nobody by itself. There is no external reporting, no sharing,
 no notification, no network call. A human — or a later, separately governed
@@ -43,12 +46,16 @@ events (see Lifecycle, below). Near-misses carry no lifecycle
 | custody store | attempt `attempt_authorized` / `attempt_claimed` / `request_transmitted` (latest state, no later state) | incident | unresolved | attempt authorization hash | HMAC-signed transition receipts |
 | custody store | attempt `reconciled_failure` | incident | confirmed_wrong | attempt authorization hash | HMAC-signed transition receipts |
 | custody store | attempt `reconciled_success` | — (no record) | — | — | resolver only |
+| human report | `human_incident_report` | incident | unresolved | audit record hash | hash chain (claim, not evidence) |
+| human report | `human_incident_report` | near-miss | not_applicable | audit record hash | hash chain (claim, not evidence) |
 
 Rules:
 
 - One record per source audit event (`incident:<audit-record-hash>` or
   `near-miss:<audit-record-hash>`); one record per custody attempt
-  (`incident:custody:<attempt_id>`, the attempt id already being a hash).
+  (`incident:custody:<attempt_id>`, the attempt id already being a hash);
+  one record per `human_incident_report` event
+  (`incident:<audit-record-hash>` or `near-miss:<audit-record-hash>`).
 - Merge: when a custody attempt has a `purchase_consequence_unknown` audit
   event carrying its `custody_attempt_id`, exactly one record is emitted,
   anchored on the audit event, with resolution taken from the attempt's
@@ -81,6 +88,11 @@ its `source` so a reader can tell which anchor backs it:
   and the HMAC-signed transition receipts. They are **not** hash-chained to
   the canonical audit. Do not present custody-derived records as
   audit-backed.
+- **Human-reported** records are anchored by the audit record hash of the
+  `human_incident_report` event and the hash chain -- the anchor proves
+  the claim was filed, when it was filed, and by whom as recorded. It
+  proves nothing about whether what the claim says is true. A human
+  report is a claim, not evidence: never present it as a verified outcome.
 
 Custody transitions reach the canonical audit wherever an evidence
 projector is wired: `DomainCommerceExecutor` takes an `evidence_projector`
@@ -154,15 +166,79 @@ Rules:
   a new record id, and the earlier lifecycle events remain in the audit as
   history. A custody-anchored record that reconciles to success vanishes
   the same way.
-- Schema: records and reports are now v2 (`pulpo.incident-record.v2`,
-  `pulpo.incident-report.v2`): each record carries `lifecycle`,
+- Schema: records and reports are now v3 (`pulpo.incident-record.v3`,
+  `pulpo.incident-report.v3`): each record carries `lifecycle`,
   `lifecycle_at_ns` (when the current state began; the record's
   `first_seen_ns` when never transitioned) and `lifecycle_actor` (who made
-  the latest transition; empty when never transitioned). v1 snapshots are
-  not loadable -- the channel is days old and library-only, so no durable
-  v1 reports exist.
+  the latest transition; empty when never transitioned), plus the human
+  fields `claimed_at_ns` (the time the reporter says the incident
+  happened; 0 on machine-derived records) and `reporter` (who filed the
+  claim; empty on machine-derived records). v2 snapshots still load: the
+  loader fills both fields with their defaults and normalises the schema
+  to v3. v1 snapshots are not loadable -- the channel is days old and
+  library-only, so no durable v1 reports exist.
 - `list_incidents` accepts a `lifecycle=` filter alongside `kind=` and
-  `resolution=`.
+  `resolution=`, and a `source=` filter (`canonical_audit`,
+  `custody_store`, `human_report`).
+
+## Human report path (slice (e))
+
+A person files a report of their own -- the channel's second half. The
+rules are the point of the slice, so they are stated plainly:
+
+- **A human report is a claim, not evidence.** It records what a person
+  says happened, in their words. It never alters, reclassifies, or
+  overwrites a machine-derived record. It may reference machine record
+  ids; it never rewrites them. Filing a report that references a machine
+  incident leaves that incident exactly as it was -- same kind, same
+  resolution, same lifecycle -- and transitioning the human record
+  (acknowledge, resolve, close, reopen) touches only the human record.
+- **The claim enters the same channel.** Filing appends a
+  `human_incident_report` audit event carrying the envelope
+  (`pulpo.incident-human-report.v1`: kind, reporter, description,
+  claimed time, related record ids) and the derivation converts it into
+  an IncidentRecord with source `human_report`, exactly like a machine
+  feed. The record enters the same lifecycle (open for an incident,
+  `not_applicable` for a near-miss) and the same audit trail: every
+  transition is an `incident_lifecycle` audit event, and a failed append
+  raises -- filing is an explicit operator action, and silent failure
+  would leave the operator believing the report was filed when it was
+  not.
+- **The reporter is attribution, not authentication.** The reporter is
+  recorded as given, conventionally `operator:<name>`; there is no
+  credential check, and the record never claims the reporter was
+  authenticated. The same holds for the actor on every lifecycle
+  transition.
+- **The claimed time is recorded as claimed.** `claimed_at_ns` is the
+  time the reporter says the incident happened. It is a claim, not a
+  trusted timestamp: it is recorded as given even if it is in the past,
+  the distant past, or the future. The record's `first_seen_ns` is when
+  the claim was filed, never the claimed time. A claimed time is never
+  used to order, backdate, or re-time anything.
+- **Related records are references, not links of authority.** Related
+  record ids must name records in the current frozen report at filing
+  time; they are carried as `related_record` anchors (hashes only, the
+  hash embedded in each related record id) and in the audit payload. A
+  related record that later vanishes (a kind flip, a custody resolution)
+  does not invalidate the human record: the reference stays in the audit
+  as history.
+- **A malformed human event is not projected.** Derivation validates the
+  envelope strictly (schema, kind, non-empty description and reporter,
+  positive claimed time, related ids a list of strings). An event that
+  fails validation produces no record -- the claim stays in the audit as
+  history, but an untrustworthy payload must not become a record. The
+  filing function is the only writer and it validates, so a malformed
+  event means tampering or a bug.
+- **Filing is a library call and a CLI command.**
+  `file_human_incident_report(orchestrator, *, kind, reporter,
+  description, claimed_at_ns, related_record_ids=(), custody=None)`
+  returns the derived record. `pulpo incidents report --state PATH --kind
+  ... --reporter ... --description ... --claimed-at ISO [--related ...]`
+  is the CLI form (see Surfaces). There is no filing form on the
+  Evidence page: the page is read-only over frozen reports and has no
+  live orchestrator, so filing there would break the page's contract.
+  There is no external reporting, no regulator notification, no sharing:
+  the frozen report is read locally, and sending is still open.
 
 ## What the channel does not do
 
@@ -179,31 +255,54 @@ Rules:
   `TrustedDomainExecutor` path: its projector is still only wired in tests,
   so worker-driven attempts are visible here only because the channel reads
   the store directly. The live commerce path does project (see above).
+- No filing form on the Evidence page: the page is read-only over frozen
+  reports and has no live orchestrator. Filing is a library call and a
+  CLI command (see Human report path, above); putting a write form on a
+  read-only page would break the page's contract.
 
 
 ## Surfaces (slice (d))
 
-Two read-only surfaces read a frozen `pulpo.incident-report.v2` snapshot
+Two read-only surfaces read a frozen `pulpo.incident-report.v3` snapshot
 (produced by `export_incident_report`); neither opens a database, appends
-to the audit, or offers a lifecycle transition.
+to the audit, or offers a lifecycle transition. Slice (e) adds one write
+surface, `pulpo incidents report`, described under the CLI below.
 
 ### CLI: `pulpo incidents`
 
 - `pulpo incidents list [--report PATH] [--kind incident|near_miss]
-  [--resolution ...] [--lifecycle ...] [--since ISO] [--until ISO]` --
+  [--resolution ...] [--lifecycle ...] [--source canonical_audit|custody_store|human_report]
+  [--since ISO] [--until ISO]` --
   one line per matching record. `--report` defaults to
   `evidence/incident_report.json`; the time window applies to
   `first_seen_ns`, as in `list_incidents`.
 - `pulpo incidents show [--report PATH] <record_id>` -- full record
   detail (source, reason, resolution, lifecycle with actor, anchors).
+  For a human-reported record it also prints the reporter and the
+  claimed time, labelled as reported, not verified.
 - `pulpo incidents summary [--report PATH]` -- counts from the report
   header (incidents, near-misses, unresolved, resolved cleanly,
   confirmed wrong) plus audit validity.
+- `pulpo incidents report --state PATH --kind incident|near_miss
+  --reporter operator:<name> --description TEXT --claimed-at ISO
+  [--related RECORD_ID ...]` -- files a human report into the canonical
+  audit and prints the new record id. This is the channel's first write
+  surface: it opens the state file the operator points at (`--state`
+  has no default -- there is no canonical deployment layout to guess
+  at -- and a missing file, or a file that is not a Pulpo kernel state,
+  is refused, never created). The kernel is constructed with a
+  throwaway read-only policy: filing appends through the direct state
+  seam, as `transition_incident` does, not through a governed action,
+  so the policy is not consulted; the audit chain hash is unkeyed
+  SHA-256, so the constructed kernel appends validly. The reporter is
+  recorded as given, not authenticated.
 - Exit codes follow the existing CLI: 0 on success; a missing or invalid
   report, an unknown record id, or a bad `--since`/`--until` is a
   `ValueError` and exits through `parser.error`, as `pulpo verify` and
   `pulpo setup` already do. An empty report lists zero records, not an
-  error.
+  error. A failed filing (bad kind, reporter, description, claimed time,
+  or an unknown related record id) is likewise a `ValueError` and exits
+  the same way.
 
 ### Control Center Evidence page (Tkinter)
 
@@ -219,7 +318,9 @@ are (`Governance`, `Evidence`, providers).
 
 The Qt Control Center lives in a separate repo (this repo's Control
 Center is Tkinter); the Qt Evidence page is a follow-on there, not in
-this slice.
+this slice. Neither page offers filing: both are read-only over frozen
+reports, and filing is a CLI/library action (see Human report path,
+above).
 
 ## The live path now reconciles (incident-reconciliation slice)
 
@@ -278,16 +379,16 @@ not exist upstream, and neither does this channel. Porting it upstream
 costs porting `evidence_observation` / `evidence_export` plus this module
 (and the `attempts()` read-only enumeration on the custody store). The
 channel itself depends only on the canonical audit columns, the custody
-store, and the `_publish_snapshot` frozen-file boundary — no schema change
-on either side.
+store, and the `_publish_snapshot` frozen-file boundary. Slice (e) moves
+the record to v3 (`claimed_at_ns` and `reporter` on the record); a port
+of the v2 channel needs those two fields carried over to stay in step,
+and v2 snapshots load into v3 with both fields defaulted.
 
 ## Open questions
 
-- Human report path: who reads the frozen report, and what (if anything)
-  is sent where? Nothing in this module answers that.
-- Human report path: who reads the frozen report, and what (if anything)
-  is sent where? Nothing in this module answers that. (The CLI and the
-  Evidence page are the local reading surfaces; sending is still open.)
+- Human report path: the CLI and the library file reports locally, and
+  the frozen report is the local reading surface. What (if anything) is
+  sent where is still open -- nothing in this module answers that.
 - Evidence-projector wiring on the `TrustedDomainExecutor` path, so
   worker-driven custody transitions reach the canonical audit too (the live
   commerce path already projects when a projector is wired). Constructing

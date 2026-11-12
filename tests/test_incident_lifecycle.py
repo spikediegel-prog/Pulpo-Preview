@@ -409,9 +409,9 @@ class LifecycleSchemaTests(unittest.TestCase):
         self.kernel = GovernanceKernel(Policy(frozenset({"read"}), 0), secret=b"test-only", state=self.backend)
         self.owner = PulpoOrchestrator(self.kernel)
 
-    def test_schemas_are_v2(self):
-        self.assertEqual("pulpo.incident-record.v2", INCIDENT_SCHEMA)
-        self.assertEqual("pulpo.incident-report.v2", REPORT_SCHEMA)
+    def test_schemas_are_v3(self):
+        self.assertEqual("pulpo.incident-record.v3", INCIDENT_SCHEMA)
+        self.assertEqual("pulpo.incident-report.v3", REPORT_SCHEMA)
 
     def test_export_load_round_trip_preserves_lifecycle(self):
         self.backend.append("purchase_consequence_unknown",

@@ -1,8 +1,10 @@
 """`pulpo incidents` CLI: list / show / summary over a frozen incident report.
 
-Read-only: the CLI loads a frozen `pulpo.incident-report.v2` snapshot
-(produced by `export_incident_report`) and never opens a database, never
-appends to the audit, and offers no lifecycle transition.
+Read-only, except for `report`: list/show/summary load a frozen
+`pulpo.incident-report.v3` snapshot (produced by `export_incident_report`)
+and never open a database, never append to the audit, and offer no
+lifecycle transition. `report` files a human incident report into the
+canonical audit (see `pulpo incidents report --help`).
 """
 import argparse
 import io
