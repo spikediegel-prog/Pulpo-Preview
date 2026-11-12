@@ -426,6 +426,14 @@ class BuildIntegrationTests(unittest.TestCase):
         self.assertIn("/tmp/apt-state/lists", text)
         self.assertIn("apt closure for calamares is empty", text)
         self.assertIn("apt closure for $MISSING is empty", text)
+    def test_unpack_check_accepts_cross_layer_symlinks(self):
+        # Regression: dbus-x11/AUTHORS.gz is a symlink into
+        # libdbus-1-3, whose files live in another squashfs layer
+        # the build does not unpack. The old [ -e ] check followed
+        # the link and failed the build on a correctly installed
+        # symlink. The check must accept a symlink entry.
+        text = _read(INSTALLER / "build-iso.sh")
+        self.assertIn('[ -L "$ROOTFS/$f" ]', text)
 
 if __name__ == "__main__":
     unittest.main()

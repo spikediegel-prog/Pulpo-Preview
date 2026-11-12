@@ -307,6 +307,12 @@ if [ -n "$MISSING" ]; then
     UNPACKED="$UNPACKED $deb"
   done
   # Verify every file all the .debs claim to install landed. This
+  # accepts a symlink entry even if its target does not resolve
+  # inside this single live layer: a .deb may link into a package
+  # already in the base image whose files live in another squashfs
+  # layer (e.g. dbus-x11/AUTHORS.gz -> ../libdbus-1-3/AUTHORS.gz).
+  # The link itself is installed correctly and the target exists
+  # in the composed live system; only a genuinely absent entry fails.
   # runs AFTER all of them are unpacked: packages cross-reference
   # each other (e.g. blt's changelog is a symlink into
   # tk8.6-blt2.5), so a per-package check would fail on entries
@@ -316,7 +322,7 @@ if [ -n "$MISSING" ]; then
   for deb in $UNPACKED; do
     dpkg-deb -c "$deb" | awk '{print $6}' | sed 's|^\./||' > "$WORK/.deb-files.txt"
     while read -r f; do
-      [ -e "$ROOTFS/$f" ] || { echo "missing after unpack: $f ($deb)" >&2; exit 1; }
+      [ -e "$ROOTFS/$f" ] || [ -L "$ROOTFS/$f" ] || { echo "missing after unpack: $f ($deb)" >&2; exit 1; }
     done < "$WORK/.deb-files.txt"
   done
   # The tkinter extension must be importable: the live session's
@@ -363,7 +369,7 @@ done
 for deb in $CAL_UNPACKED; do
   dpkg-deb -c "$deb" | awk '{print $6}' | sed 's|^\./||' > "$WORK/.deb-files.txt"
   while read -r f; do
-    [ -e "$ROOTFS/$f" ] || { echo "missing after unpack: $f ($deb)" >&2; exit 1; }
+    [ -e "$ROOTFS/$f" ] || [ -L "$ROOTFS/$f" ] || { echo "missing after unpack: $f ($deb)" >&2; exit 1; }
   done < "$WORK/.deb-files.txt"
 done
 [ -x "$ROOTFS/usr/bin/calamares" ] || { echo "calamares binary missing after unpack" >&2; exit 1; }
