@@ -119,14 +119,16 @@ failure mode is silent and misleading: the partition step's
 "After" preview shows only "EFI system 300.0 MiB FAT32 + Free
 Space", the mount module has no root partition to mount so the
 target (`/tmp/calamares-root-*`) stays a plain directory on the
-live session's RAM overlay, unpackfs rsyncs the squashfs layers
-into RAM, and the install dies part-way through unpackfs with
-"Failed to unpack image ... rsync failed with error code 13"
-once the overlay fills. The first install test (2026-11-12)
-failed exactly this way: the session log showed only the jobs
-"Create new 300MiB partition on /dev/vda" and "Set flags on
-partition /dev/vda1", `/dev/vda2` never appeared anywhere in the
-log, and `lsblk` confirmed the disk held only vda1. The
+live session's RAM overlay, and there is nowhere real to install
+to. The first install test (2026-11-12) failed exactly this way:
+the session log showed only the jobs "Create new 300MiB
+partition on /dev/vda" and "Set flags on partition /dev/vda1",
+`/dev/vda2` never appeared anywhere in the log, and `lsblk`
+confirmed the disk held only vda1. (That run's unpackfs rsync
+also failed with error 13 — but that was the whiteout bug, not
+the missing root partition; see "The whiteout failure" below.
+The partitionLayout fix is still necessary: without it there is
+no root partition and no real install target.) The
 `partitionLayout` shape is copied from
 `calamares-settings-lubuntu` (same Calamares 3.3.5, same base),
 whose root entry is the proven reference. Guarded by
@@ -157,9 +159,75 @@ verified against the base ISO with `xorriso -find /casper`.
 Known risk, stated plainly: if a layer deletes a file from a
 lower layer, the diff contains an overlay whiteout, and a
 squashfs-copy does not reproduce a deletion the way the overlay
-does. The install test (boot the installed system, compare
-against the live session) is the check that this does not bite
-in practice; no whiteout problem has been observed.
+does. **This bit, twice** — see "The whiteout failure" below.
+The install test is the check; it failed on the whiteout.
+
+## The whiteout failure (the second install-test failure, and the first)
+
+Calamares' unpackfs copies each squashfs layer with rsync
+(`-aHAXSr`, `--filter=-x trusted.overlay.*`). rsync does NOT
+understand overlayfs whiteouts. A whiteout is a char device
+with major/minor 0/0 that means "delete this path from the
+lower layers". rsync copies it as a char-device file instead
+of deleting the target path — and it FAILS outright when the
+whiteout targets a non-empty directory, because it cannot
+replace the directory with the char device.
+
+The failing layer is `minimal.no-languages.squashfs` (the 6th
+of 21, after the five language layers). It holds 3,808
+whiteout char devices (verified: `find <layer> -type c | wc -l`
+= 3808), mostly CJK font configs. The fatal one is a whiteout
+for the whole directory `usr/share/help-langpack`:
+
+- In the layer: `c--------- 3808 root root 0, 0 ... /usr/share/help-langpack`
+  (a whiteout char device, "delete this directory").
+- On the target (already copied from earlier layers):
+  `usr/share/help-langpack/` is a non-empty directory holding
+  whiteout char devices (`de`, `en_AU`, ...).
+
+rsync fails with (reproduced by hand, same command, same
+layer, to the mounted ext4 target):
+
+```
+could not make way for new regular file: usr/share/help-langpack
+Hlink node data for 17 already has path:etc/fonts/conf.avail/25-arphic-ukai-render.conf
+rsync error: errors with program diagnostics (code 13) at hlink.c(539) [generator=3.2.7]
+cannot delete non-empty directory: usr/share/help-langpack
+```
+
+Calamares reports it as `Failed to unpack image
+"/cdrom/casper/minimal.no-languages.squashfs". rsync failed
+with error code 13.` Both install-test runs died on this
+exact layer and error — run 1 (no root partition, target was a
+RAM dir) and run 2 (root partition present, target was the real
+ext4 disk, 130 MB written before the failure). The partition
+fix did not touch this; the whiteout is a separate, second bug.
+A manual rsync of the same layer to a scratch dir on the live
+overlay SUCCEEDS (all 3,808 whiteouts copied as char devices,
+51 MB) — the failure needs the target to already hold the
+directory the whiteout deletes, which is exactly the
+multi-layer install case.
+
+**Recommended fix (not yet implemented): build a single
+merged `filesystem.squashfs`, Lubuntu-style.** Lubuntu's
+`unpackfs.conf` (same Calamares 3.3.5, same Ubuntu 24.04 base)
+references one file, `/cdrom/casper/filesystem.squashfs` —
+their ISOs are built single-layer. Merge the 21 layers at
+build time (mount them as an overlayfs, in reverse-alphabetical
+lowerdir order so the last-alphabetical layer is topmost, as
+casper does; then `mksquashfs` the merged view), customise
+that one squashfs as the build does today, and point
+`unpackfs.conf` at it. The kernel's overlayfs resolves
+whiteouts (and opaque dirs) during the merge, so the merged
+squashfs has no whiteouts and no cross-layer hard-link
+conflicts, and unpackfs' single rsync copies a coherent
+filesystem. The 21-layer `unpackfs.conf` and the
+`test_all_casper_layers_listed_in_alphabetical_order` test
+would be replaced by the single-file form. Do NOT fix this by
+excluding whiteout paths from the rsync: a path that is a
+whiteout in one layer can be a real file in a later layer, so
+a blanket exclude can omit files that should be present; only
+the ordered merge respects that.
 
 ## Config carry-through (the wizard's answers reach the disk)
 

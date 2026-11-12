@@ -27,10 +27,15 @@ The QEMU command attaches a USB tablet (`-device usb-tablet`)
 so monitor mouse coordinates are absolute. With only the
 default PS/2 mouse they are relative to the guest pointer's
 last known position and clicks land in the wrong place.
+A `qemu-xhci` USB controller is also attached: `-machine q35`
+creates no USB bus by default, so a bare `-device usb-tablet`
+makes QEMU exit immediately with "No 'usb-bus' bus found".
 Keyboard is the reliable path through the wizard regardless:
 `Alt+N` advances (Next), `Alt+I` starts the install from the
 summary, `Enter` confirms the install dialog, `Tab` moves
-between fields, and `--type` fills them.
+between fields, and `--type` fills them. Note: `--type` does
+not send `~` (tilde) — it arrives as `/` — so use full paths
+(`/home/ubuntu/...`) when typing in the live session, never `~`.
 
 ### Phase install
 
@@ -90,27 +95,50 @@ between fields, and `--type` fills them.
 
 ## Results
 
-### Run (fill in after the test)
+### Run 1 — 2026-11-12 ~08:04–08:10 UTC — FAILED (missing partitionLayout)
 
 | Item | Value |
 | --- | --- |
-| ISO | (path, size, SHA-256) |
-| Date (UTC) | |
+| ISO | `~/pulpo-workspace/iso-build/pulpo-preview-0.1.0-live-diskinstall-amd64.iso`, 6,361,186,304 bytes, SHA-256 `5e901eef599c4bdea80942fd4599d4cde63e96a7ab8a513b39ebcb386a5a1a46` |
+| Date (UTC) | 2026-11-12 |
 | QEMU / OVMF | 8.2.2 TCG, OVMF_CODE_4M.fd, `-cpu qemu64`, 25 GB qcow2, user NIC |
-| Live desktop reached | |
-| Config created in the live session | |
-| Calamares ran (welcome → summary → install) | |
-| Erase-disk install finished | |
-| Installed system booted (GRUB → gdm → desktop) | |
-| Control Center opens on the installed system (Qt) | |
-| Config applied: NTP servers | |
-| Config applied: netplan DHCP | |
-| Config applied: storage record | |
-| Config files present (`/etc/pulpo/`, user profile) | |
-| EFI boot entry "pulpo" present | |
-| Verdict | |
+| Live desktop reached | Yes — Qt Control Center open and live (CPU 79.6%→84.0%, Memory ~55%) |
+| Config created in the live session | Yes — example config copied to `~/.config/PulpoPreview/control-center-customer-config.json` |
+| Calamares ran (welcome → summary → install) | Yes — Welcome, Keyboard (us), Partitions (erase-disk), Users (Pulpo Test / pulpo / pulpo-test / pulpotest1), Summary, Install started 08:04 UTC |
+| Erase-disk install finished | **No — FAILED.** Progress 8% ("Filling up filesystems.") then: `Installation Failed — Failed to unpack image "/cdrom/casper/minimal.no-languages.squashfs". rsync failed with error code 13.` |
+| Installed system booted (GRUB → gdm → desktop) | Not reached (install failed) |
+| Control Center opens on the installed system (Qt) | Not reached |
+| Config applied: NTP servers | Not reached |
+| Config applied: netplan DHCP | Not reached |
+| Config applied: storage record | Not reached |
+| Config files present (`/etc/pulpo/`, user profile) | Not reached |
+| EFI boot entry "pulpo" present | Not reached |
+| Verdict | **FAIL.** Root cause 1: no `partitionLayout` in `partition.conf`, so erase-disk created ONLY the 300 MiB EFI partition (`/dev/vda1`); no root partition was ever planned or created (`/dev/vda2` appears nowhere in the session log; `lsblk` showed only vda1). The mount module had no root to mount, so unpackfs rsynced into a RAM dir. Root cause 2 (same run, same error): the whiteout bug — see Run 2 and `DISK-INSTALLER.md` "The whiteout failure". Fixed by `partitionLayout` (commit `9564fbf`). |
 
-Evidence: (work dir on the test machine, screenshot names).
+### Run 2 — 2026-11-12 ~09:21–09:32 UTC — FAILED (whiteout)
+
+ISO rebuilt with the `partitionLayout` fix (same size, 6,361,186,304 bytes, SHA-256 `b67ab4aebb445e58ecdad7a5db635cef573e88c812c504a0ad5cbf06d61b33a8`; the fixed `partition.conf` was verified inside the rebuilt live squashfs). The `qemu-xhci` fix (`830aeae`) was also in: QEMU had exited early on run 2's first start with "No 'usb-bus' bus found" until the controller was added.
+
+| Item | Value |
+| --- | --- |
+| ISO | `~/pulpo-workspace/iso-build/pulpo-preview-0.1.0-live-diskinstall-amd64.iso`, 6,361,186,304 bytes, SHA-256 `b67ab4aebb445e58ecdad7a5db635cef573e88c812c504a0ad5cbf06d61b33a8` |
+| Date (UTC) | 2026-11-12 |
+| QEMU / OVMF | 8.2.2 TCG, OVMF_CODE_4M.fd, `-cpu qemu64`, 25 GB qcow2, user NIC, `-device qemu-xhci -device usb-tablet` |
+| Live desktop reached | Yes — Qt Control Center open and live (CPU 5.1%, Memory 55.8%, Storage 3.9%) |
+| Config created in the live session | Yes — example config copied (full path; `--type` drops `~`) |
+| Calamares ran (welcome → summary → install) | Yes — Welcome, Keyboard (us), Partitions, Users (same test user), Summary, Install started 09:27 UTC |
+| Partition step now shows the root | **Yes — fix verified.** "After:" shows EFI system 300.00 MiB FAT32 + **pulpo_root 24.70 GiB ext4**. Summary lists "Create new 25293MiB partition on /dev/vda (vda) with entries pulpo_root" and "Install Pulpo on new ext4 system partition". The qcow2 grew to ~130 MB (data written to the real disk). |
+| Erase-disk install finished | **No — FAILED.** Same error, same layer: `Failed to unpack image "/cdrom/casper/minimal.no-languages.squashfs". rsync failed with error code 13.` (09:32:04 UTC, ~5 min in.) |
+| Installed system booted (GRUB → gdm → desktop) | Not reached (install failed) |
+| Control Center opens on the installed system (Qt) | Not reached |
+| Config applied: NTP servers | Not reached |
+| Config applied: netplan DHCP | Not reached |
+| Config applied: storage record | Not reached |
+| Config files present (`/etc/pulpo/`, user profile) | Not reached |
+| EFI boot entry "pulpo" present | Not reached |
+| Verdict | **FAIL — blocked on the whiteout bug.** rsync cannot copy the layered squashfs because `minimal.no-languages.squashfs` holds 3,808 overlay whiteouts (char devices 0/0); the whiteout for `usr/share/help-langpack` (a directory) cannot replace the non-empty directory already copied from earlier layers. Reproduced by hand (same rsync, same layer, to the mounted ext4 target): `could not make way for new regular file: usr/share/help-langpack` + `rsync error (code 13) at hlink.c(539)`. Recommended fix: build a single merged `filesystem.squashfs` (Lubuntu-style) — see `DISK-INSTALLER.md` "The whiteout failure". Phase verify has not run; no install has completed. |
+
+Evidence: screenshots in `~/workspace/iso-boot-evidence/install-test/` on the operator machine (`boot3*`, `calamares2*`, `partitions2`, `users2*`, `summary2`, `confirm2`, `installing2`, `progress2-now`, `install-failed-finish`, `session-log`, `exit-codes`, `vda2-grep`, `mount-job`, `rsync-repro*`, `rsync-ext4`, `helplangpack`, `find-char*`); Calamares session logs in the live sessions (`/home/ubuntu/.cache/calamares/session.log`); build logs `/tmp/build-diskinstall5.log` (run 1) and `/tmp/build-diskinstall6.log` (run 2).
 
 ## What this does NOT prove
 
