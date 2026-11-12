@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Install Pulpo Preview
+Comment=Install Pulpo Preview 0.1.0 to disk (erase-disk install, UEFI)
+Exec=sudo -E calamares
+Icon=pulpo
+Terminal=false
+Categories=System;Settings;
+Keywords=install;pulpo;disk;uefi;
+X-GNOME-Autostart-enabled=false

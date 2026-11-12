@@ -63,12 +63,18 @@ class GrubMenuTests(unittest.TestCase):
         self.assertTrue(entries[0].startswith('menuentry "Try Pulpo Preview'))
 
     def test_no_install_entry_without_an_installer(self):
-        # This milestone is a live ISO only; the partitioner / disk
-        # installer is still open. The menu must not offer "Install".
+        # The GRUB menu deliberately has no "Install" entry: the
+        # install is a click on the "Install Pulpo Preview" desktop
+        # icon in the live session (Calamares), not a boot-menu
+        # choice. The menu must not offer "Install" — the desktop
+        # launcher is the entry point, and it exists in the repo.
         grub = self._grub()
         for line in grub.splitlines():
             if "menuentry" in line:
                 self.assertNotIn("Install Pulpo", line)
+        launcher = INSTALLER / "calamares" / "install-pulpo.desktop"
+        self.assertTrue(launcher.is_file(), "missing desktop launcher")
+        self.assertIn("Exec=sudo -E calamares", launcher.read_text())
 
     def test_splash_and_serial_console(self):
         grub = self._grub()
@@ -111,8 +117,10 @@ class BuildScriptTests(unittest.TestCase):
         text = (INSTALLER / "build-iso.sh").read_text(encoding="utf-8")
         self.assertIn("PULPO-PREVIEW-0.1.0", text)
         self.assertIn("ubuntu-24.04", text)
-        # The build must never claim a disk installer exists.
-        self.assertIn("no disk installer", text.lower())
+        # The build integrates the disk installer (Calamares); it
+        # must not claim the ISO is live-only any more.
+        self.assertIn("Calamares disk installer", text)
+        self.assertNotIn("no disk installer", text.lower())
 
     def test_boot_test_script_is_uefi_and_tcg(self):
         text = (INSTALLER / "boot-test.sh").read_text(encoding="utf-8")
