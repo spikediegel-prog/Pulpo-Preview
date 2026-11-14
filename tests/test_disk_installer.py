@@ -203,6 +203,44 @@ class CalamaresSettingsTests(unittest.TestCase):
                 f"missing instance config: {config} (for {instance_id})",
             )
 
+    def test_every_custom_shellprocess_instance_declares_its_config(self):
+        # Run 13 / PR #130: Calamares does NOT derive the instance
+        # config filename from the instance name. The config file for
+        # a custom instance (e.g. shellprocess@install-cc-deb) must be
+        # declared explicitly in settings.conf under instances: with a
+        # config: key; without it the instance defaults to
+        # <module>.conf (shellprocess.conf), which does not exist, so
+        # the job gets an empty config map and warns "No script
+        # given" -- a silent no-op, which is why the install still
+        # said "All done." while the signed .deb never landed.
+        # Every custom instance in the exec sequence must therefore
+        # have an instances: entry naming an existing config file,
+        # and a shellprocess config must carry a script: key.
+        sections, instances = _settings_sections()
+        custom = [n for n in sections["exec"] if "@" in n]
+        self.assertTrue(custom, "no custom instances in exec sequence")
+        for entry in custom:
+            module, instance_id = entry.split("@", 1)
+            self.assertIn(
+                instance_id, instances,
+                f"{entry} has no instances: entry in settings.conf "
+                f"(Calamares would default to {module}.conf, find "
+                f"nothing, and run the step as a silent no-op)",
+            )
+            config = CALAMARES / "modules" / instances[instance_id]
+            self.assertTrue(
+                config.is_file(),
+                f"missing instance config: {instances[instance_id]} "
+                f"(for {instance_id})",
+            )
+            if module == "shellprocess":
+                text = _read(config)
+                self.assertRegex(
+                    text, r"(?m)^script:\s*$",
+                    f"{instances[instance_id]} has no script: key -- "
+                    f"the job would run with an empty config map",
+                )
+
     def test_deliberate_skips_are_absent(self):
         # locale (English-only v1, UTC by design), networkcfg (the
         # Pulpo config is the network authority), packages /

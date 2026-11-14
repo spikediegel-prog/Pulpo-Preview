@@ -524,6 +524,113 @@ Evidence: screenshots in `~/workspace/iso-boot-evidence/install-test/` on the op
 
 Evidence: screenshots in `~/workspace/iso-boot-evidence/install-test/` on the operator machine (`run12-desktop1`, `run12-terminal`, `run12-id2`, `run12-config2`, `run12-desktop-file`, `run12-calamares1`, `run12-calamares2`, `run12-tab1`, `run12-keyboard`, `run12-keyboard2`, `run12-keyboard3`, `run12-partitions`, `run12-users1`–`run12-users6`, `run12-summary`, `run12-install1`–`run12-install5`, `run12-finish1`–`run12-finish6`, `run12-after-done`, `run12-after-about`, `run12-done2`, `run12-done3`, `run12-done4`, `run12-diag1`–`run12-diag14`, `run12-diag12b`, `run12-verify1`–`run12-verify13`, `run12-vterm1`, `run12-vcheck1`–`run12-vcheck4`, `run12-fallback1`–`run12-fallback3`, each as `.ppm` + `.png`); boot logs `~/pulpo-workspace/iso-build/install-test/boot.log` (install phase) and `boot-verify.log` (verify phase — fallback run's log; NVRAM-boot lines recorded above); QEMU logs `qemu.log` / `qemu-verify.log`; `launch12.log`, `launch12-verify.log`, `launch12-verify-fallback.log`; `RESULT.md` in the work dir; preserved install-phase NVRAM `~/pulpo-workspace/iso-build/install-test/OVMF_VARS_4M-install-run12.fd`; test disk `pulpo-test-run12.qcow2` 9,680,191,488 bytes (completed install, boots by NVRAM entry and by fallback; holds the installed system + `/var/log/pulpo-installer/` evidence, including the full live session log `calamares-session-live12.log`, 45,692 bytes). Harness changes for run 12 (uncommitted on `installer/whiteout-single-squashfs`): none to `install-test.sh`; this run's write-up only. The driver wrapper `~/workspace/drive12.sh` (local, operator machine) is a copy of `drive11.sh` (same remote-shell quote escaping).
 
+### Run 13 — 2026-11-14 ~17:45–19:45 UTC — MIXED (install + purge + config pass; signed .deb install FAILED)
+
+| Item | Value |
+| --- | --- |
+| ISO | Build #18, `~/pulpo-workspace/iso-build/pulpo-preview-0.1.0-live-diskinstall-amd64.iso`, 6,221,791,232 bytes, SHA-256 `a4e8c0caf324ed1a39729e7c4651937c7f7d36c0ab930fb3a113f8dcaca884af` |
+| Preview main | `d88ab9b` (PR #129 merged 2026-11-14 ~03:20 MST, merge `de3dbb1`; PR #130 merged 2026-11-14 ~10:07 MST, merge `d88ab9b`) |
+| Purpose | Prove PR #129's live-launcher purge + PR #130's signed Control Center .deb install, beyond run 12 |
+| QEMU / OVMF | 8.2.2 TCG, OVMF_CODE_4M.fd, `-cpu qemu64`, 25 GB qcow2, user NIC |
+| Live desktop reached | Yes — Qt Control Center open and live (CPU ~99% under TCG). Config copied (NOT typed): `cp /usr/share/pulpo-installer/pulpo-preview-config.example.json /home/ubuntu/.config/PulpoPreview/control-center-customer-config.json`, 412 bytes, CONFIG_OK |
+| Calamares ran (welcome → summary → install) | Yes — Welcome (no requirements warning), Keyboard (Generic 105-key PC, English (US)/Default), Partitions (vda 25.00 GiB, Erase disk, EFI 300 MiB FAT32 + pulpo_root 24.70 GiB ext4), Users (Full Name `Pulpo`, login `pulpo`, computer `pulpo-standardpc`, password `pulpotest1` ×2 green check, auto-login unchecked), Summary (GPT, 300MiB fat32 → boot, 25293MiB pulpo_root, fat32 → /boot/efi, ext4 system), Install Now. Install started ~11:05 MST (18:05 UTC) |
+| Erase-disk install finished | **Yes — "All done."** Finish page confirmed by screenshot (`run13-finish1`), finished by ~11:37 MST (18:37 UTC), disk final size 9,688,645,632 bytes. Shutdown per run-12 footguns: Alt+R unchecked "Restart now" (verified by screenshot), Alt+D closed Calamares (terminal showed only the known non-fatal `chcon` noise + the bootloader main.py SyntaxWarning, same as run 12), INSTALL_DONE created → install-test preserved NVRAM to `OVMF_VARS_4M-install.fd` (540,672 bytes) and exited, `--stop` powered QEMU down (0 qemu procs) |
+| Installed system booted (GRUB → gdm → desktop) | **Yes — via the NVRAM "Pulpo" entry.** Verify phase launched ~11:58 MST (18:58 UTC), QEMU pid 54467, boots from disk only (no ISO), reusing `OVMF_VARS_4M-install.fd`. `boot-verify.log` shows `BdsDxe: loading Boot0008 "Pulpo" from HD(1,GPT,1A4A282C-DDE4-469C-869E-D639E6839FE8,0x1000,0x96000)/\EFI\pulpo\shimx64.efi` and `starting Boot0008 "Pulpo"`. GDM reached; display blanked after ~2 min idle (woken with `spc`); `Tab` selects the Pulpo row (orange border), `ret` opens the password prompt; typed `pulpotest1` — the first `ret` after typing did not submit (screenshot unchanged after 25 s), a second `ret` submitted the login. Desktop reached 19:27 UTC; Control Center autostarted, Overview live (CPU ~99.7%, Memory 32.8%, Storage 36.2%, 8.7 / 24.1 GiB used). The "Ubuntu 26.04.1 LTS Upgrade Available" dialog appeared (same as run 12) and was closed with Alt+F4 (declined, no upgrade) |
+| PR #129 purge (no live launchers on installed desktop) | **Yes — CONFIRMED.** `/home/pulpo/Desktop/` holds ONLY `PULPO-PREVIEW-README.txt` — no `install-pulpo.desktop`, no `ubuntu-desktop-bootstrap*.desktop` (`run13-vterm4`). The README was deliberately left alone by the purge |
+| PR #129 live-launcher trust fix | **INCOMPLETE (same finding as the install phase).** In the live session both desktop icons (`install-pulpo.desktop`, `ubuntu-desktop-bootstrap_...`) show the **red X (untrusted)** even though `/etc/skel/Desktop/install-pulpo.desktop` is `-rwxrwxr-x` (775, root) and `/home/ubuntu/Desktop/install-pulpo.desktop` is `-rwxrwxr-x` (775, ubuntu) — PR #129's chmod +x DID land, and `ubuntu-desktop-bootstrap_ubuntu-desktop-bootstrap.desktop` is 755. But GNOME still shows the red X: **the executable bit alone does not make GNOME trust a desktop launcher in Ubuntu 24.04's live session; it still wants the "Allow Launching" click.** Calamares was driven from the terminal (`sudo -E calamares`, same Exec as the icon) and the install was unaffected |
+| PR #130 signed .deb install | **No — FAILED. The signed .deb was NOT installed.** `dpkg -l pulpo-control-center` → `dpkg-query: no packages found matching pulpo-control-center`; `dpkg -s pulpo-control-center` → `dpkg-query: package 'pulpo-control-center' is not installed and no information is available`; `dpkg -l | grep -i pulpo` → no output (`run13-vterm3`, `run13-vterm4`, `run13-vterm11`). The Control Center on the installed system is still the loose files from build step 4a (`dpkg-deb -x`), exactly the problem PR #130 was meant to fix — no version record, no signature verification on the installed system |
+| PR #130 root cause (evidence) | Calamares session log (`/var/log/pulpo-installer/calamares-session.log`, carried to the installed system) at Calamares startup, 17:59:55 UTC: `WARNING: No script given for ShellProcessJob "shellprocess@install-cc-deb"` followed by `CppJobModule "shellprocess@install-cc-deb" loading complete.` — **the install-cc-deb step never ran; it was a no-op.** A shellprocess job with no script succeeds silently, which is why the install still said "All done." There is NO install-cc-deb log file in `/var/log/pulpo-installer/` (only `calamares-session.log`, `config-import.out`, `pulpo-config-install.log`). The conf file (`installer/calamares/modules/shellprocess_install-cc-deb.conf`) and script (`installer/calamares/install-cc-deb.sh`) exist in the worktree at main `d88ab9b` and are well-formed (same structure as the working `shellprocess_remove-live.conf`: `---`, `dontChroot: true`, `timeout: 600`, `script:` with the command); build-iso.sh copies the script (line 805 loop), the bundle (lines ~811–830), and the whole `modules/` dir (line 785), and its file gate (lines 856–890) checks the conf, the script, and the bundle — build #18 succeeded, so the gate passed and the files were in the rootfs. But the session log shows Calamares loaded only the base `shellprocess.conf` (found in both `/etc/calamares/modules/shellprocess.conf` and `/usr/share/calamares/modules/shellprocess.conf`, lines 113–114) and **no `shellprocess_install-cc-deb.conf` path appears anywhere in the session log** (`grep -n "shellprocess.conf\|shellprocess_"` returns only lines 113–114). **ROOT CAUSE FOUND (live-ISO inspection 2026-11-14, see below).** Calamares does NOT derive the instance config filename from the instance name — there is no `module + "_" + id + ".conf"` logic. The config filename for an instance must be declared explicitly in `settings.conf` under `instances:` with a `config:` key; without it the instance defaults to `<module>.conf` (`shellprocess.conf`), which does not exist, so the job gets an empty config map and `ShellProcessJob::setConfigurationMap` warns `No script given`. PR #130 added `shellprocess@install-cc-deb` to the exec sequence (settings.conf line 61) but did NOT add the `instances:` entry for it. The other shellprocess instances (pulpo-config, remove-live, verify-initramfs, grub-prefix-stub) all HAVE `instances:` entries with `config: shellprocess_<id>.conf`, which is why they ran. The fix is a 3-line addition to `installer/calamares/settings.conf` `instances:`: `- id: install-cc-deb`, `module: shellprocess`, `config: shellprocess_install-cc-deb.conf`. PR #130's tests checked the exec sequence and that the conf/script/bundle files exist, but did NOT check that settings.conf declares the instance → config mapping — that is the test gap that let this ship |
+| Taskbar / dock icon for Pulpo | **No — still no proper Pulpo icon (user's observation, confirmed in run 13).** The Control Center runs and autostarts, but in the dock it shows as a **generic gear** (see the enlarged dock crop `run13-dock.png` from `run13-verify8`: two gear icons, one the Settings app, one the running Control Center in a darker box — no purple Pulpo octopus icon), and in later screenshots the running Control Center has no distinct dock entry at all. The `.desktop` file `pulpo-control-center.desktop` EXISTS in `/usr/share/applications/` (from the loose-file extraction, step 4a), but the app runs from loose files (not the .deb) and its window does not match the .desktop file, so GNOME shows a generic gear, not the Pulpo icon. Same as the previous build (build #17 / run 12) |
+| Config carried through | **Yes.** `/etc/pulpo/customer-config.json` exists and parses: `{"display_timezone":"America/Phoenix","network":{"address":null,"gateway":null,"dns":[],"mode":"dhcp"},"saved_at":"2026-11-10T19:52:00Z","saved_by":"pulpo-preview-installer","schema":"pulpo.control-center-customer-config.v1","storage":{"acknowledged":true,"kind":"local","path":"/var/lib/pulpo/evidence","retention_hours":24,"retention_percent":10},"time":{"primary":"ntp.ubuntu.com","secondary":"pool.ntp.org"}}` (`run13-vterm10`). User profile `~/.config/PulpoPreview/control-center-customer-config.json` exists (412 bytes, same content) plus `control-center-display.json` (125 bytes) (`run13-vterm13`) |
+| NTP / netplan | **Yes.** `grep NTP /etc/systemd/timesyncd.conf` → `NTP=ntp.ubuntu.com pool.ntp.org`. `/etc/netplan/60-pulpo.yaml` (via sudo, password `pulpotest1`): `version: 2`, `ethernets: enp0s1: dhcp4: true, dhcp6: false` (`run13-vterm10`) |
+| EFI boot entry "pulpo" present | **Yes.** `efibootmgr -v`: `BootOrder: 0008,0000,0002,0003,0004,0005,0006,0007` — the Pulpo entry (0008) is first in order, and the verify boot used it (`BootCurrent` was 0008 per the boot log; the terminal `efibootmgr` output scrolled but BootOrder confirms) (`run13-vterm11`) |
+| Control Center opens on the installed system (Qt) | **Yes.** Autostarts on login; Overview live on the installed system (CPU ~99.7%, Memory 32.8%, Storage 36.2%) (`run13-verify8`, `run13-vterm1`) |
+| Verdict | **MIXED — not a pass for PR #130.** The installer, the boot, the PR #129 purge, and the config carry-through all pass (same as run 12). But PR #130's signed-.deb install did NOT land: the step never ran (`No script given`), the .deb is not in dpkg, and the Control Center is still loose files with no version record and no signature on the installed system — the exact defect PR #130 was written to fix. The Pulpo taskbar/dock icon is still missing (generic gear). The fallback-boot path was NOT re-tested in run 13 (run 12 already proved it); only the NVRAM-entry boot was verified here |
+
+**Non-fatal noise (recorded, not diagnosed as failures).** Same as run 12: Calamares terminal output shows `chcon: failed to get security context` lines and a `SyntaxWarning: invalid escape sequence '\\$'` in the bootloader main.py. The install completed; neither was investigated further.
+
+**Observations for the coordinator (not failures).** (1) **System timezone is Etc/UTC on the installed system** (same open question as run 12 — display timezone America/Phoenix lives in the Control Center profile only). (2) **The 26.04 upgrade dialog appears on first desktop** (closed with Alt+F4 this run; declined in run 12 via "Don't Upgrade" → OK). (3) **The preview.48 statement expires Wed 2026-11-18 15:00:51 MST** — run 13 is well inside it, but any re-run of the install after that expiry will fail the install-cc-deb verification (fail-closed by design) unless a fresh signed release is cut. (4) **PR #129's live-launcher trust fix is incomplete** — chmod +x alone does not make GNOME trust the launcher; a real fix needs the trusted-metadata path (or another approach). Not yet raised as a PR.
+
+**Harness footguns found in this run (driver errors, not image defects).** (1) **A long `--type` chain + `--key ret` + `--shot` in one ssh call hits the ~30 s timeout before the screenshot/conversion finishes** — the guest typing still completes, but the PNG is not created; take the screenshot in a separate call and verify by screenshot, do not re-type. (2) **The first `ret` after typing the GDM password did not submit** (screenshot unchanged after 25 s); a second `ret` submitted the login. (3) **`--type` does not send `~`** — `~/Desktop/` became `/Desktop/`; use absolute paths (`/home/pulpo/Desktop/`). (4) **`pgrep -f qemu-system` matches its own command line** (count 1 with no process listed by `pgrep -af qemu`) — use `pgrep -af qemu` to confirm no QEMU is running.
+
+**Deliberately not done.** No code changes, no PR, no commits. No fallback-boot re-test (run 12 proved it). The run-13 disk was NOT preserved as a separate file (the work dir still holds `pulpo-test.qcow2`, 9,720,889,344 bytes / 9.1G, the completed run-13 install; it was not renamed — the next install phase overwrites it). Install-phase NVRAM preserved as `OVMF_VARS_4M-install.fd` (540,672 bytes). Verify QEMU stopped ~19:45 UTC. VM disk 47G free at the end of the run.
+
+Evidence: screenshots in `~/workspace/iso-boot-evidence/install-test/` on the operator machine (`run13-desktop1`, `run13-terminal`, `run13-terminal2`, `run13-ls1`, `run13-config1`–`run13-config2`, `run13-calamares1`–`run13-calamares3`, `run13-keyboard`, `run13-partitions`, `run13-users1`–`run13-users4`, `run13-summary`, `run13-install1`–`run13-install3`, `run13-watch-wake`, `run13-finish1`, `run13-after-done`, `run13-verify1`–`run13-verify8`, `run13-dock` (enlarged dock crop), `run13-vterm1`–`run13-vterm13`, each as `.ppm` + `.png`); boot logs `~/pulpo-workspace/iso-build/install-test/boot.log` (install phase), `boot-verify.log` (verify phase), `launch13.log`, `launch13-verify.log`; `RESULT.md` in the work dir; test disk `pulpo-test.qcow2` 9,720,889,344 bytes (completed install, boots by NVRAM entry; holds the installed system + `/var/log/pulpo-installer/` evidence, including `calamares-session.log` with the `No script given` warning at 17:59:55 UTC). Harness changes for run 13: none to `install-test.sh`; this run's write-up only.
+
+### Live-ISO root-cause inspection — 2026-11-14 ~20:07–20:43 UTC — ROOT CAUSE FOUND
+
+Booted build #18 ISO live (no disk, no install) to find why Calamares skipped `shellprocess@install-cc-deb` in run 13.
+Harness: custom `live-boot.sh` / `live-drive.sh` (VNC :3, monitor 4446, work dir `~/pulpo-workspace/iso-build/live-inspect`),
+same QEMU/OVMF as the install tests. Live desktop reached ~20:07 UTC (Control Center Overview live); inspection via a live terminal.
+
+**Everything the step needs IS in the live session — the files are not the problem.**
+- `/etc/calamares/modules/` contains `shellprocess_install-cc-deb.conf` (and the other four instance confs).
+  `/usr/share/calamares/modules/` does NOT exist at all, so `/etc/calamares/modules/` is the only config location.
+- The conf is well-formed and parses: `---`, `dontChroot: true`, `timeout: 600`,
+  `script: [ /usr/share/pulpo-installer/calamares/install-cc-deb.sh ${ROOT} ]`
+  (Python `yaml.safe_load` in the live session returns keys `['dontChroot', 'script', 'timeout']` and the script list;
+  file is clean UTF-8, no BOM, starts `---\n# Pulpo Prev`).
+- The script `/usr/share/pulpo-installer/calamares/install-cc-deb.sh` exists, `-rwxrwxr-x`, `#!/bin/bash`.
+- The bundle `/usr/share/pulpo-installer/control-center/` holds the signed `.deb`
+  (`pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb`, 23,944,912 bytes),
+  the 13 dependency `.deb`s, `release.json`, `release.json.asc`, `publisher.gpg`, `ubuntu_release.py`.
+- `settings.conf` line 61 has `- shellprocess@install-cc-deb` in the exec sequence.
+
+**Reproduced live.** Ran `sudo -E calamares -d` in the live session and captured `/tmp/calamares-dbg.log` (778 lines).
+The exact run-13 warning reproduces at startup:
+`WARNING: No script given for ShellProcessJob "shellprocess@install-cc-deb"` (line 128),
+`CppJobModule "shellprocess@install-cc-deb" loading complete.` (line 130).
+The other shellprocess instances load with no warning
+(pulpo-config 121, remove-live 132, verify-initramfs 141, grub-prefix-stub 143).
+
+**The mechanism (Calamares source, `calamares/calamares` branch `calamares`).**
+- `ShellProcessJob::setConfigurationMap` warns `No script given` when the configuration map has no `script` key
+  (`src/modules/shellprocess/ShellProcessJob.cpp`).
+- The map comes from `Module::loadConfigurationFile(configFileName)`, which searches
+  `/etc/calamares/modules/<config>` then the app-data dir's `modules/<config>` and warns
+  `No config file for "<module>" found anywhere` when nothing matches
+  (`src/libcalamares/modulesystem/Module.cpp`).
+- The debug log shows the load for this instance searched for the BASE name only:
+  `No config file for "shellprocess" found anywhere at "/home/ubuntu/src/modules/shellprocess/shellprocess.conf"`,
+  `"/etc/calamares/modules/shellprocess.conf"`, `"/usr/share/calamares/modules/shellprocess.conf"` (line 122).
+  The string `shellprocess_` appears NOWHERE in the 778-line debug log — Calamares never looked for
+  `shellprocess_install-cc-deb.conf`.
+- Why: the instance config filename is NOT derived from the instance name. `InstanceDescription` defaults to
+  `key.module() + ".conf"` (`shellprocess.conf`); the instance-specific name comes only from an explicit
+  `instances:` entry in `settings.conf` with a `config:` key
+  (`src/libcalamares/Settings.cpp`, `InstanceDescription::fromSettings`;
+  `Settings::reconcileInstancesAndSequence()` appends a default `<module>.conf` description for a custom instance
+  in `sequence:` that is not listed in `instances:`).
+  The repo's own `settings.conf` documents it: "`config` is optional, if none is given, `<module>.conf` is used".
+
+**The defect in our tree (worktree main `d88ab9b`, confirmed).**
+`installer/calamares/settings.conf` `instances:` (line 29) declares pulpo-config, remove-live, verify-initramfs and
+grub-prefix-stub, each with `config: shellprocess_<id>.conf` — e.g.
+`- id: pulpo-config / module: shellprocess / config: shellprocess_pulpo-config.conf`.
+`install-cc-deb` appears ONLY in the exec sequence (line 61); it has NO `instances:` entry.
+So Calamares used the default `shellprocess.conf`, found nothing, and ran the step as a silent no-op
+(a shellprocess job with no script returns OK, which is why the install still said "All done.").
+
+**Fix.** Add to `installer/calamares/settings.conf` `instances:`:
+```yaml
+  - id: install-cc-deb
+    module: shellprocess
+    config: shellprocess_install-cc-deb.conf
+```
+**Test gap (why PR #130 shipped this).** PR #130's tests checked the exec sequence contains
+`shellprocess@install-cc-deb` and that the conf/script/bundle files exist, but nothing asserted that
+`settings.conf` declares the instance → config mapping. A test that parses `settings.conf` `instances:` and
+requires an entry for every custom `shellprocess@<id>` in the exec sequence, with a `config:` naming an existing
+`modules/shellprocess_<id>.conf`, would have caught this. The same gap applies to any future shellprocess instance.
+
+**Also confirmed in passing.** The live session's Control Center shows a proper Pulpo octopus icon in the dock
+(`livewatch-4.png`), unlike the installed system in run 13 (generic gear) — consistent with the dock-icon
+defect being a consequence of the .deb not installing (loose files, no .desktop/WM_CLASS match), to be re-verified
+after the fix lands. No code was changed in this inspection; the live QEMU was stopped cleanly (0 qemu procs).
+Evidence: screenshots `live1`, `live-term1/2`, `live-mod1`–`live-mod11`, `live-yaml1/2`, `live-dbg1`–`live-dbg9`,
+`live-inst1`–`live-inst3` in `~/workspace/iso-boot-evidence/install-test/` on the operator machine;
+debug log `/tmp/calamares-dbg.log` was in the live session only (not preserved — the warning text is quoted above).
+
 ## What this does NOT prove
 
 - **Secure Boot enforcement.** Plain OVMF, Secure Boot off.
