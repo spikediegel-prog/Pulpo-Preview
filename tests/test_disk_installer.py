@@ -1215,6 +1215,55 @@ class RemoveLivePackagesTests(unittest.TestCase):
         result = self._source('source "$1"\nverify_casper_removed "$2"')
         self.assertNotEqual(result.returncode, 0)
 
+    def _add_live_launchers(self):
+        # Hyper-V run: install-pulpo.desktop rode into the target
+        # via /etc/skel/Desktop (user creation copies skel) and
+        # /usr/share/applications, and Ubuntu's installer icon the
+        # same way. A keeper .desktop and a text file must survive.
+        skel = self.target / "etc" / "skel" / "Desktop"
+        skel.mkdir(parents=True)
+        (skel / "install-pulpo.desktop").write_text(
+            "[Desktop Entry]", encoding="utf-8")
+        (skel / "ubuntu-desktop-bootstrap_ubuntu.desktop").write_text(
+            "[Desktop Entry]", encoding="utf-8")
+        home = self.target / "home" / "pulpo" / "Desktop"
+        home.mkdir(parents=True)
+        (home / "install-pulpo.desktop").write_text(
+            "[Desktop Entry]", encoding="utf-8")
+        (home / "firefox.desktop").write_text(
+            "[Desktop Entry]", encoding="utf-8")
+        (home / "notes.txt").write_text("keep me", encoding="utf-8")
+        apps = self.target / "usr" / "share" / "applications"
+        apps.mkdir(parents=True)
+        (apps / "install-pulpo.desktop").write_text(
+            "[Desktop Entry]", encoding="utf-8")
+
+    def test_remove_live_desktop_launchers_deletes_only_launchers(self):
+        self._add_live_launchers()
+        result = self._source('source "$1"; remove_live_desktop_launchers "$2"')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse((self.target / "etc" / "skel" / "Desktop" / "install-pulpo.desktop").exists())
+        self.assertFalse((self.target / "etc" / "skel" / "Desktop" / "ubuntu-desktop-bootstrap_ubuntu.desktop").exists())
+        self.assertFalse((self.target / "home" / "pulpo" / "Desktop" / "install-pulpo.desktop").exists())
+        self.assertFalse((self.target / "usr" / "share" / "applications" / "install-pulpo.desktop").exists())
+        self.assertTrue((self.target / "home" / "pulpo" / "Desktop" / "firefox.desktop").exists())
+        self.assertTrue((self.target / "home" / "pulpo" / "Desktop" / "notes.txt").exists())
+
+    def test_remove_live_desktop_launchers_noop_when_absent(self):
+        result = self._source('source "$1"; remove_live_desktop_launchers "$2"')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_main_removes_launchers_even_without_casper(self):
+        # The launcher removal is files, not packages: it must run
+        # even on a target where casper was never installed (main
+        # returns 0 early in that case for the package purge).
+        self._add_live_launchers()
+        self._remove_all_casper()
+        result = self._source('source "$1"; main "$2"')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse((self.target / "etc" / "skel" / "Desktop" / "install-pulpo.desktop").exists())
+        self.assertFalse((self.target / "home" / "pulpo" / "Desktop" / "install-pulpo.desktop").exists())
+
     def test_purge_is_chroot_dpkg_not_file_deletion(self):
         # The removal must be a package purge inside the target
         # chroot (so maintainer scripts run against the target),
@@ -1573,6 +1622,16 @@ class BuildIntegrationTests(unittest.TestCase):
         self.assertIn("install-pulpo.desktop", text)
         self.assertIn("pulpo-config-install.sh", text)
         self.assertIn("branding/pulpo/logo.png", text)
+
+    def test_build_marks_live_desktop_launcher_executable(self):
+        # Hyper-V run: the launcher shipped 0644, so GNOME showed
+        # a red-X "untrusted" icon and double-click did nothing
+        # until it was right-clicked to "Allow Launching" (chmod
+        # +x). The build must set +x on the /etc/skel copy and
+        # gate on it, so a regression fails the build loudly.
+        text = _read(INSTALLER / "build-iso.sh")
+        self.assertIn('chmod +x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop"', text)
+        self.assertIn('[ -x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop" ]', text)
 
     def test_build_rebuilds_iso_with_the_single_squashfs(self):
         # The xorriso rebuild must remove the 21 layered files

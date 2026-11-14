@@ -40,6 +40,22 @@
 # in an installed system, and deleting it here is what
 # remove-live is for.
 #
+# The same "no live leftover" rule covers the live desktop
+# launchers. install-pulpo.desktop is copied into
+# /etc/skel/Desktop by the ISO build, so the live desktop shows
+# an "Install Pulpo Preview" icon -- and the installed user's
+# Desktop gets the same copy at user creation (the Hyper-V run:
+# the installed desktop showed the icon, untrusted, red X).
+# Its Exec (sudo -E calamares) would re-launch the installer on
+# an installed system if clicked. The Ubuntu installer icon
+# (ubuntu-desktop-bootstrap*.desktop) is the same class of
+# leftover. remove-live therefore deletes both launchers from
+# the target's /etc/skel/Desktop, every existing user's Desktop,
+# and (for our own launcher) /usr/share/applications. This runs
+# even when casper is absent -- the launchers are files, not
+# packages -- and a failure is a warning, not a fatal error: a
+# leftover launcher cannot break the boot.
+#
 # Failure modes (loud where it matters, never silent):
 #   - No casper package, initramfs paths, or conf files in the
 #     target: warn and exit 0. The step is idempotent, and a
@@ -177,6 +193,59 @@ EOF
     return 0
 }
 
+# live_desktop_launchers <root>: print every live-session desktop
+# launcher in the target, one per line. The launchers live in two
+# places: /etc/skel/Desktop (the source every new user's Desktop
+# is built from -- so the installed user's Desktop gets a copy at
+# user creation) and every existing user's Desktop, plus
+# /usr/share/applications for our own launcher (the app-grid
+# entry). The two launchers are the installer itself
+# (install-pulpo.desktop, ours) and Ubuntu's installer
+# (ubuntu-desktop-bootstrap*.desktop, the "Install Ubuntu" icon);
+# both exist only to launch an install from the live desktop.
+# The PULPO-PREVIEW-README.txt on the live desktop is a plain
+# text file, not a launcher, so it is left alone.
+live_desktop_launchers() {
+    local root="$1"
+    local dir f base
+    for dir in "$root/etc/skel/Desktop" "$root/root/Desktop" "$root/home/"*/Desktop; do
+        [ -d "$dir" ] || continue
+        for f in "$dir"/*.desktop; do
+            [ -e "$f" ] || continue
+            base="$(basename "$f")"
+            case "$base" in
+                install-pulpo.desktop|ubuntu-desktop-bootstrap*.desktop)
+                    echo "$f"
+                    ;;
+            esac
+        done
+    done
+    f="$root/usr/share/applications/install-pulpo.desktop"
+    [ -e "$f" ] && echo "$f"
+}
+
+# remove_live_desktop_launchers <root>: delete every live-session
+# desktop launcher in the target. Plain file deletion -- the
+# skel/home copies belong to no package, and the
+# /usr/share/applications copy is our own file placed by the
+# build, not a package file. Returns non-zero if a deletion
+# fails. A leftover install-pulpo.desktop on the installed
+# desktop is not just untidy: its Exec (sudo -E calamares)
+# would re-launch the installer on an installed system if
+# clicked.
+remove_live_desktop_launchers() {
+    local root="$1"
+    local f rc=0
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        log "removing live desktop launcher: ${f#$root/}"
+        rm -f "$f" || rc=1
+    done <<EOF
+$(live_desktop_launchers "$root")
+EOF
+    return "$rc"
+}
+
 # _mount_if_missing <target> <what> <where>: bind-mount the live
 # system's <what> onto <target>/<where> if nothing is mounted
 # there yet. Prints "mounted" when it mounted, nothing otherwise.
@@ -229,6 +298,12 @@ main() {
     [ $# -ge 1 ] || { log "usage: $0 <target-root>" >&2; return 2; }
     local target="$1"
     [ -d "$target" ] || { log "target root is not a directory: $target" >&2; return 2; }
+    # The desktop launchers are files, not packages, so they are
+    # removed whether or not casper is present. A failure here is
+    # a warning, not a fatal error: a leftover launcher cannot
+    # break the boot, and the casper steps below still catch a
+    # target that is genuinely not writable.
+    remove_live_desktop_launchers "$target" || log "WARNING: failed to remove a live desktop launcher from the target" >&2
     if ! casper_present "$target"; then
         log "casper is not installed in the target; nothing to remove"
         return 0
