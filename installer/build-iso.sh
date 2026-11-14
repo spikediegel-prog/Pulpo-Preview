@@ -137,6 +137,16 @@ TOOLS="${TOOLS:-$HOME/pulpo-workspace/iso-tools}"
 BASE_ISO=""
 OUT=""
 CC_DEB="${CC_DEB:-$HOME/pulpo-workspace/Pulpo-Control-Center-Preview48-release/dist/pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb}"
+# Release bundle for the install-cc-deb step: the signed
+# statement, its detached signature, and the publisher
+# public key for the release above, plus the Control
+# Center's own verify scripts. Defaults point at the
+# preview.48 release on this machine; update them together
+# with CC_DEB when the release changes.
+CC_RELEASE_JSON="${CC_RELEASE_JSON:-$HOME/pulpo-workspace/pulpo-control-center-preview48-release.json}"
+CC_RELEASE_SIG="${CC_RELEASE_SIG:-$HOME/pulpo-workspace/pulpo-control-center-preview48-release.json.asc}"
+CC_PUBLISHER_KEY="${CC_PUBLISHER_KEY:-$HOME/pulpo-workspace/publisher.gpg}"
+CC_VERIFY_SCRIPTS="${CC_VERIFY_SCRIPTS:-$HOME/pulpo-workspace/Pulpo-Control-Center-Preview48-release/scripts}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 while [ $# -gt 0 ]; do
@@ -230,7 +240,10 @@ need sha256sum
 need md5sum
 need fusermount3
 
-for f in "$BASE_ISO" "$CC_DEB" "$REPO_ROOT/installer/grub.cfg" \
+for f in "$BASE_ISO" "$CC_DEB" "$CC_RELEASE_JSON" "$CC_RELEASE_SIG" \
+         "$CC_PUBLISHER_KEY" "$CC_VERIFY_SCRIPTS/ubuntu_release.py" \
+         "$CC_VERIFY_SCRIPTS/check_ubuntu_deb.py" \
+         "$REPO_ROOT/installer/grub.cfg" \
          "$REPO_ROOT/installer/assets/pulpo-uefi-boot-splash.bmp"; do
   [ -f "$f" ] || { echo "missing input: $f" >&2; exit 1; }
 done
@@ -789,12 +802,41 @@ chmod +x "$ROOTFS/usr/share/pulpo-installer/calamares/pulpo-config-install.sh"
 # casper package before initramfs, gate the built initrd, and
 # write the GRUB prefix redirect stub after the bootloader).
 # Each is run by its own shellprocess instance in settings.conf.
-for s in remove-live-packages verify-initramfs grub-prefix-stub; do
+for s in remove-live-packages verify-initramfs grub-prefix-stub install-cc-deb; do
   cp "$REPO_ROOT/installer/calamares/$s.sh" \
      "$ROOTFS/usr/share/pulpo-installer/calamares/$s.sh"
   chmod +x "$ROOTFS/usr/share/pulpo-installer/calamares/$s.sh"
 done
 # Desktop launcher (live session): "Install Pulpo Preview".
+# Release bundle for the install-cc-deb step: the signed
+# Control Center .deb, its dependency .debs (the ones step
+# 4e unpacked with dpkg-deb -x, so they exist in the target
+# as files but are not registered in dpkg status), the
+# signed release statement, its detached signature, the
+# publisher public key, and the Control Center's own verify
+# scripts. The installer step verifies the release and
+# installs the whole bundle into the target, so the
+# installed system carries a verifiable signed build
+# instead of loose files.
+mkdir -p "$ROOTFS/usr/share/pulpo-installer/control-center"
+cp "$CC_DEB" "$ROOTFS/usr/share/pulpo-installer/control-center/"
+for deb in ${UNPACKED:-}; do
+  cp "$deb" "$ROOTFS/usr/share/pulpo-installer/control-center/"
+done
+cp "$CC_RELEASE_JSON" "$ROOTFS/usr/share/pulpo-installer/control-center/release.json"
+cp "$CC_RELEASE_SIG" "$ROOTFS/usr/share/pulpo-installer/control-center/release.json.asc"
+cp "$CC_PUBLISHER_KEY" "$ROOTFS/usr/share/pulpo-installer/control-center/publisher.gpg"
+cp "$CC_VERIFY_SCRIPTS/ubuntu_release.py" "$CC_VERIFY_SCRIPTS/check_ubuntu_deb.py" \
+   "$ROOTFS/usr/share/pulpo-installer/control-center/"
+# Gate: the bundle must hold the Control Center .deb plus
+# exactly the dependency .debs step 4e unpacked -- a missing
+# dep .deb would make the target install fail on unmet
+# dependencies, and an extra one would install a package
+# the build never unpacked.
+BUNDLE_COUNT=$(ls "$ROOTFS/usr/share/pulpo-installer/control-center"/*.deb 2>/dev/null | wc -l)
+EXPECTED_COUNT=$((1 + $(echo ${UNPACKED:-} | wc -w)))
+[ "$BUNDLE_COUNT" -eq "$EXPECTED_COUNT" ] \
+  || { echo "control-center bundle holds $BUNDLE_COUNT .debs, expected $EXPECTED_COUNT" >&2; exit 1; }
 mkdir -p "$ROOTFS/usr/share/applications" "$ROOTFS/etc/skel/Desktop"
 cp "$REPO_ROOT/installer/calamares/install-pulpo.desktop" \
    "$ROOTFS/usr/share/applications/install-pulpo.desktop"
@@ -818,6 +860,7 @@ for f in etc/calamares/settings.conf \
          etc/calamares/modules/shellprocess_remove-live.conf \
          etc/calamares/modules/shellprocess_verify-initramfs.conf \
          etc/calamares/modules/shellprocess_grub-prefix-stub.conf \
+         etc/calamares/modules/shellprocess_install-cc-deb.conf \
          etc/calamares/branding/pulpo/branding.desc \
          etc/calamares/branding/pulpo/logo.png \
          etc/calamares/branding/pulpo/welcome.png \
@@ -826,6 +869,13 @@ for f in etc/calamares/settings.conf \
          usr/share/pulpo-installer/calamares/remove-live-packages.sh \
          usr/share/pulpo-installer/calamares/verify-initramfs.sh \
          usr/share/pulpo-installer/calamares/grub-prefix-stub.sh \
+         usr/share/pulpo-installer/calamares/install-cc-deb.sh \
+         usr/share/pulpo-installer/control-center/pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb \
+         usr/share/pulpo-installer/control-center/release.json \
+         usr/share/pulpo-installer/control-center/release.json.asc \
+         usr/share/pulpo-installer/control-center/publisher.gpg \
+         usr/share/pulpo-installer/control-center/ubuntu_release.py \
+         usr/share/pulpo-installer/control-center/check_ubuntu_deb.py \
          usr/share/applications/install-pulpo.desktop; do
   [ -f "$ROOTFS/$f" ] || { echo "calamares file missing: $f" >&2; exit 1; }
 done
@@ -836,6 +886,8 @@ grep -q "shellprocess@pulpo-config" "$ROOTFS/etc/calamares/settings.conf" \
   || { echo "settings.conf does not run the pulpo-config module" >&2; exit 1; }
 grep -q "shellprocess@remove-live" "$ROOTFS/etc/calamares/settings.conf" \
   || { echo "settings.conf does not run the remove-live module" >&2; exit 1; }
+grep -q "shellprocess@install-cc-deb" "$ROOTFS/etc/calamares/settings.conf" \
+  || { echo "settings.conf does not run the install-cc-deb module" >&2; exit 1; }
 grep -q "shellprocess@verify-initramfs" "$ROOTFS/etc/calamares/settings.conf" \
   || { echo "settings.conf does not run the verify-initramfs module" >&2; exit 1; }
 grep -q "shellprocess@grub-prefix-stub" "$ROOTFS/etc/calamares/settings.conf" \
