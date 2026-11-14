@@ -89,6 +89,26 @@ class GrubMenuTests(unittest.TestCase):
         self.assertIn("--- quiet splash", grub)
         self.assertIn('menuentry "Check installer media"', grub)
 
+    def test_kernel_lines_carry_layerfs_path(self):
+        # The live system is a single merged filesystem.squashfs,
+        # not the base's 21 layers. The stock initrd sets
+        # LAYERFS_PATH=minimal.standard.live.squashfs by default and
+        # casper's setup_overlay() then demands all three dot-suffix
+        # parent layers; without the override the ISO panics to the
+        # initramfs shell (run 3, 2026-11-12). Every kernel line
+        # must therefore carry layerfs-path=filesystem.squashfs
+        # BEFORE the `---` (an initramfs option), and the name must
+        # have no dot so casper requires only that one file.
+        grub = self._grub()
+        linux_lines = [
+            line for line in grub.splitlines()
+            if line.strip().startswith("linux") and "/casper/vmlinuz" in line
+        ]
+        self.assertEqual(len(linux_lines), 3)
+        for line in linux_lines:
+            before, _, _ = line.partition(" --- ")
+            self.assertIn("layerfs-path=filesystem.squashfs", before)
+
     def test_secure_boot_is_reuse_not_a_claim(self):
         # The build reuses Ubuntu's signed shim/grub unchanged; no
         # Pulpo key is generated or enrolled. The header comment says

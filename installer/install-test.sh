@@ -18,7 +18,7 @@
 #   install-test.sh --work-dir DIR --shot NAME   # screendump
 #   install-test.sh --work-dir DIR --key KEYS    # sendkey (e.g. "ctrl-alt-t", "ret")
 #   install-test.sh --work-dir DIR --type "text" # type a string (sendkey per char is slow; use --type)
-#   install-test.sh --work-dir DIR --mouse X Y   # move mouse + left click
+#   install-test.sh --work-dir DIR --mouse      # left-click at the CURRENT pointer position only
 #   install-test.sh --work-dir DIR --stop        # power down the VM
 #
 # Usage:
@@ -53,6 +53,12 @@
 #                      content whatever the extension)
 #   qemu.log / qemu-verify.log   QEMU's own stderr
 #   monitor.port / vnc.display   how the subcommands reach this run
+#   OVMF_VARS_4M-install.fd     install-phase NVRAM, preserved when
+#                               the install phase ends; the verify
+#                               phase boots from it (run 10: the old
+#                               script copied pristine vars at every
+#                               launch, destroying the installed
+#                               boot entry it wanted to check)
 #   RESULT.md          verdict, written by the operator at the end
 #                      of each phase (the script cannot judge a GUI).
 #
@@ -68,6 +74,13 @@ ISO=""
 BTDIR=""
 DISK=""
 DISK_SIZE=25
+# Guest RAM in MiB. Raised from 2048 to 4096 after the VM host was
+# upgraded to 5.8 Gi (2026-11-12): run 4 stalled for 5+ hours with
+# zero progress at -m 2048 on a 3.8 Gi host — the guest and the host
+# were both starving. 4096 leaves ~1.8 Gi for the idle host during
+# the test. Do not go back to 2048; 3072 is the floor if the host
+# struggles.
+MEM_MB=4096
 PHASE="install"
 TIMEOUT_MIN=30
 MONITOR_PORT=4445
@@ -88,7 +101,7 @@ while [ $# -gt 0 ]; do
     --shot) SUBCMD="shot"; SUBARG="$2"; shift 2;;
     --key) SUBCMD="key"; SUBARG="$2"; shift 2;;
     --type) SUBCMD="type"; SUBARG="$2"; shift 2;;
-    --mouse) SUBCMD="mouse"; SUBARG="$2 $3"; shift 3;;
+    --mouse) SUBCMD="mouse"; shift;;
     --stop) SUBCMD="stop"; shift;;
     *) echo "unknown option: $1" >&2; exit 2;;
   esac
@@ -167,13 +180,26 @@ case "$SUBCMD" in
     echo "typed: $SUBARG"
     exit 0;;
   mouse)
-    # mouse X Y — move to (X, Y) and left-click.
-    mon "mouse_move ${SUBARG% *} ${SUBARG#* }"
-    sleep 0.5
+    # mouse — left-click at the CURRENT pointer position.
+    # NO positioning: the QEMU monitor mouse_move command is a
+    # no-op for the usb-tablet (absolute). Probed 2026-11-12
+    # (build #10, probe-mouse work dir): mouse_move was confirmed
+    # delivered to the monitor (prompt returned, tablet is the
+    # active mouse per 'info mice') in five attempts (500 0,
+    # 1000 500, 500 300, home -30000 -30000 then 500 0 twice,
+    # 0 300) and the pointer never moved (screendumps
+    # byte-identical). Earlier "relative" readings were the
+    # sampling loop / desktop moving the pointer, not mouse_move.
+    # So --mouse cannot move the pointer to (X, Y); it only
+    # clicks wherever the pointer happens to be. Verify by
+    # screenshot after every click. Keyboard (--key/--type) is
+    # the reliable driver; Calamares is fully
+    # keyboard-navigable. A VNC absolute PointerEvent is the only
+    # known way to position the pointer (not implemented).
     mon "mouse_button 1"
     sleep 0.3
     mon "mouse_button 0"
-    echo "clicked: $SUBARG"
+    echo "clicked at current pointer position (no positioning)"
     exit 0;;
   stop)
     mon "system_powerdown"
@@ -199,7 +225,25 @@ mkdir -p "$BTDIR"
 echo "$MONITOR_PORT" > "$BTDIR/monitor.port"
 echo "$VNC_DISPLAY" > "$BTDIR/vnc.display"
 # OVMF_VARS must be writable; never write into the extracted prefix.
-cp "$OVMF_VARS_SRC" "$BTDIR/OVMF_VARS_4M.fd"
+# Run 10: the verify phase used to copy the PRISTINE vars at every
+# launch, destroying the NVRAM boot entry the install had just
+# created — so the verify boot could only ever exercise the
+# fallback path, and the efibootmgr "pulpo" check was untestable.
+# The install phase preserves its vars to OVMF_VARS_4M-install.fd
+# when it ends (below); the verify phase reuses that file when it
+# exists, so the verify boot tests the actual installed entry.
+# A verify run with no preserved install vars falls back to the
+# pristine file (old behaviour) and warns that the entry is
+# untestable.
+if [ "$PHASE" = verify ] && [ -f "$BTDIR/OVMF_VARS_4M-install.fd" ]; then
+  echo "== verify: reusing install-phase NVRAM ($BTDIR/OVMF_VARS_4M-install.fd) =="
+  cp "$BTDIR/OVMF_VARS_4M-install.fd" "$BTDIR/OVMF_VARS_4M.fd"
+else
+  if [ "$PHASE" = verify ]; then
+    echo "== verify: no install-phase NVRAM found; using pristine vars (NVRAM entry untestable) ==" >&2
+  fi
+  cp "$OVMF_VARS_SRC" "$BTDIR/OVMF_VARS_4M.fd"
+fi
 
 export LD_LIBRARY_PATH="$TOOLS/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
@@ -224,7 +268,7 @@ if [ "$PHASE" = install ]; then
   echo "work   : $BTDIR"
   echo "monitor: telnet 127.0.0.1:$MONITOR_PORT (VNC :$VNC_DISPLAY)"
   echo "timeout: ${TIMEOUT_MIN} min to reach the desktop (TCG, no KVM — expect slow)"
-  "$QEMU" -machine q35 -m 2048 -smp 2 -cpu qemu64 \
+  "$QEMU" -machine q35 -m $MEM_MB -smp 2 -cpu qemu64 \
     -drive if=pflash,format=raw,readonly=on,file="$OVMF_CODE" \
     -drive if=pflash,format=raw,file="$BTDIR/OVMF_VARS_4M.fd" \
     -drive if=virtio,format=qcow2,file="$DISK" \
@@ -248,7 +292,7 @@ elif [ "$PHASE" = verify ]; then
   # No ISO attached; boot from the disk. The installed GRUB is
   # Ubuntu's (shim + grub from the base image), so this is also
   # the check that the bootloader install worked.
-  "$QEMU" -machine q35 -m 2048 -smp 2 -cpu qemu64 \
+  "$QEMU" -machine q35 -m $MEM_MB -smp 2 -cpu qemu64 \
     -drive if=pflash,format=raw,readonly=on,file="$OVMF_CODE" \
     -drive if=pflash,format=raw,file="$BTDIR/OVMF_VARS_4M.fd" \
     -drive if=virtio,format=qcow2,file="$DISK" \
@@ -270,7 +314,13 @@ echo "qemu pid $QPID"
 echo "$QPID" > "$BTDIR/qemu.pid"
 
 cleanup() { kill "$QPID" 2>/dev/null || true; wait "$QPID" 2>/dev/null || true; }
-trap cleanup EXIT
+# Clean up only on abort (Ctrl-C / TERM), NOT on normal exit: the
+# sampling loops end long before a full install finishes, and the
+# closing message promises the VM stays running for the operator
+# to drive. An EXIT trap would kill QEMU mid-install as soon as
+# the script finished sampling. (Run 4 only survived because the
+# script happened to block in cleanup's wait on the starved host.)
+trap cleanup INT TERM
 
 shot() { # shot <name>
   mon "screendump $BTDIR/$1.ppm"
@@ -316,7 +366,7 @@ echo "The VM is still running. Drive it with:"
 echo "  $0 --work-dir $BTDIR --shot <name>     (screendump)"
 echo "  $0 --work-dir $BTDIR --key <keys>       (sendkey, e.g. ctrl-alt-t, ret, tab)"
 echo "  $0 --work-dir $BTDIR --type \"text\"      (type a string)"
-echo "  $0 --work-dir $BTDIR --mouse X Y        (move + left-click)"
+echo "  $0 --work-dir $BTDIR --mouse             (left-click at current pointer position; no positioning)"
 echo "  $0 --work-dir $BTDIR --stop             (power down)"
 echo ""
 echo "Phase install: open a terminal (ctrl-alt-t), run 'sudo -E calamares',"
@@ -331,4 +381,13 @@ while [ ! -f "$BTDIR/INSTALL_DONE" ]; do
   sleep 30
   kill -0 "$QPID" 2>/dev/null || { echo "QEMU exited (see qemu*.log)"; break; }
 done
+# Preserve the install-phase NVRAM (with the boot entry the
+# install created) so the verify phase can boot from it — see the
+# launch block above. Runs on both exits of the hold loop
+# (INSTALL_DONE found, or QEMU exited after --stop); the copy is
+# harmless for the verify phase, which never writes it back.
+if [ "$PHASE" = install ] && [ -f "$BTDIR/OVMF_VARS_4M.fd" ]; then
+  cp "$BTDIR/OVMF_VARS_4M.fd" "$BTDIR/OVMF_VARS_4M-install.fd"
+  echo "preserved install-phase NVRAM to $BTDIR/OVMF_VARS_4M-install.fd (verify phase reuses it)"
+fi
 echo "INSTALL_DONE found (or QEMU exited); stopping."

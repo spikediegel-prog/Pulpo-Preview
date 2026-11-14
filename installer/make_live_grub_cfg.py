@@ -13,10 +13,19 @@ not look exactly like Ubuntu 24.04.5.1's:
 - add gfxterm + the Pulpo boot splash (falls back to text if the
   BMP is missing; boot never depends on the image)
 - rename the two entries to Pulpo, live-only (there is NO "Install"
-  entry: no disk installer exists in this milestone)
+  entry: the install is a desktop-icon click in the live session,
+  not a boot-menu choice)
 - append ``console=ttyS0 console=tty0`` to the kernel lines so the
   QEMU boot test can capture the kernel log from the serial port
   while it still shows on screen
+- append ``layerfs-path=filesystem.squashfs`` to the kernel lines:
+  the stock initrd sets LAYERFS_PATH=minimal.standard.live.squashfs
+  (``/conf/conf.d/default-layer.conf``), and casper's setup_overlay()
+  then demands all three dot-suffix parent layers — the rebuild
+  removed all three and left only the merged filesystem.squashfs,
+  which casper never looks for in that branch (run 3 boot failure,
+  2026-11-12). A dotless name has no parent layers, so casper
+  requires only that one file
 - add a "Check installer media" entry (casper ``integrity-check``)
 
 Secure Boot: nothing here touches signing. Ubuntu's signed shim/grub
@@ -38,11 +47,11 @@ HEADER = """\
 # 24.04.5.1 desktop ISO's boot/grub/grub.cfg. The kernel lines are
 # the base's, verbatim except for the added serial console.
 #
-# LIVE ISO ONLY. There is no "Install" entry here on purpose: no disk
-# installer exists in this milestone (the partitioner is still open),
-# and the menu must not offer one. First boot is a live session that
-# autostarts the Control Center; Guided Setup is the button on the
-# Control Center System page.
+# There is no "Install" entry here on purpose: the install is a
+# deliberate click on the "Install Pulpo Preview" desktop icon in
+# the live session (Calamares, erase-disk), not a boot-menu choice.
+# First boot is a live session that autostarts the Control Center;
+# Guided Setup is the button on the Control Center System page.
 #
 # Secure Boot: Ubuntu's signed shim/grub from the base ISO are reused
 # unchanged, so the ISO boots under Secure Boot via Microsoft's key.
@@ -53,6 +62,14 @@ HEADER = """\
 # port so the QEMU boot test (installer/boot-test.sh) can capture it
 # as a file, while still showing on screen. Harmless on hardware
 # without a serial port.
+#
+# layerfs-path=filesystem.squashfs: the live system is a single
+# merged squashfs, not the base's 21 layers. The stock initrd sets
+# LAYERFS_PATH=minimal.standard.live.squashfs by default and casper's
+# setup_overlay() then requires all three dot-suffix parent layers;
+# without this override the ISO panics to the initramfs shell
+# (run 3, 2026-11-12). A dotless name has no parent layers, so
+# casper requires only filesystem.squashfs.
 
 """
 
@@ -75,12 +92,13 @@ fi
 CHECK_MEDIA_ENTRY = """\
 menuentry "Check installer media" --class pulpo {
 \tset gfxpayload=keep
-\tlinux\t/casper/vmlinuz console=ttyS0 console=tty0 integrity-check --- quiet splash
+\tlinux\t/casper/vmlinuz console=ttyS0 console=tty0 layerfs-path=filesystem.squashfs integrity-check --- quiet splash
 \tinitrd\t/casper/initrd
 }
 """
 
 CONSOLE = " console=ttyS0 console=tty0"
+LAYERFS = " layerfs-path=filesystem.squashfs"
 
 
 def _replace_once(text: str, old: str, new: str, what: str) -> str:
@@ -112,12 +130,14 @@ def make_live_grub_cfg(base: str) -> str:
         'menuentry "Pulpo Preview 0.1.0 (safe graphics)" --class pulpo {',
         "safe-graphics menuentry",
     )
-    # Kernel lines: insert the serial console right after the kernel
-    # path, keeping the base's own parameters (including the position
-    # of `---`) untouched.
+    # Kernel lines: insert the serial console and the layerfs-path
+    # override right after the kernel path, keeping the base's own
+    # parameters (including the position of `---`) untouched. The
+    # override must sit BEFORE `---`: it is an initramfs (casper)
+    # option, not a boot-system option.
     if out.count("\t/casper/vmlinuz") != 2:
         raise ValueError("expected exactly 2 linux lines with /casper/vmlinuz")
-    out = out.replace("\t/casper/vmlinuz", "\t/casper/vmlinuz" + CONSOLE)
+    out = out.replace("\t/casper/vmlinuz", "\t/casper/vmlinuz" + CONSOLE + LAYERFS)
     out = _replace_once(
         out, "grub_platform\n", CHECK_MEDIA_ENTRY + "grub_platform\n",
         "grub_platform anchor",

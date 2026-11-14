@@ -78,10 +78,17 @@ already exists instead of starting over:
 
 Rootless, because the build VM has no sudo and no unprivileged user
 namespaces: ISO tooling (xorriso, QEMU, OVMF) is fetched as Ubuntu
-`.deb`s and extracted with `dpkg-deb -x` into a prefix; the live
-rootfs is the base ISO's top squashfs layer
-(`casper/minimal.standard.live.squashfs`), unpacked with
-`unsquashfs`, customised by copying files in, repacked with
+`.deb`s and extracted with `dpkg-deb -x` into a prefix; the base
+ISO's boot chain (minimal -> minimal.standard ->
+minimal.standard.live, 3 of its 21 layered squashfs files —
+the language layers are never mounted at boot and are not
+merged) is merged into one `casper/filesystem.squashfs`
+(squashfuse + fuse-overlayfs for the
+composition, also fetched as `.deb`s — the merge resolves the
+overlay whiteouts that break Calamares' rsync, see
+`DISK-INSTALLER.md` — then rsync into a plain directory, because
+a non-root user cannot write through the overlay), the merged
+rootfs is customised by copying files in and repacked with
 `mksquashfs`; the ISO is rebuilt with xorriso replaying the base
 image's boot chain verbatim. The Control Center goes in from its
 existing `.deb` (preview.48 release, merged Control Center main
