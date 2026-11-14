@@ -800,6 +800,16 @@ cp "$REPO_ROOT/installer/calamares/install-pulpo.desktop" \
    "$ROOTFS/usr/share/applications/install-pulpo.desktop"
 cp "$REPO_ROOT/installer/calamares/install-pulpo.desktop" \
    "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop"
+# The /etc/skel copy is the one GNOME shows on the live desktop,
+# and it must be executable: GNOME treats a .desktop file on the
+# Desktop as trusted -- and launches it on double-click -- only
+# when it is executable. Shipped 0644 it shows a red-X
+# "untrusted" icon and double-click does nothing (the Hyper-V
+# run: the install never started until the file was right-clicked
+# to "Allow Launching", which is exactly chmod +x). The
+# /usr/share/applications copy needs no +x -- app-grid launchers
+# are trusted by location.
+chmod +x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop"
 # Verify the pieces Calamares needs are all in place.
 for f in etc/calamares/settings.conf \
          etc/calamares/modules/partition.conf \
@@ -819,6 +829,7 @@ for f in etc/calamares/settings.conf \
          usr/share/applications/install-pulpo.desktop; do
   [ -f "$ROOTFS/$f" ] || { echo "calamares file missing: $f" >&2; exit 1; }
 done
+[ -x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop" ] || { echo "live desktop launcher is not executable (GNOME would show it untrusted)" >&2; exit 1; }
 grep -q "branding: pulpo" "$ROOTFS/etc/calamares/settings.conf" \
   || { echo "settings.conf does not select the pulpo branding" >&2; exit 1; }
 grep -q "shellprocess@pulpo-config" "$ROOTFS/etc/calamares/settings.conf" \
