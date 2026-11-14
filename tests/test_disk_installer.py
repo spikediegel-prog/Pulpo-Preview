@@ -155,7 +155,8 @@ class CalamaresSettingsTests(unittest.TestCase):
         expected = [
             "partition", "mount", "unpackfs", "machineid", "fstab",
             "keyboard", "users", "displaymanager", "hwclock",
-            "shellprocess@pulpo-config", "shellprocess@remove-live",
+            "shellprocess@pulpo-config", "shellprocess@install-cc-deb",
+            "shellprocess@remove-live",
             "initramfscfg", "initramfs", "shellprocess@verify-initramfs",
             "grubcfg", "bootloader", "shellprocess@grub-prefix-stub",
             "umount",
@@ -1292,6 +1293,101 @@ class RemoveLivePackagesTests(unittest.TestCase):
                         exec_list.index("initramfs"))
 
 
+class InstallCcDebTests(unittest.TestCase):
+    SCRIPT = CALAMARES / "install-cc-deb.sh"
+    CONF = CALAMARES / "modules" / "shellprocess_install-cc-deb.conf"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.target = self.root / "target"
+        self.target.mkdir()
+        # Fake release bundle: a couple of .deb files (empty files
+        # are enough for the listing path; verification fails on
+        # them, which is what the failure-path tests assert).
+        self.bundle = self.root / "bundle"
+        self.bundle.mkdir()
+        (self.bundle / "pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb").write_bytes(b"")
+        (self.bundle / "python3-tk_3.12.3-1_amd64.deb").write_bytes(b"")
+
+    def _source(self, snippet):
+        return subprocess.run(
+            ["bash", "-c", snippet, "install-cc-deb-check",
+             str(self.SCRIPT), str(self.target)],
+            capture_output=True, text=True, timeout=60,
+        )
+
+    def test_script_is_executable(self):
+        self.assertTrue(self.SCRIPT.stat().st_mode & stat.S_IXUSR)
+
+    def test_pinned_release_values(self):
+        # The expected version, source revision and publisher
+        # fingerprint are pinned in the script, not read from the
+        # statement -- verify() checks the statement against
+        # them. A release change must update all three together.
+        text = _read(self.SCRIPT)
+        self.assertIn('EXPECTED_VERSION="0.1.0~ubuntu.preview.48+e3.2077631"', text)
+        self.assertIn('EXPECTED_REVISION="20776311d4c39c1f6ddebe08ddc5880cb2a9c131"', text)
+        self.assertIn('PUBLISHER_FINGERPRINT="19B555C6055FD7B64B848DA67F7B8449ED6FEB20"', text)
+        self.assertIn('CC_DEB_NAME="pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb"', text)
+
+    def test_verify_invocation(self):
+        # The step must verify with the Control Center's own
+        # ubuntu_release.py verify, passing every input it needs.
+        text = _read(self.SCRIPT)
+        self.assertIn('python3 "$script" verify', text)
+        self.assertIn('--artifact "$deb"', text)
+        self.assertIn('--manifest "$manifest"', text)
+        self.assertIn('--signature "$signature"', text)
+        self.assertIn('--public-key "$key"', text)
+        self.assertIn('--fingerprint "$PUBLISHER_FINGERPRINT"', text)
+
+    def test_install_uses_chroot_dpkg_and_configure(self):
+        text = _read(self.SCRIPT)
+        self.assertIn('chroot "$target" dpkg -i', text)
+        self.assertIn('chroot "$target" dpkg --configure -a', text)
+        self.assertIn('dpkg -s "$pkg"', text)
+        self.assertIn("install ok installed", text)
+
+    def test_bundle_debs_lists_debs(self):
+        result = self._source(
+            'source "$1"; bundle_debs "%s"' % self.bundle)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb", result.stdout)
+        self.assertIn("python3-tk_3.12.3-1_amd64.deb", result.stdout)
+
+    def test_verify_release_fails_on_missing_bundle(self):
+        # No statement, signature, key or verify scripts in the
+        # fake bundle: verification must fail, never pass.
+        result = self._source(
+            'source "$1"; verify_release "%s"' % self.bundle)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_main_fails_when_bundle_missing(self):
+        # The live image's bundle dir does not exist in the test
+        # environment, so main() must fail loudly rather than
+        # install anything.
+        result = self._source('source "$1"; main "$2"')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("verification failed", result.stdout + result.stderr)
+
+    def test_conf_exists_and_runs_the_script(self):
+        text = _read(self.CONF)
+        self.assertIn("dontChroot: true", text)
+        self.assertIn("install-cc-deb.sh ${ROOT}", text)
+
+    def test_settings_order(self):
+        sections, _ = _settings_sections()
+        exec_list = sections["exec"]
+        self.assertLess(exec_list.index("shellprocess@pulpo-config"),
+                        exec_list.index("shellprocess@install-cc-deb"))
+        self.assertLess(exec_list.index("shellprocess@install-cc-deb"),
+                        exec_list.index("shellprocess@remove-live"))
+        self.assertLess(exec_list.index("shellprocess@install-cc-deb"),
+                        exec_list.index("initramfscfg"))
+
+
 class VerifyInitramfsTests(unittest.TestCase):
     SCRIPT = CALAMARES / "verify-initramfs.sh"
     CONF = CALAMARES / "modules" / "shellprocess_verify-initramfs.conf"
@@ -1632,6 +1728,30 @@ class BuildIntegrationTests(unittest.TestCase):
         text = _read(INSTALLER / "build-iso.sh")
         self.assertIn('chmod +x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop"', text)
         self.assertIn('[ -x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop" ]', text)
+
+    def test_build_copies_signed_release_bundle(self):
+        # The installer must install the signed release .deb
+        # into the target, so the build copies the whole
+        # release bundle into the live image: the .deb, its
+        # dependency .debs, the signed statement, the detached
+        # signature, the publisher key, and the Control
+        # Center's own verify scripts.
+        text = _read(INSTALLER / "build-iso.sh")
+        self.assertIn('cp "$CC_DEB" "$ROOTFS/usr/share/pulpo-installer/control-center/"', text)
+        self.assertIn('for deb in ${UNPACKED:-}; do', text)
+        self.assertIn('cp "$deb" "$ROOTFS/usr/share/pulpo-installer/control-center/"', text)
+        self.assertIn('cp "$CC_RELEASE_JSON" "$ROOTFS/usr/share/pulpo-installer/control-center/release.json"', text)
+        self.assertIn('cp "$CC_RELEASE_SIG" "$ROOTFS/usr/share/pulpo-installer/control-center/release.json.asc"', text)
+        self.assertIn('cp "$CC_PUBLISHER_KEY" "$ROOTFS/usr/share/pulpo-installer/control-center/publisher.gpg"', text)
+        self.assertIn('cp "$CC_VERIFY_SCRIPTS/ubuntu_release.py" "$CC_VERIFY_SCRIPTS/check_ubuntu_deb.py"', text)
+        self.assertIn("control-center bundle holds", text)
+
+    def test_build_copies_install_cc_deb_script_and_gates_on_it(self):
+        text = _read(INSTALLER / "build-iso.sh")
+        self.assertIn("install-cc-deb", text)
+        self.assertIn("usr/share/pulpo-installer/calamares/install-cc-deb.sh", text)
+        self.assertIn("etc/calamares/modules/shellprocess_install-cc-deb.conf", text)
+        self.assertIn('shellprocess@install-cc-deb', text)
 
     def test_build_rebuilds_iso_with_the_single_squashfs(self):
         # The xorriso rebuild must remove the 21 layered files
