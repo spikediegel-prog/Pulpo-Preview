@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Pulpo Trust Launcher
+Comment=Mark the live desktop installer launcher as trusted (runs once at live login)
+Exec=/usr/share/pulpo-installer/pulpo-trust-launcher.sh
+Icon=pulpo
+Terminal=false
+Categories=System;Settings;
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
