@@ -1383,10 +1383,53 @@ class InstallCcDebTests(unittest.TestCase):
 
     def test_install_uses_chroot_dpkg_and_configure(self):
         text = _read(self.SCRIPT)
-        self.assertIn('chroot "$target" dpkg -i', text)
+        # Run 15: the .deb glob must expand inside the chroot,
+        # not on the host -- the host has no staging dir, so a
+        # host-expanded glob reaches dpkg as a literal '*'.
+        self.assertIn('chroot "$target" sh -c "dpkg -i $TARGET_STAGING/*.deb"', text)
+        self.assertNotIn('chroot "$target" dpkg -i "$TARGET_STAGING"/*.deb', text)
         self.assertIn('chroot "$target" dpkg --configure -a', text)
         self.assertIn('dpkg -s "$pkg"', text)
         self.assertIn("install ok installed", text)
+
+    def test_install_debs_expands_deb_glob_inside_chroot(self):
+        # Run 15: `chroot "$target" dpkg -i "$TARGET_STAGING"/*.deb`
+        # expands the glob on the host, where the staging dir does
+        # not exist, so dpkg inside the chroot received the literal
+        # pattern. A stub chroot records its argv; a decoy .deb in
+        # the host staging path makes the old host-expanded form
+        # visible (no '*' in the log), while the fixed form passes
+        # the literal glob through sh -c for the chroot to expand.
+        stubdir = Path(self.tmp.name) / "stubbin"
+        stubdir.mkdir()
+        chroot_log = Path(self.tmp.name) / "chroot.log"
+        stub = stubdir / "chroot"
+        stub.write_text(
+            "#!/bin/bash\n"
+            "echo \"$@\" >> \"" + str(chroot_log) + "\"\n"
+            "shift\n"
+            "if [ \"$1\" = \"dpkg\" ] && [ \"$2\" = \"-s\" ]; then\n"
+            "  echo \"Status: install ok installed\"\n"
+            "fi\n"
+            "exit 0\n"
+        )
+        stub.chmod(0o755)
+        for name in ("mountpoint", "mount", "umount"):
+            s = stubdir / name
+            s.write_text("#!/bin/bash\nexit %d\n" % (1 if name == "mountpoint" else 0))
+            s.chmod(0o755)
+        host_staging = Path(self.tmp.name) / "host-staging"
+        host_staging.mkdir()
+        (host_staging / "host-decoy.deb").write_bytes(b"")
+        result = self._source(
+            'export PATH="%s:$PATH"; source "$1"; '
+            'TARGET_STAGING="%s"; install_debs "$2" "%s"'
+            % (stubdir, host_staging, self.bundle))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        log = chroot_log.read_text()
+        self.assertIn("sh -c", log)
+        self.assertIn("*.deb", log)
+        self.assertNotIn("host-decoy.deb", log)
 
     def test_bundle_debs_lists_debs(self):
         result = self._source(
@@ -1786,6 +1829,17 @@ class GrubPrefixStubTests(unittest.TestCase):
 
 
 class BuildIntegrationTests(unittest.TestCase):
+    def test_build_makes_control_center_bundle_world_readable(self):
+        # Run 15: the release statement on the build machine is
+        # 0600 and a plain cp carries the mode, so release.json was
+        # unreadable to the live ubuntu user and the verify failed
+        # with permission denied. The build must chmod the bundle
+        # files 0644 after copying them into the rootfs.
+        text = _read(INSTALLER / "build-iso.sh")
+        block = text.split('mkdir -p "$ROOTFS/usr/share/pulpo-installer/control-center"')[1]
+        block = block.split("# Gate: the bundle must hold")[0]
+        self.assertIn('chmod 0644 "$ROOTFS/usr/share/pulpo-installer/control-center/"*', block)
+
     def test_build_uses_the_release_cc_deb(self):
         text = _read(INSTALLER / "build-iso.sh")
         self.assertIn("2077631", text)

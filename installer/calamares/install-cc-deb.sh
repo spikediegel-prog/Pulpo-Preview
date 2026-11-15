@@ -287,7 +287,12 @@ EOF
     _mount_if_missing "$target" /dev dev || { _unmount_ours "$target"; rm -rf "$staging"; return 1; }
     local rc=0
     log "installing bundle .debs into the target"
-    chroot "$target" dpkg -i "$TARGET_STAGING"/*.deb || {
+    # The glob must expand inside the chroot, not on the host:
+    # the host has no $TARGET_STAGING, so the host shell passes
+    # the literal pattern to dpkg (run 15: "cannot access
+    # archive '/tmp/pulpo-cc-install/*.deb'"). The glob stays
+    # literal inside double quotes and the chroot's sh expands it.
+    chroot "$target" sh -c "dpkg -i $TARGET_STAGING/*.deb" || {
         log "dpkg -i exited non-zero (may be install order; configuring next)"
         rc=1
     }

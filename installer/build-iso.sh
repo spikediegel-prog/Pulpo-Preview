@@ -828,6 +828,12 @@ cp "$CC_RELEASE_SIG" "$ROOTFS/usr/share/pulpo-installer/control-center/release.j
 cp "$CC_PUBLISHER_KEY" "$ROOTFS/usr/share/pulpo-installer/control-center/publisher.gpg"
 cp "$CC_VERIFY_SCRIPTS/ubuntu_release.py" "$CC_VERIFY_SCRIPTS/check_ubuntu_deb.py" \
    "$ROOTFS/usr/share/pulpo-installer/control-center/"
+# The bundle must be world-readable: the install step verifies
+# the release as the live session's non-root user (run 15: the
+# statement file on the build machine is 0600 and a plain cp
+# carries the mode, so release.json was unreadable to ubuntu
+# and the verify failed with permission denied).
+chmod 0644 "$ROOTFS/usr/share/pulpo-installer/control-center/"*
 # Gate: the bundle must hold the Control Center .deb plus
 # exactly the dependency .debs step 4e unpacked -- a missing
 # dep .deb would make the target install fail on unmet
