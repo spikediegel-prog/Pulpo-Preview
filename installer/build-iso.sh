@@ -848,14 +848,27 @@ cp "$REPO_ROOT/installer/calamares/install-pulpo.desktop" \
    "$ROOTFS/usr/share/applications/install-pulpo.desktop"
 cp "$REPO_ROOT/installer/calamares/install-pulpo.desktop" \
    "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop"
+# The trust half of "Allow Launching": GNOME shows the desktop
+# launcher untrusted until it is executable AND has metadata::trusted
+# set. PR #129 did the executable bit; the trust metadata is set at
+# live login by pulpo-trust-launcher.sh (autostart, runs once, removes
+# itself) -- on the real path, as the live user, with a real session
+# bus, which a build-time gio set cannot do (the metadata lives in
+# the user's gvfs-metadata store, keyed by the runtime path).
+mkdir -p "$ROOTFS/usr/share/pulpo-installer" "$ROOTFS/etc/skel/.config/autostart"
+cp "$REPO_ROOT/installer/calamares/pulpo-trust-launcher.sh" \
+   "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh"
+cp "$REPO_ROOT/installer/calamares/pulpo-trust-launcher.desktop" \
+   "$ROOTFS/etc/skel/.config/autostart/pulpo-trust-launcher.desktop"
+chmod +x "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh"
 # The /etc/skel copy is the one GNOME shows on the live desktop,
 # and it must be executable: GNOME treats a .desktop file on the
 # Desktop as trusted -- and launches it on double-click -- only
-# when it is executable. Shipped 0644 it shows a red-X
-# "untrusted" icon and double-click does nothing (the Hyper-V
-# run: the install never started until the file was right-clicked
-# to "Allow Launching", which is exactly chmod +x). The
-# /usr/share/applications copy needs no +x -- app-grid launchers
+# when it is executable AND has metadata::trusted set. Shipped 0644
+# it shows a red-X "untrusted" icon and double-click does nothing
+# (the Hyper-V run). PR #129 set the executable bit; the trust
+# metadata is set at live login by pulpo-trust-launcher.sh (above).
+# The /usr/share/applications copy needs no +x -- app-grid launchers
 # are trusted by location.
 chmod +x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop"
 # Verify the pieces Calamares needs are all in place.
@@ -882,10 +895,15 @@ for f in etc/calamares/settings.conf \
          usr/share/pulpo-installer/control-center/publisher.gpg \
          usr/share/pulpo-installer/control-center/ubuntu_release.py \
          usr/share/pulpo-installer/control-center/check_ubuntu_deb.py \
-         usr/share/applications/install-pulpo.desktop; do
+         usr/share/applications/install-pulpo.desktop \
+         usr/share/pulpo-installer/pulpo-trust-launcher.sh \
+         etc/skel/.config/autostart/pulpo-trust-launcher.desktop; do
   [ -f "$ROOTFS/$f" ] || { echo "calamares file missing: $f" >&2; exit 1; }
 done
 [ -x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop" ] || { echo "live desktop launcher is not executable (GNOME would show it untrusted)" >&2; exit 1; }
+[ -x "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh" ] || { echo "trust launcher script is not executable" >&2; exit 1; }
+grep -q "^Exec=/usr/share/pulpo-installer/pulpo-trust-launcher.sh$" "$ROOTFS/etc/skel/.config/autostart/pulpo-trust-launcher.desktop" \
+  || { echo "trust launcher autostart entry does not Exec the installed script" >&2; exit 1; }
 grep -q "branding: pulpo" "$ROOTFS/etc/calamares/settings.conf" \
   || { echo "settings.conf does not select the pulpo branding" >&2; exit 1; }
 grep -q "shellprocess@pulpo-config" "$ROOTFS/etc/calamares/settings.conf" \

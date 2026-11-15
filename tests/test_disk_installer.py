@@ -807,6 +807,123 @@ class DesktopLauncherTests(unittest.TestCase):
         self.assertIn("Exec=sudo -E calamares", text)
         self.assertIn("Icon=pulpo", text)
 
+    def test_trust_launcher_autostart_entry_execs_installed_script(self):
+        # The trust script runs once at live login via this
+        # autostart entry; it must Exec the script at the path
+        # the build installs it to, and be enabled for GNOME.
+        text = _read(CALAMARES / "pulpo-trust-launcher.desktop")
+        self.assertIn("Type=Application", text)
+        self.assertIn("Exec=/usr/share/pulpo-installer/pulpo-trust-launcher.sh", text)
+        self.assertIn("X-GNOME-Autostart-enabled=true", text)
+
+    def test_trust_launcher_script_sets_metadata_trusted(self):
+        # Run 13: chmod +x alone leaves the red-X untrusted
+        # icon. The script must set metadata::trusted via gio,
+        # touch the file so the icon refreshes, and remove its
+        # own autostart entry so it runs once.
+        text = _read(CALAMARES / "pulpo-trust-launcher.sh")
+        self.assertIn('gio set "$launcher" metadata::trusted true', text)
+        self.assertIn('touch "$launcher"', text)
+        self.assertIn("remove_own_autostart", text)
+
+
+class TrustLauncherTests(unittest.TestCase):
+    SCRIPT = CALAMARES / "pulpo-trust-launcher.sh"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.home = self.root / "home"
+        (self.home / "Desktop").mkdir(parents=True)
+        (self.home / ".config" / "autostart").mkdir(parents=True)
+        (self.home / ".config" / "autostart" / "pulpo-trust-launcher.desktop").write_text(
+            "[Desktop Entry]\n", encoding="utf-8")
+        self.stubbin = self.root / "stubbin"
+        self.stubbin.mkdir()
+        self.gio_log = self.root / "gio.log"
+        # Real touch/sleep/rm for the gio-missing test (gio absent).
+        for name in ("touch", "sleep", "rm"):
+            for candidate in ("/usr/bin/" + name, "/bin/" + name):
+                if os.path.exists(candidate):
+                    os.symlink(candidate, self.stubbin / name)
+                    break
+
+    def _write_gio_stub(self, exit_code=0):
+        stub = self.stubbin / "gio"
+        stub.write_text(
+            "#!/bin/bash\n"
+            'echo "$@" >> "' + str(self.gio_log) + '"\n'
+            "exit " + str(exit_code) + "\n",
+            encoding="utf-8")
+        stub.chmod(0o755)
+
+    def _source(self, snippet):
+        return subprocess.run(
+            ["bash", "-c", snippet, "trust-launcher-check",
+             str(self.SCRIPT), str(self.root)],
+            capture_output=True, text=True, timeout=60,
+        )
+
+    def _run_main(self):
+        return self._source(
+            'export HOME="%s" PATH="%s:$PATH"; source "$1"; main'
+            % (self.home, self.stubbin))
+
+    def test_script_is_executable(self):
+        self.assertTrue(self.SCRIPT.stat().st_mode & stat.S_IXUSR)
+
+    def test_main_trusts_launcher_and_removes_autostart(self):
+        # The point of the script: set metadata::trusted on the
+        # live desktop launcher (run 13: chmod +x alone leaves
+        # the red-X untrusted icon), touch it so the icon
+        # refreshes, and remove the autostart entry so it runs
+        # once.
+        (self.home / "Desktop" / "install-pulpo.desktop").write_text(
+            "[Desktop Entry]\n", encoding="utf-8")
+        self._write_gio_stub(exit_code=0)
+        result = self._run_main()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("live desktop launcher trusted", result.stdout)
+        self.assertIn(
+            "set %s/Desktop/install-pulpo.desktop metadata::trusted true"
+            % self.home, self.gio_log.read_text())
+        self.assertFalse(
+            (self.home / ".config" / "autostart" / "pulpo-trust-launcher.desktop").exists())
+
+    def test_main_skips_gio_when_launcher_absent(self):
+        self._write_gio_stub(exit_code=0)
+        result = self._run_main()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse(self.gio_log.exists())
+        self.assertFalse(
+            (self.home / ".config" / "autostart" / "pulpo-trust-launcher.desktop").exists())
+
+    def test_main_never_fails_login_when_gio_fails(self):
+        # gio can fail (no bus yet, daemon slow to spawn): the
+        # script must still exit 0 and remove its autostart
+        # entry, never breaking login.
+        (self.home / "Desktop" / "install-pulpo.desktop").write_text(
+            "[Desktop Entry]\n", encoding="utf-8")
+        self._write_gio_stub(exit_code=1)
+        result = self._run_main()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("leaving it untrusted", result.stdout)
+        self.assertFalse(
+            (self.home / ".config" / "autostart" / "pulpo-trust-launcher.desktop").exists())
+
+    def test_main_skips_when_gio_missing(self):
+        (self.home / "Desktop" / "install-pulpo.desktop").write_text(
+            "[Desktop Entry]\n", encoding="utf-8")
+        # PATH with real touch/sleep/rm but no gio.
+        result = self._source(
+            'export HOME="%s" PATH="%s"; source "$1"; main'
+            % (self.home, self.stubbin))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("gio is not available", result.stdout)
+        self.assertFalse(
+            (self.home / ".config" / "autostart" / "pulpo-trust-launcher.desktop").exists())
+
 
 class PulpoConfigScriptTests(unittest.TestCase):
     SCRIPT = CALAMARES / "pulpo-config-install.sh"
@@ -1290,6 +1407,44 @@ class RemoveLivePackagesTests(unittest.TestCase):
 
     def test_remove_live_desktop_launchers_noop_when_absent(self):
         result = self._source('source "$1"; remove_live_desktop_launchers "$2"')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def _add_trust_launcher(self):
+        # The trust script + autostart entry ride into the
+        # target via the image and /etc/skel. A keeper
+        # autostart entry and a keeper script must survive.
+        skel = self.target / "etc" / "skel" / ".config" / "autostart"
+        skel.mkdir(parents=True)
+        (skel / "pulpo-trust-launcher.desktop").write_text(
+            "[Desktop Entry]", encoding="utf-8")
+        (skel / "other-app.desktop").write_text(
+            "[Desktop Entry]", encoding="utf-8")
+        home = self.target / "home" / "pulpo" / ".config" / "autostart"
+        home.mkdir(parents=True)
+        (home / "pulpo-trust-launcher.desktop").write_text(
+            "[Desktop Entry]", encoding="utf-8")
+        script_dir = self.target / "usr" / "share" / "pulpo-installer"
+        script_dir.mkdir(parents=True)
+        (script_dir / "pulpo-trust-launcher.sh").write_text(
+            "#!/bin/bash\n", encoding="utf-8")
+        (script_dir / "install-cc-deb.sh").write_text(
+            "#!/bin/bash\n", encoding="utf-8")
+
+    def test_remove_live_trust_launcher_deletes_only_trust_files(self):
+        self._add_trust_launcher()
+        self._add_live_launchers()
+        result = self._source('source "$1"; remove_live_trust_launcher "$2"')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse((self.target / "etc" / "skel" / ".config" / "autostart" / "pulpo-trust-launcher.desktop").exists())
+        self.assertFalse((self.target / "home" / "pulpo" / ".config" / "autostart" / "pulpo-trust-launcher.desktop").exists())
+        self.assertFalse((self.target / "usr" / "share" / "pulpo-installer" / "pulpo-trust-launcher.sh").exists())
+        self.assertTrue((self.target / "etc" / "skel" / ".config" / "autostart" / "other-app.desktop").exists())
+        self.assertTrue((self.target / "usr" / "share" / "pulpo-installer" / "install-cc-deb.sh").exists())
+        # The desktop launchers are a separate purge: untouched here.
+        self.assertTrue((self.target / "etc" / "skel" / "Desktop" / "install-pulpo.desktop").exists())
+
+    def test_remove_live_trust_launcher_noop_when_absent(self):
+        result = self._source('source "$1"; remove_live_trust_launcher "$2"')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_main_removes_launchers_even_without_casper(self):
@@ -1929,6 +2084,20 @@ class BuildIntegrationTests(unittest.TestCase):
         text = _read(INSTALLER / "build-iso.sh")
         self.assertIn('chmod +x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop"', text)
         self.assertIn('[ -x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop" ]', text)
+
+    def test_build_installs_trust_launcher(self):
+        # PR #129 follow-up: chmod +x alone leaves the red-X
+        # untrusted icon (run 13). The build must also install
+        # the trust script + its autostart entry, chmod +x the
+        # script, and gate on both files and on the autostart
+        # entry Exec'ing the installed script.
+        text = _read(INSTALLER / "build-iso.sh")
+        self.assertIn('cp "$REPO_ROOT/installer/calamares/pulpo-trust-launcher.sh"', text)
+        self.assertIn('cp "$REPO_ROOT/installer/calamares/pulpo-trust-launcher.desktop"', text)
+        self.assertIn('chmod +x "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh"', text)
+        self.assertIn("usr/share/pulpo-installer/pulpo-trust-launcher.sh", text)
+        self.assertIn("etc/skel/.config/autostart/pulpo-trust-launcher.desktop", text)
+        self.assertIn('grep -q "^Exec=/usr/share/pulpo-installer/pulpo-trust-launcher.sh$"', text)
 
     def test_build_copies_signed_release_bundle(self):
         # The installer must install the signed release .deb

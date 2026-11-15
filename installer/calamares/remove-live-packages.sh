@@ -56,6 +56,17 @@
 # packages -- and a failure is a warning, not a fatal error: a
 # leftover launcher cannot break the boot.
 #
+# The same rule covers the trust launcher (PR #129 follow-up).
+# pulpo-trust-launcher.sh runs once at live login via an autostart
+# entry in /etc/skel/.config/autostart, setting metadata::trusted on
+# the live desktop launcher. Both files ride into the target via
+# /etc/skel and the image, so the installed user would get the
+# autostart entry at creation and the script would run at every
+# login (harmless there -- the live launcher is absent -- but it
+# has no business on an installed system). remove-live therefore
+# deletes the autostart entry from the target's skel and every
+# existing user's .config/autostart, and the script itself.
+#
 # Failure modes (loud where it matters, never silent):
 #   - No casper package, initramfs paths, or conf files in the
 #     target: warn and exit 0. The step is idempotent, and a
@@ -246,6 +257,38 @@ EOF
     return "$rc"
 }
 
+# live_trust_launcher_files <root>: list the trust-launcher files
+# in the target: its autostart entry (skel + root + every user's
+# .config/autostart) and the script itself.
+live_trust_launcher_files() {
+    local root="$1"
+    local dir f
+    for dir in "$root/etc/skel/.config/autostart" "$root/root/.config/autostart" "$root/home/"*/.config/autostart; do
+        [ -d "$dir" ] || continue
+        f="$dir/pulpo-trust-launcher.desktop"
+        [ -e "$f" ] && echo "$f"
+    done
+    f="$root/usr/share/pulpo-installer/pulpo-trust-launcher.sh"
+    [ -e "$f" ] && echo "$f"
+}
+
+# remove_live_trust_launcher <root>: delete the trust-launcher
+# files from the target. Same warning-not-fatal rule as the
+# desktop launchers: a leftover autostart entry would run the
+# trust script on the installed system at every login.
+remove_live_trust_launcher() {
+    local root="$1"
+    local f rc=0
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        log "removing live trust launcher file: ${f#$root/}"
+        rm -f "$f" || rc=1
+    done <<EOF
+$(live_trust_launcher_files "$root")
+EOF
+    return "$rc"
+}
+
 # _mount_if_missing <target> <what> <where>: bind-mount the live
 # system's <what> onto <target>/<where> if nothing is mounted
 # there yet. Prints "mounted" when it mounted, nothing otherwise.
@@ -304,6 +347,7 @@ main() {
     # break the boot, and the casper steps below still catch a
     # target that is genuinely not writable.
     remove_live_desktop_launchers "$target" || log "WARNING: failed to remove a live desktop launcher from the target" >&2
+    remove_live_trust_launcher "$target" || log "WARNING: failed to remove a live trust launcher file from the target" >&2
     if ! casper_present "$target"; then
         log "casper is not installed in the target; nothing to remove"
         return 0
