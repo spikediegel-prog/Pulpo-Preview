@@ -47,6 +47,19 @@
 # this ISO's Control Center install has a shelf life, and a
 # later build needs a fresh signed release.
 #
+# The verification must NOT run as root: ubuntu_release.py
+# refuses root (line 165: 'Verify as the normal user, without
+# sudo'), and Calamares runs this script as root, so
+# verify_release() drops to the live session's non-root user
+# (default `ubuntu`) with runuser for the verify invocation
+# only -- run 14 died on exactly that, when the verify ran
+# directly as root and the guard refused it, so the install
+# failed loudly at the verify step. The dpkg install into the
+# target still runs as root. If the verify user does not
+# exist, the step fails loudly; there is no fallback to
+# verifying as root, the guard would refuse it and a silent
+# fallback would hide the breakage.
+#
 # Install order: the .debs are installed with one `dpkg -i`
 # followed by `dpkg --configure -a`. The single dpkg -i may exit
 # non-zero on ordering alone (a package installed before its
@@ -96,6 +109,35 @@ BUNDLE_DIR="/usr/share/pulpo-installer/control-center"
 # Where the bundle .debs are staged inside the target for the install.
 TARGET_STAGING="/tmp/pulpo-cc-install"
 
+# The user the release verification runs as. ubuntu_release.py
+# refuses root, and Calamares runs this script as root, so the
+# verify must drop to the live session's non-root user (default
+# `ubuntu`, uid 1000). The dpkg install into the target still
+# runs as root -- only the verify invocation drops privileges.
+# PULPO_VERIFY_USER overrides the user for tests (tests set it
+# to the current user). Resolved to a home by
+# resolve_verify_ids() in main().
+VERIFY_USER="${PULPO_VERIFY_USER:-ubuntu}"
+VERIFY_HOME=""
+
+# Whether this script is running as root (Calamares) or already
+# non-root (tests / dev). Under fakeroot, id -u reports 0.
+AS_ROOT=0
+[ "$(id -u)" -eq 0 ] && AS_ROOT=1
+
+# resolve_verify_ids: resolve the verify user's home. Returns
+# non-zero (and logs why) when the user does not exist -- there
+# is no fallback to verifying as root.
+resolve_verify_ids() {
+    VERIFY_HOME="$(getent passwd "$VERIFY_USER" 2>/dev/null | cut -d: -f6)"
+    [ -n "$VERIFY_HOME" ] || VERIFY_HOME="/home/$VERIFY_USER"
+    id -u "$VERIFY_USER" >/dev/null 2>&1 || {
+        log "verify user $VERIFY_USER does not exist in the live session" >&2
+        return 1
+    }
+    return 0
+}
+
 LOG_PREFIX="[install-cc-deb]"
 
 log() {
@@ -128,6 +170,25 @@ $(bundle_debs "$bundle")
 EOF
 }
 
+# _run_verify <args...>: run ubuntu_release.py verify, dropping
+# to the live session's non-root user when this script runs as
+# root. ubuntu_release.py refuses root, and Calamares runs this
+# script as root, so the verify must not run as root. Already
+# non-root (tests), run directly -- runuser refuses non-root
+# callers. HOME is set to the verify user's home so anything
+# reading $HOME gets the live user's home, not root's.
+_run_verify() {
+    if [ "$AS_ROOT" -eq 1 ]; then
+        if [ -z "$VERIFY_HOME" ]; then
+            VERIFY_HOME="$(getent passwd "$VERIFY_USER" 2>/dev/null | cut -d: -f6)"
+            [ -n "$VERIFY_HOME" ] || VERIFY_HOME="/home/$VERIFY_USER"
+        fi
+        runuser -u "$VERIFY_USER" -- env "HOME=$VERIFY_HOME" "$@"
+    else
+        "$@"
+    fi
+}
+
 # verify_release <bundle-dir>: verify the signed Control Center
 # release in the bundle with the Control Center's own
 # ubuntu_release.py verify. Returns non-zero (and logs why) when
@@ -147,7 +208,7 @@ verify_release() {
     done
     log "verifying $CC_DEB_NAME (version $EXPECTED_VERSION)"
     local out rc=0
-    out=$(python3 "$script" verify \
+    out=$(_run_verify python3 "$script" verify \
         --artifact "$deb" \
         --version "$EXPECTED_VERSION" \
         --revision "$EXPECTED_REVISION" \
@@ -261,6 +322,12 @@ main() {
     [ $# -ge 1 ] || { log "usage: $0 <target-root>" >&2; return 2; }
     local target="$1"
     [ -d "$target" ] || { log "target root is not a directory: $target" >&2; return 2; }
+    if [ "$AS_ROOT" -eq 1 ]; then
+        resolve_verify_ids || {
+            log "ERROR: cannot resolve verify user; refusing to install" >&2
+            return 1
+        }
+    fi
     verify_release "$BUNDLE_DIR" || {
         log "ERROR: signed release verification failed; refusing to install" >&2
         return 1
