@@ -1415,6 +1415,50 @@ class InstallCcDebTests(unittest.TestCase):
         self.assertIn("dontChroot: true", text)
         self.assertIn("install-cc-deb.sh ${ROOT}", text)
 
+    def test_verify_runs_as_non_root_user_when_root(self):
+        # Run 14: ubuntu_release.py refuses root, so verify_release
+        # must drop to the live session's non-root user when this
+        # script runs as root (Calamares). A stub runuser on PATH
+        # records its invocation; the fake bundle has all six files
+        # present (empty) so verify_release reaches the python3 call
+        # and fails there (empty files are not a valid release) --
+        # the assertion is that runuser was invoked with -u <user>
+        # for the verify, not that verification passed.
+        import getpass
+        user = getpass.getuser()
+        stubdir = Path(self.tmp.name) / "stubbin"
+        stubdir.mkdir()
+        runuser_log = Path(self.tmp.name) / "runuser.log"
+        stub = stubdir / "runuser"
+        stub.write_text(
+            "#!/bin/bash\n"
+            "echo \"$@\" >> \"" + str(runuser_log) + "\"\n"
+            "while [ $# -gt 0 ]; do case \"$1\" in --) shift; break;; *) shift;; esac; done\n"
+            "exec \"$@\"\n"
+        )
+        stub.chmod(0o755)
+        for name in ("release.json", "release.json.asc", "publisher.gpg",
+                     "ubuntu_release.py", "check_ubuntu_deb.py"):
+            (self.bundle / name).write_bytes(b"")
+        result = self._source(
+            'export PATH="%s:$PATH"; source "$1"; AS_ROOT=1; '
+            'VERIFY_USER="%s"; verify_release "%s"'
+            % (stubdir, user, self.bundle))
+        self.assertNotEqual(result.returncode, 0)
+        log = runuser_log.read_text()
+        self.assertIn("-u %s" % user, log)
+        self.assertIn("ubuntu_release.py", log)
+        self.assertIn("verify", log)
+
+    def test_verify_uses_runuser_and_install_stays_root(self):
+        # Only the verify invocation drops privileges; the dpkg
+        # install into the target (chroot) must run as root.
+        text = _read(self.SCRIPT)
+        self.assertIn('runuser -u "$VERIFY_USER"', text)
+        install_section = text.split("install_debs()")[1].split("main()")[0]
+        self.assertNotIn("runuser", install_section)
+        self.assertNotIn("sudo -u", install_section)
+
     def test_settings_order(self):
         sections, _ = _settings_sections()
         exec_list = sections["exec"]
