@@ -873,6 +873,14 @@ class TrustLauncherTests(unittest.TestCase):
     def test_script_is_executable(self):
         self.assertTrue(self.SCRIPT.stat().st_mode & stat.S_IXUSR)
 
+    def test_script_is_world_readable(self):
+        # Run 18: the repo file was 0771, so the live ubuntu
+        # user could execute but not read it, and bash failed
+        # with "Permission denied". The script must be
+        # world-readable (other-read bit set).
+        mode = self.SCRIPT.stat().st_mode
+        self.assertTrue(mode & 0o004, oct(mode))
+
     def test_main_trusts_launcher_and_removes_autostart(self):
         # The point of the script: set metadata::trusted on the
         # live desktop launcher (run 13: chmod +x alone leaves
@@ -2094,7 +2102,8 @@ class BuildIntegrationTests(unittest.TestCase):
         text = _read(INSTALLER / "build-iso.sh")
         self.assertIn('cp "$REPO_ROOT/installer/calamares/pulpo-trust-launcher.sh"', text)
         self.assertIn('cp "$REPO_ROOT/installer/calamares/pulpo-trust-launcher.desktop"', text)
-        self.assertIn('chmod +x "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh"', text)
+        self.assertIn('chmod 0755 "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh"', text)
+        self.assertIn('[ -r "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh" ]', text)
         self.assertIn("usr/share/pulpo-installer/pulpo-trust-launcher.sh", text)
         self.assertIn("etc/skel/.config/autostart/pulpo-trust-launcher.desktop", text)
         self.assertIn('grep -q "^Exec=/usr/share/pulpo-installer/pulpo-trust-launcher.sh$"', text)

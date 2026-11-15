@@ -860,7 +860,13 @@ cp "$REPO_ROOT/installer/calamares/pulpo-trust-launcher.sh" \
    "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh"
 cp "$REPO_ROOT/installer/calamares/pulpo-trust-launcher.desktop" \
    "$ROOTFS/etc/skel/.config/autostart/pulpo-trust-launcher.desktop"
-chmod +x "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh"
+# 0755, not just +x: the script runs as the non-root live user,
+# and bash must READ a script to run it. Run 18: the repo file
+# was 0771, chmod +x preserved that, and the autostart entry
+# failed with "Permission denied". Setting 0755 here makes the
+# installed copy world-readable + executable regardless of the
+# source mode.
+chmod 0755 "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh"
 # The /etc/skel copy is the one GNOME shows on the live desktop,
 # and it must be executable: GNOME treats a .desktop file on the
 # Desktop as trusted -- and launches it on double-click -- only
@@ -902,6 +908,7 @@ for f in etc/calamares/settings.conf \
 done
 [ -x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop" ] || { echo "live desktop launcher is not executable (GNOME would show it untrusted)" >&2; exit 1; }
 [ -x "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh" ] || { echo "trust launcher script is not executable" >&2; exit 1; }
+[ -r "$ROOTFS/usr/share/pulpo-installer/pulpo-trust-launcher.sh" ] || { echo "trust launcher script is not readable (the live user could not run it)" >&2; exit 1; }
 grep -q "^Exec=/usr/share/pulpo-installer/pulpo-trust-launcher.sh$" "$ROOTFS/etc/skel/.config/autostart/pulpo-trust-launcher.desktop" \
   || { echo "trust launcher autostart entry does not Exec the installed script" >&2; exit 1; }
 grep -q "branding: pulpo" "$ROOTFS/etc/calamares/settings.conf" \
