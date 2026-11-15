@@ -60,6 +60,16 @@
 # verifying as root, the guard would refuse it and a silent
 # fallback would hide the breakage.
 #
+# The step's log: log() writes every line to stdout (Calamares
+# shows it in the GUI Details box) AND, once main() sets
+# LOG_FILE, to $target/var/log/pulpo-installer/install-cc-deb.log,
+# inside the target so it survives on the installed system.
+# Run 16 proved the install but the step's stdout landed in NO
+# log file, so a future failure of this step would have needed
+# the run-15 manual re-run to diagnose. The dpkg output is
+# routed through _tee() for the same reason -- the raw dpkg
+# error is what diagnosed run 15's defect B.
+#
 # Install order: the .debs are installed with one `dpkg -i`
 # followed by `dpkg --configure -a`. The single dpkg -i may exit
 # non-zero on ordering alone (a package installed before its
@@ -140,8 +150,29 @@ resolve_verify_ids() {
 
 LOG_PREFIX="[install-cc-deb]"
 
+# The step log file, inside the target so it survives on the
+# installed system. Set by main() once the target root is
+# known; empty until then (tests and direct function calls
+# leave it unset, and log() just prints to stdout).
+LOG_FILE=""
+
+# log <message...>: print a step log line to stdout, and append
+# it to the step log file when one is set.
 log() {
     echo "$LOG_PREFIX $*"
+    [ -n "$LOG_FILE" ] && echo "$LOG_PREFIX $*" >> "$LOG_FILE"
+}
+
+# _tee: pass stdin through to stdout (so Calamares' Details box
+# still shows it) and append it to the step log file when one is
+# set. Used for the dpkg output, whose raw lines are the
+# diagnosis when an install fails.
+_tee() {
+    if [ -n "$LOG_FILE" ]; then
+        tee -a "$LOG_FILE"
+    else
+        cat
+    fi
 }
 
 # bundle_debs <bundle-dir>: print every .deb in the bundle, one
@@ -292,16 +323,18 @@ EOF
     # the literal pattern to dpkg (run 15: "cannot access
     # archive '/tmp/pulpo-cc-install/*.deb'"). The glob stays
     # literal inside double quotes and the chroot's sh expands it.
-    chroot "$target" sh -c "dpkg -i $TARGET_STAGING/*.deb" || {
+    chroot "$target" sh -c "dpkg -i $TARGET_STAGING/*.deb" 2>&1 | _tee
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
         log "dpkg -i exited non-zero (may be install order; configuring next)"
         rc=1
-    }
-    chroot "$target" dpkg --configure -a || {
+    fi
+    chroot "$target" dpkg --configure -a 2>&1 | _tee
+    if [ "${PIPESTATUS[0]}" -ne 0 ]; then
         log "ERROR: dpkg --configure -a failed in the target" >&2
         _unmount_ours "$target"
         rm -rf "$staging"
         return 1
-    }
+    fi
     local pkg
     while IFS= read -r pkg; do
         [ -n "$pkg" ] || continue
@@ -327,6 +360,12 @@ main() {
     [ $# -ge 1 ] || { log "usage: $0 <target-root>" >&2; return 2; }
     local target="$1"
     [ -d "$target" ] || { log "target root is not a directory: $target" >&2; return 2; }
+    # The step log lives inside the target so it survives on the
+    # installed system. Set it before verifying, so the verify
+    # lines are captured too. If the log dir cannot be created,
+    # fail loudly rather than install without a log.
+    LOG_FILE="$target/var/log/pulpo-installer/install-cc-deb.log"
+    mkdir -p "$(dirname "$LOG_FILE")" || { log "cannot create log dir in target" >&2; return 1; }
     if [ "$AS_ROOT" -eq 1 ]; then
         resolve_verify_ids || {
             log "ERROR: cannot resolve verify user; refusing to install" >&2

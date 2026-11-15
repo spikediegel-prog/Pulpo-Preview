@@ -1431,6 +1431,71 @@ class InstallCcDebTests(unittest.TestCase):
         self.assertIn("*.deb", log)
         self.assertNotIn("host-decoy.deb", log)
 
+    def test_log_writes_to_log_file_when_set(self):
+        # Run 16: the step's stdout landed in no log file, so a
+        # future failure needed the run-15 manual re-run to
+        # diagnose. log() must write every line to stdout AND, when
+        # LOG_FILE is set, append it to the step log file.
+        log_file = Path(self.tmp.name) / "install-cc-deb.log"
+        result = self._source(
+            'source "$1"; LOG_FILE="%s"; log "hello log"' % log_file)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("[install-cc-deb] hello log", result.stdout)
+        self.assertEqual(log_file.read_text(), "[install-cc-deb] hello log\n")
+
+    def test_install_debs_logs_dpkg_output_to_log_file(self):
+        # The raw dpkg output is what diagnosed run 15's defect B,
+        # so install_debs must route it through _tee() into the step
+        # log file as well as stdout. A stub chroot prints a fake
+        # dpkg line for the install; the log file must hold it.
+        stubdir = Path(self.tmp.name) / "stubbin"
+        stubdir.mkdir()
+        chroot_log = Path(self.tmp.name) / "chroot.log"
+        stub = stubdir / "chroot"
+        stub.write_text(
+            "#!/bin/bash\n"
+            "echo \"$@\" >> \"" + str(chroot_log) + "\"\n"
+            "shift\n"
+            "if [ \"$1\" = \"dpkg\" ] && [ \"$2\" = \"-s\" ]; then\n"
+            "  echo \"Status: install ok installed\"\n"
+            "else\n"
+            "  echo \"FAKE-DPKG-OUTPUT\"\n"
+            "fi\n"
+            "exit 0\n"
+        )
+        stub.chmod(0o755)
+        for name in ("mountpoint", "mount", "umount"):
+            s = stubdir / name
+            s.write_text("#!/bin/bash\nexit %d\n" % (1 if name == "mountpoint" else 0))
+            s.chmod(0o755)
+        log_file = Path(self.tmp.name) / "install-cc-deb.log"
+        result = self._source(
+            'export PATH="%s:$PATH"; source "$1"; LOG_FILE="%s"; '
+            'install_debs "$2" "%s"'
+            % (stubdir, log_file, self.bundle))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("FAKE-DPKG-OUTPUT", result.stdout)
+        self.assertIn("FAKE-DPKG-OUTPUT", log_file.read_text())
+        self.assertIn("installing bundle .debs into the target", log_file.read_text())
+
+    def test_main_writes_step_log_on_verify_failure(self):
+        # main() must set LOG_FILE inside the target before
+        # verifying, so a failed verify leaves its diagnosis in
+        # the installed system's log, not only in Calamares'
+        # stdout. A bundle dir with missing files fails the
+        # verify; the step log must exist and hold the failure.
+        empty_bundle = Path(self.tmp.name) / "empty-bundle"
+        empty_bundle.mkdir()
+        result = self._source(
+            'source "$1"; BUNDLE_DIR="%s"; main "$2"'
+            % empty_bundle)
+        self.assertNotEqual(result.returncode, 0)
+        log_file = Path(self.target) / "var/log/pulpo-installer/install-cc-deb.log"
+        self.assertTrue(log_file.is_file())
+        log_text = log_file.read_text()
+        self.assertIn("release bundle file missing", log_text)
+        self.assertIn("signed release verification failed", log_text)
+
     def test_bundle_debs_lists_debs(self):
         result = self._source(
             'source "$1"; bundle_debs "%s"' % self.bundle)
