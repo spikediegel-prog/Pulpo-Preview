@@ -98,16 +98,16 @@
 #     --base-iso   Ubuntu 24.04 desktop ISO (default: $WORK/ubuntu-*.iso)
 #     --work-dir   scratch dir, needs ~20G free (default: ~/pulpo-workspace/iso-build)
 #     --out        output ISO path (default: $WORK/pulpo-preview-0.1.0-live-amd64.iso)
-#     --cc-deb     Control Center .deb (default: the preview.48 release .deb from merged CC main 2077631)
+#     --cc-deb     Control Center .deb (default: the preview.50 release .deb from merged CC main 0625357)
 #
 # Inputs (all from the repo / already-built artefacts — nothing invented):
-#   - Control Center .deb: the preview.48 RELEASE .deb, built from
-#     merged Control Center main 2077631 (PR #66 merged) and
-#     installed + signed + verified on the VM. It vendors PySide6
+#   - Control Center .deb: the preview.50 RELEASE .deb, built from
+#     merged Control Center main 0625357 (PRs #69/#70/#71 merged) and
+#     signed + verified on the VM; not yet installed. It vendors PySide6
 #     6.9.3 (the newest PySide6 that still starts on x86-64-v1) and
 #     a launcher that probes Qt in a child and falls back to
 #     Tkinter if Qt cannot start. SHA-256
-#     60e65c1048493b57701497f028788ddf23f0a9c74d65965d5743537f29cc4921.
+#     5cf7f52c071c5b48b33d44b10092cbed6f12f12e07e0b33c045ec138b1947e07.
 #     The pre-merge branch .deb must NOT be used; the default
 #     below points at the release .deb.
 #   - pulpo package: installed from this worktree with
@@ -123,7 +123,7 @@
 #     pass --out for a distinct build, e.g. the disk-install ISO)
 #   - Live session: first boot autologs into GNOME and autostarts
 #     Pulpo Control Center; Guided Setup is the button on the System
-#     page (Diagnostics tab). The live session also carries the
+#     page (Setup tab). The live session also carries the
 #     Calamares disk installer (desktop icon "Install Pulpo
 #     Preview"): erase-disk install, UEFI GRUB + Ubuntu shim, and
 #     the wizard's config carried through to the installed system.
@@ -136,17 +136,17 @@ WORK="${WORK:-$HOME/pulpo-workspace/iso-build}"
 TOOLS="${TOOLS:-$HOME/pulpo-workspace/iso-tools}"
 BASE_ISO=""
 OUT=""
-CC_DEB="${CC_DEB:-$HOME/pulpo-workspace/Pulpo-Control-Center-Preview48-release/dist/pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb}"
+CC_DEB="${CC_DEB:-$HOME/pulpo-workspace/Pulpo-Control-Center-Standalone/dist/pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb}"
 # Release bundle for the install-cc-deb step: the signed
 # statement, its detached signature, and the publisher
 # public key for the release above, plus the Control
 # Center's own verify scripts. Defaults point at the
-# preview.48 release on this machine; update them together
+# preview.50 release on this machine; update them together
 # with CC_DEB when the release changes.
-CC_RELEASE_JSON="${CC_RELEASE_JSON:-$HOME/pulpo-workspace/pulpo-control-center-preview48-release.json}"
-CC_RELEASE_SIG="${CC_RELEASE_SIG:-$HOME/pulpo-workspace/pulpo-control-center-preview48-release.json.asc}"
+CC_RELEASE_JSON="${CC_RELEASE_JSON:-$HOME/pulpo-workspace/pulpo-control-center-preview50-release.json}"
+CC_RELEASE_SIG="${CC_RELEASE_SIG:-$HOME/pulpo-workspace/pulpo-control-center-preview50-release.json.asc}"
 CC_PUBLISHER_KEY="${CC_PUBLISHER_KEY:-$HOME/pulpo-workspace/publisher.gpg}"
-CC_VERIFY_SCRIPTS="${CC_VERIFY_SCRIPTS:-$HOME/pulpo-workspace/Pulpo-Control-Center-Preview48-release/scripts}"
+CC_VERIFY_SCRIPTS="${CC_VERIFY_SCRIPTS:-$HOME/pulpo-workspace/Pulpo-Control-Center-Standalone/scripts}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 while [ $# -gt 0 ]; do
@@ -664,7 +664,7 @@ here writes to your hard drive unless you choose to.
 - Pulpo Control Center should have opened automatically. If not,
   launch it from the applications menu.
 - Guided Setup is the button on the Control Center System page
-  (Diagnostics tab). It writes the customer config
+  (Setup tab). It writes the customer config
   (pulpo.control-center-customer-config.v1).
 - Disk installer: the "Install Pulpo Preview" icon on the desktop
   installs to disk (erase-disk install, UEFI). It carries the
@@ -895,7 +895,7 @@ for f in etc/calamares/settings.conf \
          usr/share/pulpo-installer/calamares/verify-initramfs.sh \
          usr/share/pulpo-installer/calamares/grub-prefix-stub.sh \
          usr/share/pulpo-installer/calamares/install-cc-deb.sh \
-         usr/share/pulpo-installer/control-center/pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb \
+         "usr/share/pulpo-installer/control-center/$(basename "$CC_DEB")" \
          usr/share/pulpo-installer/control-center/release.json \
          usr/share/pulpo-installer/control-center/release.json.asc \
          usr/share/pulpo-installer/control-center/publisher.gpg \
