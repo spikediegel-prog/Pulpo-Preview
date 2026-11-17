@@ -1673,6 +1673,53 @@ class InstallCcDebTests(unittest.TestCase):
             'source "$1"; verify_release "%s"' % self.bundle)
         self.assertNotEqual(result.returncode, 0)
 
+    def test_verify_release_installs_expired_but_authentic_release_and_logs_notice(self):
+        # Right to Own: an expired-but-authentic release installs, and
+        # the freshness notice must reach the step log so the install
+        # names the release it installed. A stub python3 stands in for
+        # ubuntu_release.py verify, reporting verified with an expired
+        # freshness notice.
+        for name in ("release.json", "release.json.asc", "publisher.gpg",
+                     "ubuntu_release.py", "check_ubuntu_deb.py"):
+            (self.bundle / name).write_bytes(b"")
+        stubdir = Path(self.tmp.name) / "stubbin"
+        stubdir.mkdir()
+        stub = stubdir / "python3"
+        stub.write_text(
+            "#!/bin/bash\n"
+            "echo '{\"verified\": true, \"fresh\": false, "
+            "\"freshness\": \"expired\", \"notice\": "
+            "\"Release 0.1.0~ubuntu.preview.48+e3.2077631 is authentic "
+            "but its statement expired.\"}'\n")
+        stub.chmod(0o755)
+        log_file = Path(self.tmp.name) / "install-cc-deb.log"
+        result = self._source(
+            'export PATH="%s:$PATH"; source "$1"; LOG_FILE="%s"; verify_release "%s"'
+            % (stubdir, log_file, self.bundle))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("release notice:", result.stdout)
+        self.assertIn("expired", result.stdout)
+        self.assertIn("expired", log_file.read_text())
+
+    def test_verify_release_refuses_unverified_release(self):
+        # verified:false in the verifier output must fail the step,
+        # even when the verifier itself exits 0.
+        for name in ("release.json", "release.json.asc", "publisher.gpg",
+                     "ubuntu_release.py", "check_ubuntu_deb.py"):
+            (self.bundle / name).write_bytes(b"")
+        stubdir = Path(self.tmp.name) / "stubbin"
+        stubdir.mkdir()
+        stub = stubdir / "python3"
+        stub.write_text(
+            "#!/bin/bash\n"
+            "echo '{\"verified\": false, \"error\": \"bad signature\"}'\n")
+        stub.chmod(0o755)
+        result = self._source(
+            'export PATH="%s:$PATH"; source "$1"; verify_release "%s"'
+            % (stubdir, self.bundle))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("did not report verified", result.stdout + result.stderr)
+
     def test_main_fails_when_bundle_missing(self):
         # The live image's bundle dir does not exist in the test
         # environment, so main() must fail loudly rather than

@@ -40,12 +40,15 @@
 # statement, the detached GPG signature against the publisher key
 # (full fingerprint required), the signature time against the
 # statement lifetime, and the .deb itself with the Debian
-# validator. The statement is time-bounded: preview.48's
-# statement expires Wed 2026-11-18 15:00:51 MST, and verify
-# fails after that (now >= expires_at). That is fail-closed and
-# correct -- an expired release must not install -- but it means
-# this ISO's Control Center install has a shelf life, and a
-# later build needs a fresh signed release.
+# validator. Right to Own (2026-11-15): authenticity and freshness
+# are separate claims. The signature and hash are verified strictly
+# and fail-closed forever, with no clock; expiry is freshness
+# policy only, so an expired-but-authentic release still installs,
+# and verify_release() logs the freshness notice naming the
+# release. A future-dated statement still fails. This ISO's
+# Control Center install therefore has no shelf life: a customer
+# reinstalling years from now installs the authentic release they
+# own, knowingly, with the notice in the step log.
 #
 # The verification must NOT run as root: ubuntu_release.py
 # refuses root (line 165: 'Verify as the normal user, without
@@ -86,8 +89,10 @@
 #     missing: fail. The build gates on them; their absence
 #     here means the image is not the one the build produced.
 #   - Verification fails (bad hash, bad signature, wrong
-#     version/revision, expired statement): fail. Never install
-#     an unverified release.
+#     version/revision, future statement): fail. Never install
+#     an unverified release. An expired-but-authentic release
+#     installs (Right to Own); its freshness notice is logged
+#     by verify_release() so the install names the release.
 #   - dpkg -i or dpkg --configure -a fails, or any bundle
 #     package is not "install ok installed" afterwards: fail.
 #   - /proc, /sys or /dev are not mounted in the target
@@ -223,7 +228,11 @@ _run_verify() {
 # verify_release <bundle-dir>: verify the signed Control Center
 # release in the bundle with the Control Center's own
 # ubuntu_release.py verify. Returns non-zero (and logs why) when
-# any bundle file is missing or the verification fails.
+# any bundle file is missing or the verification fails. Right to
+# Own: verified:true installs even when the statement has expired;
+# only authenticity gates the install. The freshness notice from
+# the verifier output is logged, so the step log names the release
+# that was installed and whether it was current or expired.
 verify_release() {
     local bundle="$1"
     local deb="$bundle/$CC_DEB_NAME"
@@ -259,6 +268,11 @@ verify_release() {
             ;;
     esac
     log "release verified: $EXPECTED_VERSION ($EXPECTED_REVISION)"
+    local notice
+    notice=$(printf '%s' "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("notice", ""))' 2>/dev/null || true)
+    if [ -n "$notice" ]; then
+        log "release notice: $notice"
+    fi
     return 0
 }
 
