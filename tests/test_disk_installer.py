@@ -1509,7 +1509,7 @@ class InstallCcDebTests(unittest.TestCase):
         # them, which is what the failure-path tests assert).
         self.bundle = self.root / "bundle"
         self.bundle.mkdir()
-        (self.bundle / "pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb").write_bytes(b"")
+        (self.bundle / "pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb").write_bytes(b"")
         (self.bundle / "python3-tk_3.12.3-1_amd64.deb").write_bytes(b"")
 
     def _source(self, snippet):
@@ -1528,10 +1528,10 @@ class InstallCcDebTests(unittest.TestCase):
         # statement -- verify() checks the statement against
         # them. A release change must update all three together.
         text = _read(self.SCRIPT)
-        self.assertIn('EXPECTED_VERSION="0.1.0~ubuntu.preview.48+e3.2077631"', text)
-        self.assertIn('EXPECTED_REVISION="20776311d4c39c1f6ddebe08ddc5880cb2a9c131"', text)
+        self.assertIn('EXPECTED_VERSION="0.1.0~ubuntu.preview.50+e3.0625357"', text)
+        self.assertIn('EXPECTED_REVISION="0625357feddcb763b3861ac2eb771682582acd5e"', text)
         self.assertIn('PUBLISHER_FINGERPRINT="19B555C6055FD7B64B848DA67F7B8449ED6FEB20"', text)
-        self.assertIn('CC_DEB_NAME="pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb"', text)
+        self.assertIn('CC_DEB_NAME="pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb"', text)
 
     def test_verify_invocation(self):
         # The step must verify with the Control Center's own
@@ -1663,7 +1663,7 @@ class InstallCcDebTests(unittest.TestCase):
         result = self._source(
             'source "$1"; bundle_debs "%s"' % self.bundle)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("pulpo-control-center_0.1.0~ubuntu.preview.48+e3.2077631_amd64.deb", result.stdout)
+        self.assertIn("pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb", result.stdout)
         self.assertIn("python3-tk_3.12.3-1_amd64.deb", result.stdout)
 
     def test_verify_release_fails_on_missing_bundle(self):
@@ -1689,7 +1689,7 @@ class InstallCcDebTests(unittest.TestCase):
             "#!/bin/bash\n"
             "echo '{\"verified\": true, \"fresh\": false, "
             "\"freshness\": \"expired\", \"notice\": "
-            "\"Release 0.1.0~ubuntu.preview.48+e3.2077631 is authentic "
+            "\"Release 0.1.0~ubuntu.preview.50+e3.0625357 is authentic "
             "but its statement expired.\"}'\n")
         stub.chmod(0o755)
         log_file = Path(self.tmp.name) / "install-cc-deb.log"
@@ -2117,8 +2117,8 @@ class BuildIntegrationTests(unittest.TestCase):
 
     def test_build_uses_the_release_cc_deb(self):
         text = _read(INSTALLER / "build-iso.sh")
-        self.assertIn("2077631", text)
-        self.assertIn("Preview48-release", text)
+        self.assertIn("0625357", text)
+        self.assertIn("Pulpo-Control-Center-Standalone", text)
         self.assertNotIn("b17b654", text)
 
     def test_build_adds_calamares_and_excludes_gles(self):
