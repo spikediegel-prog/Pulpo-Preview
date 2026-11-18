@@ -101,13 +101,17 @@ def _read(path):
     return path.read_text(encoding="utf-8")
 
 
-def _settings_sections():
-    """Parse installer/calamares/settings.conf's show/exec lists."""
+def _settings_sections(path=None):
+    """Parse a settings.conf's show/exec lists.
+
+    Defaults to installer/calamares/settings.conf; pass the dev
+    variant's path to parse settings-dev.conf the same way.
+    """
     sections = {"show": [], "exec": []}
     instances = {}
     current = None
     current_id = None
-    for line in _read(CALAMARES / "settings.conf").splitlines():
+    for line in _read(path or CALAMARES / "settings.conf").splitlines():
         m = re.match(r"^- (show|exec):\s*$", line)
         if m:
             current = m.group(1)
@@ -2384,6 +2388,407 @@ class BuildIntegrationTests(unittest.TestCase):
                         exec_list.index("shellprocess@grub-prefix-stub"))
         self.assertLess(exec_list.index("shellprocess@grub-prefix-stub"),
                         exec_list.index("umount"))
+
+
+
+# The dev/test ISO variant (--dev): dev-setup.sh, the dev settings
+# variant, the dev customer config, the --dev build flag, and the
+# clean/dev verifier. The dev ISO is a test artifact, never
+# published; the tests below pin both sides of the line — what a
+# dev build must carry, and what a clean build must never carry.
+HATCH_PUBLIC_KEY = (
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII6I1QynbsUwGdsGFu2pvhsTK22WHGeUr19H/eNF3RDk hatch"
+)
+
+
+def _load_validator():
+    import importlib.util
+    path = INSTALLER / "validate_config.py"
+    spec = importlib.util.spec_from_file_location("installer_validate_config", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class DevIsoTests(unittest.TestCase):
+    SCRIPT = CALAMARES / "dev-setup.sh"
+    CONF = CALAMARES / "modules" / "shellprocess_dev-setup.conf"
+    DEV_SETTINGS = CALAMARES / "settings-dev.conf"
+    DEV_CONFIG = CALAMARES / "dev-customer-config.json"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.target = self.root / "target"
+        self.target.mkdir()
+        etc = self.target / "etc"
+        etc.mkdir()
+        (etc / "passwd").write_text(
+            "root:x:0:0:root:/root:/bin/bash\n"
+            "testuser:x:1000:1000:Test User:/home/testuser:/bin/bash\n",
+            encoding="utf-8",
+        )
+        self.bundle = self.root / "dev-bundle"
+        self.bundle.mkdir()
+        for name in ("xrdp_0.9.24_amd64.deb",
+                     "openssh-server_1_amd64.deb",
+                     "tailscale_1.104.7_amd64.deb"):
+            (self.bundle / name).write_bytes(b"fake-deb")
+        self.marker = self.root / "DEV-BUILD"
+        self.dev_config = self.root / "dev-customer-config.json"
+        self.dev_config.write_text(
+            (self.DEV_CONFIG).read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        self.calls = self.root / "calls.txt"
+        self.stub = self.root / "stub-config-install"
+        self.stub.write_text(
+            "#!/bin/bash\n"
+            'echo "$@" >> "$STUB_CALLS"\n'
+            'echo "GLOB=$PULPO_LIVE_CONFIG_GLOB" >> "$STUB_CALLS"\n'
+            'echo "USER=$PULPO_IMPORT_USER" >> "$STUB_CALLS"\n'
+            "exit ${STUB_RC:-0}\n",
+            encoding="utf-8",
+        )
+        self.stub.chmod(0o755)
+
+    def _env(self, stub_rc="0"):
+        env = dict(os.environ)
+        env["PULPO_DEV_MARKER"] = str(self.marker)
+        env["PULPO_DEV_BUNDLE_DIR"] = str(self.bundle)
+        env["PULPO_DEV_CONFIG"] = str(self.dev_config)
+        env["PULPO_CONFIG_INSTALL_SCRIPT"] = str(self.stub)
+        env["PULPO_DEV_IMPORT_USER"] = "testuser"
+        env["STUB_CALLS"] = str(self.calls)
+        env["STUB_RC"] = stub_rc
+        return env
+
+    def _source(self, snippet, stub_rc="0"):
+        return subprocess.run(
+            ["bash", "-c", snippet, "dev-setup-check",
+             str(self.SCRIPT), str(self.target)],
+            env=self._env(stub_rc),
+            capture_output=True, text=True, timeout=60,
+        )
+
+    def test_dev_files_exist_and_are_executable(self):
+        self.assertTrue(self.SCRIPT.is_file(), "missing dev-setup.sh")
+        self.assertTrue(self.SCRIPT.stat().st_mode & stat.S_IXUSR)
+        self.assertTrue(self.CONF.is_file(), "missing shellprocess_dev-setup.conf")
+        self.assertTrue(self.DEV_SETTINGS.is_file(), "missing settings-dev.conf")
+        self.assertTrue(self.DEV_CONFIG.is_file(), "missing dev-customer-config.json")
+
+    def test_clean_settings_never_registers_dev_setup(self):
+        # The release file must not mention the dev step at all:
+        # a clean image carries no dev-setup instance, so the step
+        # cannot run there even if its script were present.
+        text = _read(CALAMARES / "settings.conf")
+        self.assertNotIn("dev-setup", text)
+        self.assertNotIn("settings-dev.conf", text)
+        sections, _ = _settings_sections()
+        self.assertNotIn("shellprocess@dev-setup", sections["exec"])
+
+    def test_dev_settings_is_clean_plus_dev_setup(self):
+        # The dev variant is the clean sequence with exactly one
+        # step added: shellprocess@dev-setup, immediately after
+        # shellprocess@pulpo-config (the dev config intentionally
+        # overrides any live Guided Setup config right after it is
+        # applied) and before install-cc-deb.
+        clean_sections, _ = _settings_sections()
+        dev_sections, dev_instances = _settings_sections(self.DEV_SETTINGS)
+        self.assertEqual(dev_sections["show"], clean_sections["show"])
+        expected = list(clean_sections["exec"])
+        expected.insert(
+            expected.index("shellprocess@pulpo-config") + 1,
+            "shellprocess@dev-setup",
+        )
+        self.assertEqual(dev_sections["exec"], expected)
+        self.assertIn("dev-setup", dev_instances)
+        self.assertEqual(
+            dev_instances["dev-setup"], "shellprocess_dev-setup.conf"
+        )
+        # The dev instance's config must exist and carry a script.
+        config = CALAMARES / "modules" / dev_instances["dev-setup"]
+        self.assertTrue(config.is_file())
+        self.assertRegex(_read(config), r"(?m)^script:\s*$")
+        # Every module the dev variant references must exist in
+        # Calamares, same as the clean settings.
+        names = set(dev_sections["show"]) | {
+            n.split("@")[0] for n in dev_sections["exec"]
+        }
+        for name in names:
+            self.assertIn(name, CALAMARES_MODULES, f"unknown module: {name}")
+
+    def test_dev_shellprocess_conf_is_dont_chroot_with_root(self):
+        text = _read(self.CONF)
+        self.assertIn("dontChroot: true", text)
+        self.assertRegex(text, r"(?m)^timeout: \d+$")
+        self.assertIn("/usr/share/pulpo-installer/calamares/dev-setup.sh ${ROOT}", text)
+
+    def test_dev_setup_refuses_without_the_marker(self):
+        # No marker: the step must refuse loudly. With the marker:
+        # the gate passes. This is the second line of defence (the
+        # first is that clean settings.conf never registers the
+        # step at all).
+        result = self._source('source "$1"\nrequire_dev_marker')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("no dev build marker", result.stderr + result.stdout)
+        self.marker.write_text("Pulpo Preview dev/test build\n", encoding="utf-8")
+        result = self._source('source "$1"\nrequire_dev_marker')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("dev build marker present", result.stdout)
+
+    def test_dev_setup_bundle_check_needs_all_three_packages(self):
+        self.marker.write_text("Pulpo Preview dev/test build\n", encoding="utf-8")
+        result = self._source('source "$1"\ncheck_bundle "$PULPO_DEV_BUNDLE_DIR"')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        (self.bundle / "tailscale_1.104.7_amd64.deb").unlink()
+        result = self._source('source "$1"\ncheck_bundle "$PULPO_DEV_BUNDLE_DIR"')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("tailscale", result.stdout + result.stderr)
+
+    def test_dev_setup_installs_ssh_key_and_evidence_dir(self):
+        snippet = (
+            'source "$1"\n'
+            'install_ssh_key "$2" testuser 1000 1000\n'
+            'create_evidence_dir "$2" 1000 1000\n'
+        )
+        result = self._source(snippet)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        sshdir = self.target / "home" / "testuser" / ".ssh"
+        authkeys = sshdir / "authorized_keys"
+        self.assertEqual(stat.S_IMODE(sshdir.stat().st_mode), 0o700)
+        self.assertEqual(stat.S_IMODE(authkeys.stat().st_mode), 0o600)
+        self.assertEqual(
+            authkeys.read_text(encoding="utf-8").strip(), HATCH_PUBLIC_KEY
+        )
+        evidence = self.target / "var" / "lib" / "pulpo" / "evidence"
+        self.assertTrue(evidence.is_dir())
+        self.assertEqual(stat.S_IMODE(evidence.stat().st_mode), 0o755)
+        # A second key install must fail loudly, never append
+        # blindly over an existing authorized_keys.
+        result = self._source('source "$1"\ninstall_ssh_key "$2" testuser 1000 1000')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(
+            authkeys.read_text(encoding="utf-8").strip(), HATCH_PUBLIC_KEY
+        )
+
+    def test_dev_setup_config_goes_through_pulpo_config_install(self):
+        # The dev config is installed through the SAME import path
+        # as pulpo-config-install.sh: the dev step calls that
+        # script with PULPO_LIVE_CONFIG_GLOB pointed at the baked
+        # dev config, and the import user passed through.
+        self.marker.write_text("Pulpo Preview dev/test build\n", encoding="utf-8")
+        result = self._source('source "$1"\ninstall_dev_config "$2"')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        calls = self.calls.read_text(encoding="utf-8")
+        self.assertIn(str(self.target), calls)
+        self.assertIn(f"GLOB={self.dev_config}", calls)
+        self.assertIn("USER=testuser", calls)
+        # A failing import must fail the step, never be dropped.
+        result = self._source('source "$1"\ninstall_dev_config "$2"', stub_rc="1")
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_dev_setup_script_text(self):
+        text = _read(self.SCRIPT)
+        # The three dev packages, the services, the evidence dir,
+        # the marker gate, and the import path must all be there.
+        self.assertIn("xrdp", text)
+        self.assertIn("openssh-server", text)
+        self.assertIn("tailscale", text)
+        self.assertIn("systemctl enable xrdp ssh", text)
+        self.assertIn("/var/lib/pulpo/evidence", text)
+        self.assertIn("DEV-BUILD", text)
+        self.assertIn("PULPO_LIVE_CONFIG_GLOB", text)
+        self.assertIn("pulpo-config-install.sh", text)
+        self.assertIn("dpkg --configure -a", text)
+        self.assertIn('Status: install ok installed', text)
+        # The hatch PUBLIC key, exactly as verified against the
+        # dev VM's ~/.ssh/authorized_keys (2026-11-17).
+        self.assertIn(HATCH_PUBLIC_KEY, text)
+
+    def test_dev_setup_never_bakes_a_credential(self):
+        # No Tailscale auth key material, no private key: the dev
+        # step installs remote access, but the only key material
+        # is the hatch PUBLIC key. What is forbidden is an auth
+        # key being supplied (TS_AUTHKEY, --authkey, authkey=).
+        # A bare "authkey" substring match would false-positive
+        # on the script's own $authkeys variable (the
+        # authorized_keys path), so the build's 4h gate and this
+        # test both match the supply forms, not the substring.
+        # "auth key" (two words) appears only in prose saying
+        # tailscale is NOT joined without a human-supplied key.
+        text = _read(self.SCRIPT)
+        self.assertNotIn("TS_AUTHKEY", text)
+        self.assertNotIn("--authkey", text)
+        self.assertNotRegex(text, r"(?i)authkey\s*=")
+        self.assertNotIn("PRIVATE KEY", text)
+        self.assertIn("NOT joined", text)
+
+    def test_dev_customer_config_is_valid_and_corrected(self):
+        # The baked dev config must be one `config import` will
+        # accept, with the corrected values (not Public Beta's
+        # live config): real NTP servers, the live Hyper-V
+        # gateway, America/Phoenix, local evidence 24h/10%.
+        doc = json.loads(self.DEV_CONFIG.read_text(encoding="utf-8"))
+        errors = _load_validator().validate(doc)
+        self.assertEqual(errors, [], errors)
+        self.assertEqual(doc["time"]["primary"], "pool.ntp.org")
+        self.assertEqual(doc["time"]["secondary"], "ntp.ubuntu.com")
+        self.assertEqual(doc["display_timezone"], "America/Phoenix")
+        self.assertEqual(doc["network"]["gateway"], "172.21.32.1")
+        self.assertEqual(doc["network"]["mode"], "static")
+        self.assertEqual(doc["storage"]["path"], "/var/lib/pulpo/evidence")
+        self.assertEqual(doc["storage"]["retention_hours"], 24)
+        self.assertEqual(doc["storage"]["retention_percent"], 10)
+        self.assertTrue(doc["storage"]["acknowledged"])
+        import ipaddress
+        interface = ipaddress.IPv4Interface(doc["network"]["address"])
+        self.assertIn(
+            ipaddress.IPv4Address(doc["network"]["gateway"]),
+            interface.network,
+        )
+
+    def test_build_iso_dev_flag(self):
+        text = _read(INSTALLER / "build-iso.sh")
+        self.assertIn("--dev) DEV=1; shift;;", text)
+        self.assertIn('DEV=0', text)
+        self.assertIn('VOLID="PULPO-PREVIEW-DEV"', text)
+        self.assertIn("pulpo-preview-$VERSION-live-amd64-dev.iso", text)
+        self.assertIn('DEV_PKGS="xrdp openssh-server tailscale"', text)
+        self.assertIn("usr/share/pulpo-installer/dev-bundle", text)
+        self.assertIn("usr/share/pulpo-installer/DEV-BUILD", text)
+        self.assertIn("installer/calamares/dev-setup.sh", text)
+        self.assertIn("installer/calamares/settings-dev.conf", text)
+        self.assertIn("installer/calamares/dev-customer-config.json", text)
+        self.assertIn("dev bundle holds", text)
+        self.assertIn("dev customer config fails validation", text)
+        self.assertIn("authkey material in the dev files", text)
+        # Step 8b runs the clean/dev verifier on every build.
+        self.assertIn("[8b/8] verifying clean/dev separation", text)
+        self.assertIn('"$REPO_ROOT/installer/verify-clean-iso.sh" --dev', text)
+        self.assertIn('--ownership-map "$PLAN/ownership.txt"', text)
+        # The clean defaults are unchanged.
+        self.assertIn('VOLID="PULPO-PREVIEW-0.1.0"', text)
+        self.assertIn('OUT="$WORK/pulpo-preview-$VERSION-live-amd64.iso"', text)
+
+    def test_build_iso_dev_additions_are_guarded(self):
+        # Default-off must be today's clean path: the dev copies
+        # happen only inside the DEV=1 block. The first dev copy
+        # (dev-setup.sh into the rootfs) must come after the 4h
+        # guard opens.
+        text = _read(INSTALLER / "build-iso.sh")
+        guard = text.index('if [ "$DEV" -eq 1 ]; then\necho "  [4h] dev variant')
+        copy = text.index('cp "$REPO_ROOT/installer/calamares/dev-setup.sh"')
+        self.assertLess(guard, copy)
+        block = text[guard:text.index("# 5. Repack")]
+        self.assertTrue(block.rstrip().endswith("fi"))
+        self.assertIn("DEV-BUILD", block)
+
+
+class VerifyCleanIsoTests(unittest.TestCase):
+    SCRIPT = INSTALLER / "verify-clean-iso.sh"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+
+    def _listing(self, name, extra=(), bundle_debs=("xrdp_0.9.24_amd64.deb",
+                      "openssh-server_1_amd64.deb", "tailscale_1.104.7_amd64.deb")):
+        # A minimal `unsquashfs -l` listing (squashfs-root/ prefixed,
+        # as the script normalises). The base image carries an
+        # sshd-keygen@.service.d fragment — included here to prove
+        # the binary check matches exact paths, not substrings.
+        lines = [
+            "squashfs-root/usr/share/pulpo-installer/control-center/release.json",
+            "squashfs-root/usr/share/pulpo-installer/control-center/publisher.gpg",
+            "squashfs-root/usr/share/pulpo-installer/control-center/ubuntu_release.py",
+            "squashfs-root/usr/share/pulpo-installer/control-center/check_ubuntu_deb.py",
+            "squashfs-root/usr/share/pulpo-installer/control-center/pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb",
+            "squashfs-root/etc/calamares/settings.conf",
+            "squashfs-root/usr/lib/systemd/system/sshd-keygen@.service.d/disable-sshd-keygen-if-cloud-init-active.conf",
+        ]
+        if name == "dev":
+            lines += [
+                "squashfs-root/usr/share/pulpo-installer/DEV-BUILD",
+                "squashfs-root/usr/share/pulpo-installer/calamares/dev-setup.sh",
+                "squashfs-root/usr/share/pulpo-installer/dev-customer-config.json",
+                "squashfs-root/etc/calamares/settings-dev.conf",
+            ]
+            for deb in bundle_debs:
+                lines.append(
+                    f"squashfs-root/usr/share/pulpo-installer/dev-bundle/{deb}"
+                )
+        lines += list(extra)
+        path = self.root / f"{name}.list"
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return path
+
+    def _run(self, mode, listing):
+        return subprocess.run(
+            ["bash", str(self.SCRIPT), mode, "--list-file", str(listing)],
+            capture_output=True, text=True, timeout=60,
+        )
+
+    def test_script_exists_and_is_executable(self):
+        self.assertTrue(self.SCRIPT.is_file(), "missing verify-clean-iso.sh")
+        self.assertTrue(self.SCRIPT.stat().st_mode & stat.S_IXUSR)
+
+    def test_clean_listing_passes_clean_and_fails_dev(self):
+        listing = self._listing("clean")
+        result = self._run("--clean", listing)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("PASS (clean)", result.stdout)
+        result = self._run("--dev", listing)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("DEV-BUILD marker missing", result.stdout)
+
+    def test_dev_listing_passes_dev_and_fails_clean(self):
+        listing = self._listing("dev")
+        result = self._run("--dev", listing)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("PASS (dev)", result.stdout)
+        result = self._run("--clean", listing)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("DEV-BUILD marker present", result.stdout)
+        self.assertIn("dev-bundle/ present", result.stdout)
+
+    def test_dev_listing_missing_a_bundle_deb_fails_dev(self):
+        listing = self._listing(
+            "dev", bundle_debs=("xrdp_0.9.24_amd64.deb",
+                                 "openssh-server_1_amd64.deb"))
+        result = self._run("--dev", listing)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing the tailscale .deb", result.stdout)
+
+    def test_sshd_binary_fails_both_modes(self):
+        # The sshd-keygen fragment in the base listing must NOT
+        # trip this; the real binary must, in both modes.
+        listing = self._listing(
+            "clean", extra=("squashfs-root/usr/sbin/sshd",))
+        for mode in ("--clean", "--dev"):
+            result = self._run(mode, listing)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("usr/sbin/sshd", result.stdout)
+
+    def test_skel_authorized_keys_fails_both_modes(self):
+        listing = self._listing(
+            "dev", extra=("squashfs-root/etc/skel/.ssh/authorized_keys",))
+        for mode in ("--clean", "--dev"):
+            result = self._run(mode, listing)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("/etc/skel", result.stdout)
+
+    def test_missing_control_center_bundle_fails(self):
+        listing = self.root / "nobundle.list"
+        listing.write_text(
+            "squashfs-root/etc/calamares/settings.conf\n", encoding="utf-8"
+        )
+        result = self._run("--clean", listing)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("release.json", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

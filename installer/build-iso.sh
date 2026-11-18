@@ -94,11 +94,21 @@
 #
 # Usage:
 #   installer/build-iso.sh [--base-iso PATH] [--work-dir PATH]
-#                          [--out PATH] [--cc-deb PATH]
+#                          [--out PATH] [--cc-deb PATH] [--dev]
 #     --base-iso   Ubuntu 24.04 desktop ISO (default: $WORK/ubuntu-*.iso)
 #     --work-dir   scratch dir, needs ~20G free (default: ~/pulpo-workspace/iso-build)
 #     --out        output ISO path (default: $WORK/pulpo-preview-0.1.0-live-amd64.iso)
 #     --cc-deb     Control Center .deb (default: the preview.50 release .deb from merged CC main 0625357)
+#     --dev        dev/test variant (opt-in, default OFF): volume label
+#                  PULPO-PREVIEW-DEV, output
+#                  pulpo-preview-0.1.0-live-amd64-dev.iso, plus the dev
+#                  bundle (xrdp + openssh-server + tailscale .debs),
+#                  the dev Calamares step, the corrected dev customer
+#                  config, and the DEV-BUILD marker. See step 4h and
+#                  installer/DISK-INSTALLER.md "The dev/test ISO
+#                  variant (--dev)". A dev ISO is a test artifact,
+#                  never published. A default-off build is
+#                  byte-for-byte today's clean path.
 #
 # Inputs (all from the repo / already-built artefacts — nothing invented):
 #   - Control Center .deb: the preview.50 RELEASE .deb, built from
@@ -132,6 +142,7 @@ set -euo pipefail
 
 VERSION="0.1.0"
 VOLID="PULPO-PREVIEW-0.1.0"
+DEV=0
 WORK="${WORK:-$HOME/pulpo-workspace/iso-build}"
 TOOLS="${TOOLS:-$HOME/pulpo-workspace/iso-tools}"
 BASE_ISO=""
@@ -155,12 +166,26 @@ while [ $# -gt 0 ]; do
     --work-dir) WORK="$2"; shift 2;;
     --out) OUT="$2"; shift 2;;
     --cc-deb) CC_DEB="$2"; shift 2;;
+    --dev) DEV=1; shift;;
     *) echo "unknown option: $1" >&2; exit 2;;
   esac
 done
 
+# --dev: opt-in test variant, default OFF. A default-off build is
+# byte-for-byte today's clean path: every dev addition below is
+# guarded by DEV=1, and only the volume label / default output
+# name change when it is on.
+if [ "$DEV" -eq 1 ]; then
+  VOLID="PULPO-PREVIEW-DEV"
+fi
 [ -n "$BASE_ISO" ] || BASE_ISO="$(ls "$WORK"/ubuntu-24.04.*-desktop-amd64.iso | head -1)"
-[ -n "$OUT" ] || OUT="$WORK/pulpo-preview-$VERSION-live-amd64.iso"
+if [ -n "$OUT" ]; then
+  : # an explicit --out wins, dev or clean
+elif [ "$DEV" -eq 1 ]; then
+  OUT="$WORK/pulpo-preview-$VERSION-live-amd64-dev.iso"
+else
+  OUT="$WORK/pulpo-preview-$VERSION-live-amd64.iso"
+fi
 
 # xorriso and its libs (libburn, libisofs) live in the extracted
 # prefix, not on the loader path — pass LD_LIBRARY_PATH only to
@@ -253,6 +278,11 @@ echo "base ISO : $BASE_ISO"
 echo "work dir : $WORK"
 echo "output   : $OUT"
 echo "repo     : $REPO_ROOT"
+if [ "$DEV" -eq 1 ]; then
+  echo "dev build: yes (volume label $VOLID; test artifact, never publish)"
+else
+  echo "dev build: no"
+fi
 
 mkdir -p "$WORK"
 cd "$WORK"
@@ -966,6 +996,126 @@ else
 fi
 echo "  [4g] GIS suppressed (skel marker + autostart Hidden=true)"
 
+# 4h. Dev/test variant ONLY (--dev): the dev bundle + dev Calamares
+#     step + DEV-BUILD marker. Everything in this block is guarded
+#     by DEV=1, so a default-off build never executes it and its
+#     output is byte-for-byte today's clean path. The dev tools are
+#     fetched as .debs and STASHED, not unpacked: xrdp, openssh-server
+#     and tailscale are installed into the TARGET at install time by
+#     dev-setup.sh (dpkg -i, so maintainer scripts run), never into
+#     the live session. Unpacking them here would put remote-access
+#     binaries in the live image; verify-clean-iso.sh step 8b fails
+#     the build if any are found there.
+#     The closure is computed the same way as 4e/4f (apt-cache
+#     depends --recurse, no recommends); packages already in the
+#     base image are skipped, never overwritten. The Tailscale repo
+#     is one of the build VM's /etc/apt/sources.list.d entries, so
+#     the same apt-get download pattern fetches it (proven
+#     2026-11-17: tailscale 1.104.7 from pkgs.tailscale.com, after
+#     step 3 repopulates the /tmp/apt-state lists).
+#     NEVER baked in: no Tailscale auth key or any credential, no
+#     password, no installer account, no private key. The only key
+#     material is the hatch SSH PUBLIC key, written by dev-setup.sh
+#     into the TARGET user's authorized_keys at install time.
+if [ "$DEV" -eq 1 ]; then
+echo "  [4h] dev variant (--dev): dev bundle + dev Calamares step"
+DEV_PKGS="xrdp openssh-server tailscale"
+DEV_CLOSURE=$($APT_CACHE depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances $DEV_PKGS 2>/dev/null | grep "^[a-z0-9]" | sort -u || true)
+[ -n "$DEV_CLOSURE" ] || { echo "apt closure for $DEV_PKGS is empty -- package lists missing?" >&2; exit 1; }
+DEV_BUNDLE="$ROOTFS/usr/share/pulpo-installer/dev-bundle"
+mkdir -p "$DEV_BUNDLE"
+DEV_BUNDLE_DEBS=""
+for pkg in $DEV_CLOSURE; do
+  if grep -q "^${pkg}:\?\(amd64\)\?$(printf '\t')" "$ISO_ROOT/casper/filesystem.manifest"; then
+    continue  # already in the base image
+  fi
+  deb=$(ls "$EXTRA_DEBS/${pkg}_"*.deb /tmp/apt-cache/archives/${pkg}_*.deb 2>/dev/null | head -1 || true)
+  if [ -z "$deb" ]; then
+    (cd "$EXTRA_DEBS" && $APT_GET download "$pkg" > /dev/null 2>&1) \
+      || { echo "could not fetch $pkg .deb (needs network + apt lists)" >&2; exit 1; }
+    deb=$(ls "$EXTRA_DEBS/${pkg}_"*.deb 2>/dev/null | head -1 || true)
+  fi
+  [ -n "$deb" ] || { echo "missing .deb for $pkg" >&2; exit 1; }
+  dpkg-deb -f "$deb" Package >/dev/null 2>&1 \
+    || { echo "not a valid .deb: $deb" >&2; exit 1; }
+  cp "$deb" "$DEV_BUNDLE/"
+  DEV_BUNDLE_DEBS="$DEV_BUNDLE_DEBS $deb"
+done
+for deb in "$DEV_BUNDLE"/*.deb; do
+  [ -e "$deb" ] && chmod 0644 "$deb"
+done
+# Gate: the bundle must hold the three dev packages, and its count
+# must match the closure's non-manifest packages exactly — a
+# missing .deb would make the target install fail on unmet
+# dependencies, and an extra one would install a package the
+# build never fetched.
+for pkg in $DEV_PKGS; do
+  ls "$DEV_BUNDLE/${pkg}_"*.deb >/dev/null 2>&1 \
+    || { echo "dev bundle is missing the $pkg .deb" >&2; exit 1; }
+done
+DEV_BUNDLE_COUNT=$(ls "$DEV_BUNDLE"/*.deb 2>/dev/null | wc -l)
+DEV_EXPECTED_COUNT=$(echo $DEV_BUNDLE_DEBS | wc -w)
+[ "$DEV_BUNDLE_COUNT" -eq "$DEV_EXPECTED_COUNT" ] \
+  || { echo "dev bundle holds $DEV_BUNDLE_COUNT .debs, expected $DEV_EXPECTED_COUNT" >&2; exit 1; }
+echo "  [4h] dev bundle: $DEV_BUNDLE_COUNT .debs (xrdp + openssh-server + tailscale closures)"
+# The dev Calamares step + dev customer config + dev settings variant.
+cp "$REPO_ROOT/installer/calamares/dev-setup.sh" \
+   "$ROOTFS/usr/share/pulpo-installer/calamares/dev-setup.sh"
+chmod +x "$ROOTFS/usr/share/pulpo-installer/calamares/dev-setup.sh"
+cp "$REPO_ROOT/installer/calamares/dev-customer-config.json" \
+   "$ROOTFS/usr/share/pulpo-installer/dev-customer-config.json"
+chmod 0644 "$ROOTFS/usr/share/pulpo-installer/dev-customer-config.json"
+# The dev config must be one `config import` will accept (same
+# validator the installer carries; the import itself validates
+# again at install time).
+python3 "$REPO_ROOT/installer/validate_config.py" \
+  "$ROOTFS/usr/share/pulpo-installer/dev-customer-config.json" \
+  || { echo "dev customer config fails validation" >&2; exit 1; }
+# The dev settings variant becomes the live settings.conf (the
+# desktop launcher runs plain `calamares`, which reads
+# settings.conf), and is ALSO kept as settings-dev.conf so the
+# variant is identifiable in the image and the clean check can
+# assert its absence.
+cp "$REPO_ROOT/installer/calamares/settings-dev.conf" \
+   "$ROOTFS/etc/calamares/settings.conf"
+cp "$REPO_ROOT/installer/calamares/settings-dev.conf" \
+   "$ROOTFS/etc/calamares/settings-dev.conf"
+# Stamp the dev marker: the dev step refuses to run without it,
+# and the clean check fails a release build that carries it.
+printf '%s\n' "Pulpo Preview dev/test build" \
+  "Built with installer/build-iso.sh --dev; test artifact, never publish." \
+  > "$ROOTFS/usr/share/pulpo-installer/DEV-BUILD"
+# Gates: the dev step + config + marker are in place, the live
+# settings.conf is the dev variant, and no Tailscale auth-key
+# material is anywhere in the dev files (a baked-in auth key
+# would join the tailnet unattended — that must never happen).
+# The pattern is exact on purpose: the dev-setup.sh variable
+# $authkeys (the authorized_keys path) legitimately contains
+# "authkey" as a substring, so a bare substring match would fail
+# every dev build. What is forbidden is an auth key being
+# supplied: TS_AUTHKEY, --authkey, or an authkey= assignment.
+for f in usr/share/pulpo-installer/calamares/dev-setup.sh \
+         usr/share/pulpo-installer/dev-customer-config.json \
+         etc/calamares/settings.conf \
+         etc/calamares/settings-dev.conf \
+         usr/share/pulpo-installer/DEV-BUILD; do
+  [ -f "$ROOTFS/$f" ] || { echo "dev file missing: $f" >&2; exit 1; }
+done
+[ -x "$ROOTFS/usr/share/pulpo-installer/calamares/dev-setup.sh" ] \
+  || { echo "dev-setup.sh is not executable" >&2; exit 1; }
+grep -q "shellprocess@dev-setup" "$ROOTFS/etc/calamares/settings.conf" \
+  || { echo "dev settings.conf does not run the dev-setup module" >&2; exit 1; }
+grep -q "shellprocess@pulpo-config" "$ROOTFS/etc/calamares/settings.conf" \
+  || { echo "dev settings.conf lost the pulpo-config module" >&2; exit 1; }
+if grep -qiE "TS_AUTHKEY|--authkey|authkey *=" \
+    "$ROOTFS/usr/share/pulpo-installer/calamares/dev-setup.sh" \
+    "$ROOTFS/usr/share/pulpo-installer/dev-customer-config.json" \
+    "$ROOTFS/etc/calamares/settings-dev.conf"; then
+  echo "authkey material in the dev files; refusing to build" >&2; exit 1
+fi
+echo "  [4h] dev Calamares step + dev config + DEV-BUILD marker in place"
+fi
+
 # 5. Repack the merged rootfs as the single filesystem.squashfs
 #    and refresh the size / checksum records.
 echo "== [5/8] repacking merged rootfs as filesystem.squashfs =="
@@ -1171,6 +1321,28 @@ if xorriso -indev "$OUT" -find /casper -name 'minimal.*' 2>/dev/null | grep -q m
   echo "output ISO still holds layered minimal.* files" >&2; exit 1
 fi
 sha256sum "$OUT" > "$OUT.sha256"
+
+# 8b. Clean/dev verification (fail-closed): a clean build must
+#     carry no dev artefacts at all; a dev build must carry the
+#     marker + dev files, and must still have no remote-access
+#     binaries unpacked in the live rootfs and no SSH key in
+#     skel. The ownership gate is re-run here on the squashfs
+#     the ISO carries, and the bundle survival check proves the
+#     gated squashfs is the one mapped into the ISO.
+echo "== [8b/8] verifying clean/dev separation =="
+if [ "$DEV" -eq 1 ]; then
+  "$REPO_ROOT/installer/verify-clean-iso.sh" --dev \
+    --squashfs "$NEW_SQUASHFS" \
+    --ownership-map "$PLAN/ownership.txt" --rootfs "$ROOTFS" \
+    --repo "$REPO_ROOT" \
+    || { echo "dev ISO verification failed" >&2; exit 1; }
+else
+  "$REPO_ROOT/installer/verify-clean-iso.sh" \
+    --squashfs "$NEW_SQUASHFS" \
+    --ownership-map "$PLAN/ownership.txt" --rootfs "$ROOTFS" \
+    --repo "$REPO_ROOT" \
+    || { echo "clean ISO verification failed" >&2; exit 1; }
+fi
 echo "== done =="
 ls -la "$OUT" "$OUT.sha256"
 cat "$OUT.sha256"

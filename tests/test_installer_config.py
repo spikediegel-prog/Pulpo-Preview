@@ -93,6 +93,45 @@ class InstallerConfigTests(unittest.TestCase):
         self.assertTrue(any("acknowledged" in error for error in errors), errors)
 
 
+class DevCustomerConfigTests(unittest.TestCase):
+    """The baked dev customer config (installer/calamares/
+    dev-customer-config.json, shipped only by --dev builds).
+
+    Values are the corrected ones, not Public Beta's live config:
+    real NTP servers (Public Beta saved DNS servers as NTP), the
+    live Hyper-V gateway 172.21.32.1 (Public Beta saved
+    172.21.39.1, which does not exist), America/Phoenix, local
+    evidence 24h/10%. The static address is Mike's own saved
+    address from the Public Beta config; only the gateway was
+    wrong. See installer/DISK-INSTALLER.md "The dev/test ISO
+    variant (--dev)".
+    """
+
+    def _dev(self):
+        return json.loads(
+            (INSTALLER / "calamares" / "dev-customer-config.json")
+            .read_text(encoding="utf-8")
+        )
+
+    def test_dev_config_passes(self):
+        self.assertEqual(validate_config.validate(self._dev()), [])
+
+    def test_dev_config_values_are_the_corrected_ones(self):
+        doc = self._dev()
+        self.assertEqual(doc["time"]["primary"], "pool.ntp.org")
+        self.assertEqual(doc["time"]["secondary"], "ntp.ubuntu.com")
+        self.assertEqual(doc["display_timezone"], "America/Phoenix")
+        self.assertEqual(doc["network"]["mode"], "static")
+        self.assertEqual(doc["network"]["address"], "172.21.39.212/20")
+        self.assertEqual(doc["network"]["gateway"], "172.21.32.1")
+        self.assertEqual(doc["network"]["dns"], ["1.1.1.1", "8.8.8.8"])
+        self.assertEqual(doc["storage"]["path"], "/var/lib/pulpo/evidence")
+        self.assertEqual(doc["storage"]["retention_hours"], 24)
+        self.assertEqual(doc["storage"]["retention_percent"], 10)
+        self.assertTrue(doc["storage"]["acknowledged"])
+        self.assertEqual(doc["saved_by"], "pulpo-preview-installer-dev")
+
+
 class InstallerManifestTests(unittest.TestCase):
     def test_manifest_assets_exist_and_match_sha256(self):
         manifest = json.loads(
