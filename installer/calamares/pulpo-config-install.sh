@@ -285,7 +285,12 @@ main() {
     mkdir -p "$TARGET/etc/pulpo"
     cp "$SRC" "$TARGET/etc/pulpo/customer-config.json" \
         || fail "could not copy config to $TARGET/etc/pulpo/customer-config.json"
-    chmod 644 "$TARGET/etc/pulpo/customer-config.json"
+    # 0600, not 0644: the Control Center refuses to load a
+    # customer config that is group- or world-readable
+    # (system_config.load_customer_config, via
+    # session_preferences._private_file) — a 0644 copy reads as
+    # unsafe_preferences_file and the saved config loads as null.
+    chmod 600 "$TARGET/etc/pulpo/customer-config.json"
     log "system record written: /etc/pulpo/customer-config.json"
 
     # The users module creates the first user with UID 1000.
@@ -296,7 +301,9 @@ main() {
         mkdir -p "$PROFILE_DIR"
         cp "$SRC" "$PROFILE_DIR/control-center-customer-config.json" \
             || fail "could not copy config to the user profile"
-        chmod 644 "$PROFILE_DIR/control-center-customer-config.json"
+        # 0600, same reason as the system record above: this
+        # is the copy the app actually loads on first run.
+        chmod 600 "$PROFILE_DIR/control-center-customer-config.json"
         if [ -n "$TARGET_IDS" ]; then
             chown -R "$TARGET_IDS" "$TARGET/home/$TARGET_USER/.config" 2>/dev/null || \
                 log "WARNING: could not chown the profile dir (continuing)"

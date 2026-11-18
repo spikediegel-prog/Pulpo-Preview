@@ -1033,6 +1033,24 @@ class PulpoConfigScriptTests(unittest.TestCase):
         self.assertIn("--apply-network", calls[0])
         self.assertIn(str(self.src), calls[0])
 
+    def test_written_configs_are_private_files_the_app_will_load(self):
+        # Build #31-dev: the installer wrote both copies 0644 and
+        # the app refused them (unsafe_preferences_file, saved
+        # config null). The writer must emit 0600, and each copy
+        # must pass the same private-file check the Control Center
+        # applies when it loads a customer config.
+        result = self._run()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        from pulpo import session_preferences as preferences
+        system = self.target / "etc" / "pulpo" / "customer-config.json"
+        profile = (
+            self.target / "home" / "testuser" / ".config" / "PulpoPreview"
+            / "control-center-customer-config.json"
+        )
+        for path in (system, profile):
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600, str(path))
+            preferences._private_file(os.stat(path))  # raises on an unsafe file
+
     def test_no_interface_retries_with_fallback_and_proceeds(self):
         result = self._run(mode="noiface")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
