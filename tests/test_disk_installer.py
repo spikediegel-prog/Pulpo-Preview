@@ -1051,6 +1051,38 @@ class PulpoConfigScriptTests(unittest.TestCase):
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600, str(path))
             preferences._private_file(os.stat(path))  # raises on an unsafe file
 
+    def test_saved_timezone_is_applied_to_target(self):
+        # Build #31-dev: the wizard saved America/Phoenix but the
+        # installed system stayed Etc/UTC — `config import`
+        # applies the NTP servers, never the system timezone.
+        # The installer must apply it to the target (the
+        # target-root equivalent of `timedatectl set-timezone`):
+        # /etc/localtime symlink + /etc/timezone, target only.
+        zoneinfo = self.target / "usr" / "share" / "zoneinfo" / "America"
+        zoneinfo.mkdir(parents=True)
+        (zoneinfo / "Phoenix").write_text("fake zoneinfo", encoding="utf-8")
+        result = self._run()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        localtime = self.target / "etc" / "localtime"
+        self.assertTrue(localtime.is_symlink(), str(localtime))
+        self.assertEqual(
+            os.readlink(localtime), "/usr/share/zoneinfo/America/Phoenix"
+        )
+        self.assertEqual(
+            (self.target / "etc" / "timezone").read_text(encoding="utf-8").strip(),
+            "America/Phoenix",
+        )
+        self.assertIn("system timezone set: America/Phoenix", result.stdout)
+
+    def test_missing_zoneinfo_warns_and_proceeds(self):
+        # No zoneinfo entry for the saved timezone in the target:
+        # warn, leave the installed timezone alone, install proceeds.
+        result = self._run()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse((self.target / "etc" / "localtime").is_symlink())
+        self.assertFalse((self.target / "etc" / "timezone").exists())
+        self.assertIn("no zoneinfo entry for 'America/Phoenix'", result.stdout)
+
     def test_no_interface_retries_with_fallback_and_proceeds(self):
         result = self._run(mode="noiface")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
