@@ -1,5 +1,6 @@
 import json
 import unittest
+from dataclasses import replace
 
 from pulpo.commerce import DomainPurchaseRequest, DomainQuote, assess_quote
 from pulpo.namecom_core import (
@@ -187,6 +188,23 @@ class NameComCoreTests(unittest.TestCase):
         self.assertEqual(20.0, body["purchasePrice"])
         self.assertEqual("registration", body["purchaseType"])
         self.assertEqual(1, body["years"])
+
+    def test_create_domain_refuses_the_order_bound_autorenew_choice(self):
+        # Preview adaptation of upstream #267: the fork's Name.com adapter
+        # deliberately refuses auto-renew (namecom_autorenew_not_supported),
+        # so an enabled order-bound choice must fail closed with no provider
+        # request instead of flowing through to the provider.
+        order = replace(self.order(), auto_renew_enabled=True)
+        transport = FakeTransport([])
+        client = NameComCoreClient(
+            NameComCoreConfig("pulpo-test", "sandbox-token"),
+            transport=transport,
+        )
+        with self.assertRaisesRegex(
+            NameComViolation, "namecom_autorenew_not_supported"
+        ):
+            client.create_domain(order, idempotency_key="autorenew-refused-check")
+        self.assertEqual(0, len(transport.calls))
 
     def test_provider_overcharge_is_detected_and_never_normalized_into_success(self):
         order = self.order()
