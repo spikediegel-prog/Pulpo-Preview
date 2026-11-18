@@ -957,3 +957,99 @@ started; Mike expanded it 2026-11-11 and it is now 117 GB with
   has to write the disk), but it grants no authority, creates
   no permits, and never touches the Pulpo kernel. First boot
   hands off to the Control Center's Guided Setup apply path.
+
+## The dev/test ISO variant (--dev)
+
+`installer/build-iso.sh --dev` builds a dev/test ISO for the
+Public Beta VM loop. It is opt-in and default OFF: a default-off
+build is byte-for-byte today's clean path (every dev addition is
+guarded by `DEV=1` in the build script). A dev ISO is a test
+artifact, never published, never a release candidate.
+
+What --dev changes:
+
+- Volume label `PULPO-PREVIEW-DEV` (clean: `PULPO-PREVIEW-0.1.0`)
+  and output name `pulpo-preview-0.1.0-live-amd64-dev.iso`.
+- The dev bundle: the xrdp, openssh-server and tailscale .debs
+  (full closures, same `apt-get download` pattern as steps 4e/4f;
+  packages already in the base image are skipped), stashed under
+  `/usr/share/pulpo-installer/dev-bundle/` in the image. They are
+  NOT unpacked into the live session — the dev Calamares step
+  installs them into the TARGET with `dpkg -i` at install time,
+  so maintainer scripts run. The build gates on the bundle
+  holding all three packages and on its exact count.
+- The dev Calamares step: `installer/calamares/dev-setup.sh`
+  (instance `shellprocess@dev-setup`, config
+  `shellprocess_dev-setup.conf`), registered in the dev settings
+  variant `installer/calamares/settings-dev.conf`, which the
+  build installs as the live `settings.conf` (and keeps as
+  `settings-dev.conf`). The step runs right after
+  `shellprocess@pulpo-config` and, in order: installs the dev
+  bundle into the target, enables xrdp and ssh, installs the
+  corrected dev customer config through the same import path as
+  `pulpo-config-install.sh`, writes the hatch SSH PUBLIC key to
+  the new user's `~/.ssh/authorized_keys` (0600), and creates
+  `/var/lib/pulpo/evidence` (0755, owned by the user).
+- The `DEV-BUILD` marker file at
+  `/usr/share/pulpo-installer/DEV-BUILD`. The dev step refuses to
+  run without it, and the clean settings.conf never registers the
+  step — two independent lines of defence, so a clean image can
+  never run dev setup even by mistake.
+- The dev customer config
+  (`installer/calamares/dev-customer-config.json`), baked into
+  the image and applied by the dev step. Values are the corrected
+  ones, not Public Beta's live config: NTP `pool.ntp.org` /
+  `ntp.ubuntu.com` (Public Beta saved the DNS servers 1.1.1.1 /
+  8.8.8.8 as NTP — the known install-assessment FAIL 2), gateway
+  `172.21.32.1` (the live Hyper-V Default Switch gateway; Public
+  Beta saved `172.21.39.1`, which does not exist — FAIL 1),
+  timezone `America/Phoenix`, storage local
+  `/var/lib/pulpo/evidence` 24h/10% acknowledged. The static
+  address `172.21.39.212/20` is Mike's own saved address from
+  the Public Beta config; only the gateway was wrong. The DNS
+  servers `1.1.1.1` / `8.8.8.8` are the DNS servers from that
+  same saved config, used here as what they are: DNS. The build
+  validates the dev config with `installer/validate_config.py`
+  before stamping the image.
+
+What --dev NEVER bakes in: no Tailscale auth key or any
+credential, no password, no installer account, no private key.
+The only key material is the hatch SSH PUBLIC key (verified
+against the dev VM's `~/.ssh/authorized_keys`); the private half
+never leaves the build machine. Tailscale is installed but NOT
+joined — `tailscale up` on the installed system still needs a
+human-supplied auth key. The build fails closed if auth-key
+material appears in any dev file (the `TS_AUTHKEY`, `--authkey`
+or `authkey=` supply forms — a bare `authkey` substring match
+would false-positive on dev-setup.sh's own `$authkeys`
+variable, the authorized_keys path).
+
+The clean check: `installer/verify-clean-iso.sh` runs as step 8b
+on EVERY build (clean and dev) and standalone against any ISO
+(`--iso`) or squashfs (`--squashfs`). Clean mode asserts no
+DEV-BUILD marker, no dev-setup.sh, no dev-bundle/, no
+dev-customer-config.json, no settings-dev.conf, and no
+`dev-setup` reference in settings.conf; dev mode (`--dev`)
+asserts the inverse (marker + dev files present, dev bundle
+holding the xrdp / openssh-server / tailscale .debs). Both modes
+assert no xrdp/sshd binaries unpacked in the live rootfs (the
+dev tools ship as .debs, installed at install time — never
+unpacked into the live session), no `authorized_keys` anywhere
+under `/etc/skel` (the key goes into the TARGET user's home at
+install time), the Control Center release bundle survived into
+the image, and — with `--ownership-map` — the step-5 ownership
+gate re-run on the squashfs the ISO carries. Any hit exits 1.
+The base image carries an `sshd-keygen@.service.d` config
+fragment; that is not a binary and does not trip the check (the
+paths are matched exactly, not by substring).
+
+Why the dev additions need a Calamares step at all: unpackfs
+copies the whole squashfs, so there is no live-only hiding place
+— anything baked into the live image ships to the installed
+system. The dev tools therefore ship as .debs in the bundle and
+are installed into the target by the dev step, and the SSH key
+and evidence dir are created in the target by the dev step, not
+in the image. The one exception is the dev customer config,
+which is a document, not a credential; it is baked into the
+image only so the dev step can apply it without a live Guided
+Setup run.
