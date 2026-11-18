@@ -569,3 +569,11 @@ Execution obeys.
 
 Evidence reports.
 ```
+
+
+## Optional GPU hash benchmark
+
+The optional CUDA/ROCm helper benchmarks audit-record SHA-256 recomputation.
+It is not connected to normal kernel verification; CPU verification and all
+governance decisions remain authoritative. RX 7900 XT setup and benchmark
+interpretation are documented in [GPU acceleration](docs/GPU_ACCELERATION.md).
