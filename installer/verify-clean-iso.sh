@@ -18,7 +18,11 @@
 #     --list-file  test hook: read a pre-captured `unsquashfs -l`
 #                  listing instead of running unsquashfs (the unit
 #                  tests use it; the build never does)
-#     --xorriso    xorriso binary (default: xorriso on PATH)
+#     --xorriso    xorriso binary (default: xorriso on PATH; if it is
+#                  not on PATH, the iso-build/xorriso-wrap.sh wrapper
+#                  and the extracted iso-tools prefix are tried, since
+#                  xorriso lives in the prefix, not on PATH — pass a
+#                  wrapper script explicitly to override)
 #     --ownership-map  run installer/ownership-gate.py against
 #                  the squashfs with this map (step 8b passes the
 #                  build's merge-plan ownership.txt); with
@@ -80,6 +84,7 @@ ISO=""
 SQUASHFS=""
 LIST_FILE=""
 XORRISO="xorriso"
+XORRISO_LD_LIBRARY_PATH=""
 OWNERSHIP_MAP=""
 ROOTFS=""
 
@@ -97,6 +102,33 @@ while [ $# -gt 0 ]; do
     *) echo "unknown option: $1" >&2; exit 2;;
   esac
 done
+
+# xorriso lives in the extracted iso-tools prefix on the build VM,
+# not on PATH (build-iso.sh wraps it with LD_LIBRARY_PATH the same
+# way). Resolve it here so --iso mode works standalone: an explicit
+# --xorriso wins (a wrapper script, e.g. iso-build/xorriso-wrap.sh,
+# carries its own LD_LIBRARY_PATH); otherwise try the wrap script,
+# then the iso-tools prefix binary with its lib dir.
+if [ "$XORRISO" = "xorriso" ] && ! command -v xorriso >/dev/null 2>&1; then
+  _WRAP="$HOME/pulpo-workspace/iso-build/xorriso-wrap.sh"
+  _PREFIX="${TOOLS:-$HOME/pulpo-workspace/iso-tools}"
+  if [ -x "$_WRAP" ]; then
+    XORRISO="$_WRAP"
+  elif [ -x "$_PREFIX/usr/bin/xorriso" ]; then
+    XORRISO="$_PREFIX/usr/bin/xorriso"
+    XORRISO_LD_LIBRARY_PATH="$_PREFIX/usr/lib/x86_64-linux-gnu"
+  fi
+fi
+
+# _xorriso <args>: run the resolved xorriso, with LD_LIBRARY_PATH
+# only when the prefix binary (not a wrapper) was resolved.
+_xorriso() {
+  if [ -n "$XORRISO_LD_LIBRARY_PATH" ]; then
+    env LD_LIBRARY_PATH="$XORRISO_LD_LIBRARY_PATH" "$XORRISO" "$@"
+  else
+    "$XORRISO" "$@"
+  fi
+}
 
 FAILURES=""
 
@@ -140,7 +172,9 @@ elif [ -n "$ISO" ]; then
         || { echo "missing: xorriso ($XORRISO)" >&2; exit 2; }
     WORK="$(mktemp -d)"
     trap 'rm -rf "$WORK"' EXIT
-    "$XORRISO" -osirrox on -indev "$ISO" -extract /casper/filesystem.squashfs "$WORK" \
+    # -extract takes a FILE target for a single file: passing the
+    # work directory made xorriso refuse to replace it (run 29-dev).
+    _xorriso -osirrox on -indev "$ISO" -extract /casper/filesystem.squashfs "$WORK/filesystem.squashfs" \
         > "$WORK/xorriso-extract.log" 2>&1 \
         || { echo "cannot extract filesystem.squashfs from $ISO (see $WORK/xorriso-extract.log)" >&2; exit 1; }
     SQUASHFS="$WORK/filesystem.squashfs"

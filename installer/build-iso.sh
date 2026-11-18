@@ -192,6 +192,31 @@ fi
 # xorriso so the system python/pip are unaffected.
 xorriso() { env LD_LIBRARY_PATH="$TOOLS/usr/lib/x86_64-linux-gnu" "$TOOLS/usr/bin/xorriso" "$@"; }
 
+# _dev_bundle_skip BEGIN (extracted by tests/test_disk_installer.py)
+# Decide whether a dev-closure package can be skipped because the
+# base image already carries exactly the version apt would install.
+# Returns 0 (skip) or 1 (bundle it). Reads $DEV_MANIFEST
+# (filesystem.manifest) and $APT_CACHE.
+# Skew rule (run 29-dev, 2026-11-17): a package already in the base
+# image must still be bundled when apt's candidate version differs
+# from the manifest version — freshly fetched openssh-server 13.20
+# demands openssh-client (= 13.20) while the base image carries
+# 13.19, so dpkg --configure -a failed in the target. This is
+# general: it applies to ANY strict-version (=) dependency, not
+# just openssh-client, so whenever the archive moves a strict dep
+# past the base image the version-matched .deb is bundled.
+# A missing candidate (or "(none)") means apt knows no newer
+# version — the base version is the only one, so skip.
+_dev_bundle_skip() {
+  local pkg="$1" manifest_ver candidate_ver
+  manifest_ver=$(grep -m1 "^${pkg}:\?\(amd64\)\?$(printf '\t')" "$DEV_MANIFEST" 2>/dev/null | cut -f2)
+  [ -n "$manifest_ver" ] || return 1
+  candidate_ver=$($APT_CACHE policy "$pkg" 2>/dev/null | awk '/^Candidate:/ {print $2; exit}')
+  [ -n "$candidate_ver" ] && [ "$candidate_ver" != "(none)" ] || return 0
+  [ "$manifest_ver" = "$candidate_ver" ]
+}
+# _dev_bundle_skip END
+
 # The 21 casper squashfs layers of the Ubuntu 24.04.5.1 base ISO,
 # in alphabetical order (verified with xorriso -find /casper on
 # the base ISO). This list is ONLY the presence check in step 2:
@@ -1007,8 +1032,14 @@ echo "  [4g] GIS suppressed (skel marker + autostart Hidden=true)"
 #     binaries in the live image; verify-clean-iso.sh step 8b fails
 #     the build if any are found there.
 #     The closure is computed the same way as 4e/4f (apt-cache
-#     depends --recurse, no recommends); packages already in the
-#     base image are skipped, never overwritten. The Tailscale repo
+#     depends --recurse, no recommends); a package already in the
+#     base image is skipped only when the base carries exactly the
+#     version apt would install (_dev_bundle_skip) — when the
+#     archive has moved past the base image, the version-matched
+#     .deb is bundled instead, so a strict-version (=) dependency
+#     of a bundled package can never go unmet (run 29-dev:
+#     openssh-server 13.20 vs base openssh-client 13.19). The
+#     Tailscale repo
 #     is one of the build VM's /etc/apt/sources.list.d entries, so
 #     the same apt-get download pattern fetches it (proven
 #     2026-11-17: tailscale 1.104.7 from pkgs.tailscale.com, after
@@ -1025,9 +1056,10 @@ DEV_CLOSURE=$($APT_CACHE depends --recurse --no-recommends --no-suggests --no-co
 DEV_BUNDLE="$ROOTFS/usr/share/pulpo-installer/dev-bundle"
 mkdir -p "$DEV_BUNDLE"
 DEV_BUNDLE_DEBS=""
+DEV_MANIFEST="$ISO_ROOT/casper/filesystem.manifest"
 for pkg in $DEV_CLOSURE; do
-  if grep -q "^${pkg}:\?\(amd64\)\?$(printf '\t')" "$ISO_ROOT/casper/filesystem.manifest"; then
-    continue  # already in the base image
+  if _dev_bundle_skip "$pkg"; then
+    continue  # base image already carries the version apt would install
   fi
   deb=$(ls "$EXTRA_DEBS/${pkg}_"*.deb /tmp/apt-cache/archives/${pkg}_*.deb 2>/dev/null | head -1 || true)
   if [ -z "$deb" ]; then

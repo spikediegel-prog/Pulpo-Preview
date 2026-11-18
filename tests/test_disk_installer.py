@@ -2685,6 +2685,67 @@ class DevIsoTests(unittest.TestCase):
         self.assertTrue(block.rstrip().endswith("fi"))
         self.assertIn("DEV-BUILD", block)
 
+    def _dev_bundle_skip_fn(self):
+        text = _read(INSTALLER / "build-iso.sh")
+        start = text.index("# _dev_bundle_skip BEGIN")
+        end = text.index("# _dev_bundle_skip END") + len("# _dev_bundle_skip END")
+        return text[start:end]
+
+    def test_dev_bundle_skip_bundles_version_skewed_manifest_packages(self):
+        # Run 29-dev regression: openssh-client is in the base
+        # manifest at 13.19 while apt's candidate is 13.20, so the
+        # version-matched .deb must be bundled even though the
+        # package is in the manifest — otherwise the freshly
+        # fetched openssh-server 13.20 cannot configure in the
+        # target (strict (=) dependency). The step-4h loop must
+        # call this function, not a bare manifest grep.
+        text = _read(INSTALLER / "build-iso.sh")
+        self.assertIn('_dev_bundle_skip "$pkg"', text)
+        fn_file = self.root / "dev_bundle_skip.sh"
+        fn_file.write_text(self._dev_bundle_skip_fn() + "\n", encoding="utf-8")
+        manifest = self.root / "filesystem.manifest"
+        manifest.write_text(
+            "openssh-client\t1:9.6p1-3ubuntu13.19\n"
+            "xrdp\t0.9.24-4ubuntu0.1\n"
+            "nocandidate\t1.0-1\n",
+            encoding="utf-8",
+        )
+        stub = self.root / "apt-cache-stub"
+        stub.write_text(
+            "#!/bin/bash\n"
+            "# Stub for `apt-cache policy <pkg>`: prints a canned Candidate line.\n"
+            "pkg=\"${@: -1}\"\n"
+            "case \"$pkg\" in\n"
+            "  openssh-client) printf '%s\\n' 'Candidate: 1:9.6p1-3ubuntu13.20' ;;\n"
+            "  xrdp) printf '%s\\n' 'Candidate: 0.9.24-4ubuntu0.1' ;;\n"
+            "  nocandidate) printf '%s\\n' 'Candidate: (none)' ;;\n"
+            "  *) printf '%s\\n' 'Candidate: 1.0' ;;\n"
+            "esac\n",
+            encoding="utf-8",
+        )
+        stub.chmod(0o755)
+
+        def skip(pkg):
+            result = subprocess.run(
+                ["bash", "-c",
+                 f"source \"{fn_file}\"\n"
+                 f"DEV_MANIFEST=\"{manifest}\"\n"
+                 f"APT_CACHE=\"{stub}\"\n"
+                 f"_dev_bundle_skip \"{pkg}\"; echo \"rc=$?\""],
+                capture_output=True, text=True, timeout=60,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return result.stdout.strip().endswith("rc=0")
+
+        # Manifest 13.19 vs candidate 13.20: must bundle (rc 1).
+        self.assertFalse(skip("openssh-client"))
+        # Manifest == candidate: skip.
+        self.assertTrue(skip("xrdp"))
+        # Not in the manifest at all: bundle.
+        self.assertFalse(skip("tailscale"))
+        # In the manifest, apt knows no candidate: skip (base is the only version).
+        self.assertTrue(skip("nocandidate"))
+
 
 class VerifyCleanIsoTests(unittest.TestCase):
     SCRIPT = INSTALLER / "verify-clean-iso.sh"
@@ -2788,6 +2849,90 @@ class VerifyCleanIsoTests(unittest.TestCase):
         result = self._run("--clean", listing)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("release.json", result.stdout)
+
+    def _find_xorriso(self):
+        import shutil
+        for candidate in (
+            shutil.which("xorriso"),
+            str(Path.home() / "pulpo-workspace/iso-build/xorriso-wrap.sh"),
+            str(Path.home() / "pulpo-workspace/iso-tools/usr/bin/xorriso"),
+        ):
+            if candidate and Path(candidate).exists() and os.access(candidate, os.X_OK):
+                return candidate
+        return None
+
+    def _build_test_iso(self, name, dev=True):
+        # A real (tiny) ISO carrying a filesystem.squashfs at
+        # /casper/filesystem.squashfs, so --iso mode is exercised
+        # end to end instead of via --list-file. Skips when the
+        # squashfs/xorriso tooling is unavailable (e.g. CI).
+        import shutil
+        if shutil.which("mksquashfs") is None or shutil.which("unsquashfs") is None:
+            self.skipTest("mksquashfs/unsquashfs not available")
+        xorriso = self._find_xorriso()
+        if xorriso is None:
+            self.skipTest("xorriso not available")
+        rootfs = self.root / f"{name}-rootfs"
+        (rootfs / "usr/share/pulpo-installer/control-center").mkdir(parents=True)
+        (rootfs / "etc/calamares").mkdir(parents=True)
+        for f in ("release.json", "publisher.gpg", "ubuntu_release.py",
+                  "check_ubuntu_deb.py",
+                  "pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb"):
+            (rootfs / "usr/share/pulpo-installer/control-center" / f).write_bytes(b"")
+        settings = "shellprocess@pulpo-config\n"
+        if dev:
+            settings += "shellprocess@dev-setup\n"
+            (rootfs / "usr/share/pulpo-installer/calamares").mkdir(parents=True)
+            (rootfs / "usr/share/pulpo-installer/DEV-BUILD").write_text(
+                "Pulpo Preview dev/test build\n", encoding="utf-8")
+            (rootfs / "usr/share/pulpo-installer/calamares/dev-setup.sh").write_bytes(b"")
+            (rootfs / "usr/share/pulpo-installer/dev-customer-config.json").write_bytes(b"")
+            (rootfs / "etc/calamares/settings-dev.conf").write_bytes(b"")
+            bundle = rootfs / "usr/share/pulpo-installer/dev-bundle"
+            bundle.mkdir(parents=True)
+            for deb in ("xrdp_0.9.24_amd64.deb", "openssh-server_1_amd64.deb",
+                        "tailscale_1.104.7_amd64.deb"):
+                (bundle / deb).write_bytes(b"")
+        (rootfs / "etc/calamares/settings.conf").write_text(settings, encoding="utf-8")
+        squashfs = self.root / f"{name}.squashfs"
+        result = subprocess.run(
+            ["mksquashfs", str(rootfs), str(squashfs), "-noappend", "-quiet"],
+            capture_output=True, text=True, timeout=120)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        iso = self.root / f"{name}.iso"
+        result = subprocess.run(
+            [xorriso, "-as", "mkisofs", "-o", str(iso), "-V", "TEST",
+             "-graft-points", f"/casper/filesystem.squashfs={squashfs}"],
+            capture_output=True, text=True, timeout=120)
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        return iso, xorriso
+
+    def test_iso_mode_extracts_squashfs_from_a_real_iso(self):
+        # Run 29-dev regression: --iso mode passed a directory as
+        # the xorriso -extract target for a single file, so xorriso
+        # refused to replace it. This exercises --iso mode against
+        # a real (tiny) ISO, in both modes, with and without an
+        # explicit --xorriso (the second run leans on the script's
+        # own xorriso resolution).
+        iso, xorriso = self._build_test_iso("dev", dev=True)
+        for args in (["--dev", "--iso", str(iso)],
+                     ["--dev", "--iso", str(iso), "--xorriso", xorriso]):
+            result = subprocess.run(
+                ["bash", str(self.SCRIPT), *args],
+                capture_output=True, text=True, timeout=120)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("PASS (dev)", result.stdout)
+        result = subprocess.run(
+            ["bash", str(self.SCRIPT), "--clean", "--iso", str(iso)],
+            capture_output=True, text=True, timeout=120)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("DEV-BUILD marker present", result.stdout)
+        clean_iso, _ = self._build_test_iso("clean", dev=False)
+        result = subprocess.run(
+            ["bash", str(self.SCRIPT), "--clean", "--iso", str(clean_iso)],
+            capture_output=True, text=True, timeout=120)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("PASS (clean)", result.stdout)
 
 
 if __name__ == "__main__":
