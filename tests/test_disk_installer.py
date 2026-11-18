@@ -2713,12 +2713,12 @@ class DevIsoTests(unittest.TestCase):
         stub = self.root / "apt-cache-stub"
         stub.write_text(
             "#!/bin/bash\n"
-            "# Stub for `apt-cache policy <pkg>`: prints a canned Candidate line.\n"
+            "# Stub for `apt-cache policy <pkg>`: prints a canned Candidate line,\n# indented two spaces exactly like the real output (the old stub\n# omitted the indent, which hid the /^Candidate:/ anchor bug).\n"
             "pkg=\"${@: -1}\"\n"
             "case \"$pkg\" in\n"
-            "  openssh-client) printf '%s\\n' 'Candidate: 1:9.6p1-3ubuntu13.20' ;;\n"
-            "  xrdp) printf '%s\\n' 'Candidate: 0.9.24-4ubuntu0.1' ;;\n"
-            "  nocandidate) printf '%s\\n' 'Candidate: (none)' ;;\n"
+            "  openssh-client) printf '%s\\n' '  Candidate: 1:9.6p1-3ubuntu13.20' ;;\n"
+            "  xrdp) printf '%s\\n' '  Candidate: 0.9.24-4ubuntu0.1' ;;\n"
+            "  nocandidate) printf '%s\\n' '  Candidate: (none)' ;;\n"
             "  *) printf '%s\\n' 'Candidate: 1.0' ;;\n"
             "esac\n",
             encoding="utf-8",

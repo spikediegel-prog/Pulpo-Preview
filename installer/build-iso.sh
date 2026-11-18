@@ -211,7 +211,10 @@ _dev_bundle_skip() {
   local pkg="$1" manifest_ver candidate_ver
   manifest_ver=$(grep -m1 "^${pkg}:\?\(amd64\)\?$(printf '\t')" "$DEV_MANIFEST" 2>/dev/null | cut -f2)
   [ -n "$manifest_ver" ] || return 1
-  candidate_ver=$($APT_CACHE policy "$pkg" 2>/dev/null | awk '/^Candidate:/ {print $2; exit}')
+  # NOTE: `apt-cache policy` indents the Candidate: line two spaces,
+  # so the match must allow leading whitespace (a ^ anchor alone
+  # never matches and candidate_ver comes back empty).
+  candidate_ver=$($APT_CACHE policy "$pkg" 2>/dev/null | awk '/^[[:space:]]*Candidate:/ {print $2; exit}')
   [ -n "$candidate_ver" ] && [ "$candidate_ver" != "(none)" ] || return 0
   [ "$manifest_ver" = "$candidate_ver" ]
 }
