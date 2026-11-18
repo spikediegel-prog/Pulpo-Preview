@@ -14,7 +14,11 @@
 #      (~/.config/PulpoPreview/control-center-customer-config.json),
 #   3. runs `pulpo-control-center config import --root $TARGET
 #      --apply-network` so the target's timesyncd, netplan and
-#      storage records are written from the same document,
+#      storage records are written from the same document, then
+#      applies the saved display_timezone to the target's system
+#      clock config (/etc/localtime + /etc/timezone) — the import
+#      applies the NTP servers but never the system timezone, and
+#      the live session's timezone is never touched,
 #   4. copies the Calamares session log into the target for
 #      post-install diagnosis.
 #
@@ -247,6 +251,42 @@ run_import() {
     fi
 }
 
+# Apply the saved display timezone to the TARGET's system clock
+# config — the target-root equivalent of `timedatectl
+# set-timezone`. Build #31-dev: the wizard saved America/Phoenix
+# but the installed system stayed Etc/UTC, because `config
+# import` applies only the NTP servers (the Control Center
+# treats display_timezone as a preference for reading times, and
+# its `config set-timezone` never touches the system clock). The
+# import validates display_timezone before applying anything, so
+# by the time this runs the value is a valid IANA name; the `..`
+# / absolute-path guard and the zoneinfo-existence check are
+# defence in depth, because the value is turned into a
+# filesystem path. Only the target is touched — never the live
+# session — so there is no clash with Guided Setup's
+# live-session path, which only records the preference. A
+# missing zone entry, a missing key, or an unreadable document
+# warns and skips: the install must not fail over a clock label,
+# and Guided Setup on the installed system can still record it.
+# Writes what timedatectl set-timezone writes on Ubuntu: the
+# /etc/localtime symlink and /etc/timezone.
+apply_target_timezone() {
+    local tz zoneinfo
+    tz="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("display_timezone", "") or "")' "$SRC" 2>/dev/null)" \
+        || { log "WARNING: could not read display_timezone from $SRC; system timezone left as installed"; return 0; }
+    [ -n "$tz" ] || { log "WARNING: no display_timezone in $SRC; system timezone left as installed"; return 0; }
+    case "$tz" in
+        /*|*..*) log "WARNING: refusing unsafe timezone '$tz'; system timezone left as installed"; return 0 ;;
+    esac
+    zoneinfo="$TARGET/usr/share/zoneinfo/$tz"
+    [ -f "$zoneinfo" ] || { log "WARNING: no zoneinfo entry for '$tz' in the target; system timezone left as installed"; return 0; }
+    ln -sf "/usr/share/zoneinfo/$tz" "$TARGET/etc/localtime" \
+        || fail "could not link $TARGET/etc/localtime"
+    printf '%s\n' "$tz" > "$TARGET/etc/timezone" \
+        || fail "could not write $TARGET/etc/timezone"
+    log "system timezone set: $tz (/etc/localtime + /etc/timezone in the target)"
+}
+
 main() {
     TARGET="${1:?usage: pulpo-config-install.sh <target-root>}"
     LOGDIR="$TARGET/var/log/pulpo-installer"
@@ -364,6 +404,12 @@ main() {
         sed 's/^/[import] /' "$IMPORT_OUT" | tee -a "$LOGFILE"
         fail "config import failed"
     fi
+
+    # 3b. The import applies the NTP servers but not the system
+    # timezone (display_timezone is a Control Center preference
+    # for reading times). Apply it to the target from the same
+    # document — target only, never the live session.
+    apply_target_timezone
 
     # 4. Keep the Calamares session log with the install record.
     for clog in /root/.cache/calamares/session.log \
