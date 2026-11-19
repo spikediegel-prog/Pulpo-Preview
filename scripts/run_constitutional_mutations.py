@@ -232,6 +232,20 @@ MUTATIONS: tuple[Mutation, ...] = (
             "tests.test_service_boundary.AdversarialBoundaryTests.test_response_tampering_detected_by_client",
         ),
     ),
+    Mutation(
+        # Port of upstream PR #372 (kernel build item #2): the
+        # projection's denial record call is what makes a
+        # directive-scope denial visible to the canonical audit.
+        # Removing it must be detected by the item #2 tests.
+        "projection_denial_record_removed",
+        "pulpo/directives.py",
+        '        self.kernel.record_directive_denial(\n            intent,',
+        '        None and self.kernel.record_directive_denial(\n            intent,',
+        (
+            "tests.test_projection_denial_audit.ProjectionDenialRecordTests.test_unknown_directive_denial_is_recorded_with_fixed_schema",
+            "tests.test_projection_denial_audit.ProjectionDenialRecordTests.test_mandate_failures_are_recorded",
+        ),
+    ),
 )
 
 
