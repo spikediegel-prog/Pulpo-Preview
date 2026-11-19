@@ -312,6 +312,26 @@ class GovernedDirectiveProjection:
             raise RuntimeError("directive_clock_invalid")
         return now_ns
 
+    def _deny(self, intent: Intent, directive: Directive, reason: str, digest: str) -> Decision:
+        # Port of upstream PR #372 (kernel build item #2): a
+        # directive-scope denial is a governed effect (evidence
+        # production), so it is recorded in the canonical audit
+        # through the kernel's fixed-schema verb - exactly one record
+        # per denied attempt, like kernel-reached denials. The Decision
+        # returned is the one the projection has always returned; only
+        # its visibility changes. Fork note: Preview has no
+        # aggregate-budget early check (build item #1 is unported), so
+        # the three paths below are the projection's whole denial
+        # surface here.
+        self.kernel.record_directive_denial(
+            intent,
+            directive_id=directive.directive_id,
+            version=directive.version,
+            directive_hash=directive.directive_hash,
+            reason=reason,
+        )
+        return Decision("deny", reason, digest)
+
     def evaluate(self, intent: Intent, directive: Directive) -> Decision:
         status = self.kernel._state.directive_status(
             directive.directive_id,
@@ -320,15 +340,15 @@ class GovernedDirectiveProjection:
         )
         digest = self.kernel.intent_hash(intent)
         if status != "active":
-            return Decision("deny", status, digest)
+            return self._deny(intent, directive, status, digest)
         if directive.parent_directive_hash is not None:
             parent_status = self.kernel._state.directive_hash_status(directive.parent_directive_hash)
             if parent_status != "active":
-                return Decision("deny", parent_status, digest)
+                return self._deny(intent, directive, parent_status, digest)
         now_ns = self._trusted_now()
         failure = directive.permits(intent, now_ns)
         if failure:
-            return Decision("deny", failure, digest)
+            return self._deny(intent, directive, failure, digest)
 
         decision = self.kernel.evaluate(intent)
         if decision.outcome == "allow" and decision.permit is not None:

@@ -1357,5 +1357,57 @@ class GovernanceKernel:
         self._append("decision", {"outcome": outcome, "reason": reason, "intent_hash": digest})
         return decision
 
+    def record_directive_denial(
+        self,
+        intent: Intent,
+        *,
+        directive_id: str,
+        version: int,
+        directive_hash: str,
+        reason: str,
+    ) -> None:
+        """Facade verb: record a directive-scope denial in the audit.
+
+        Port of upstream Ironnember/Pulpo1.0 PR #372 (kernel build item
+        #2): the directive projection returns its directive-scope
+        denials (directive not active, parent not active, mandate
+        failure) without a kernel evaluation, so before this verb those
+        denials appended nothing - a refused attempt was invisible to
+        the canonical audit and to reconciliation, unlike
+        kernel-reached denials (``decision``) and consume denials
+        (``permit_rejected``), which append exactly one record each.
+        The projection reports each of its denials through this verb
+        instead. The schema is fixed: the caller supplies the intent,
+        the directive's identity, and the reason it already computed;
+        the kernel derives the intent hash and appends exactly one
+        ``directive_denial`` record with ``authority_effect=none``.
+        Recording a denial grants nothing, spends nothing, and
+        changes no directive state.
+
+        Fork note: upstream's fourth path - the aggregate-budget early
+        check from build item #1 (PR #369) - has no Preview
+        counterpart (Preview's Directive carries no aggregate budget),
+        so the projection routes its three existing denial paths
+        through this verb.
+        """
+
+        self._append(
+            "directive_denial",
+            {
+                "schema": "pulpo.directive-denial.v0",
+                "directive_id": directive_id,
+                "version": version,
+                "directive_hash": directive_hash,
+                "intent_hash": self.intent_hash(intent),
+                "principal": intent.principal,
+                "action": intent.action,
+                "resource": intent.resource,
+                "cost": intent.cost,
+                "session_id": intent.session_id,
+                "reason": reason,
+                "authority_effect": "none",
+            },
+        )
+
     def _append(self, event: str, payload: dict[str, Any]) -> None:
         self._state.append(event, payload, self._clock())
