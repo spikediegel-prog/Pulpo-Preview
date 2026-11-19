@@ -332,7 +332,7 @@ class GovernedDirectiveProjection:
         )
         return Decision("deny", reason, digest)
 
-    def evaluate(self, intent: Intent, directive: Directive) -> Decision:
+    def evaluate(self, intent: Intent, directive: Directive, *, presenter: str | None = None) -> Decision:
         status = self.kernel._state.directive_status(
             directive.directive_id,
             directive.version,
@@ -350,7 +350,7 @@ class GovernedDirectiveProjection:
         if failure:
             return self._deny(intent, directive, failure, digest)
 
-        decision = self.kernel.evaluate(intent)
+        decision = self.kernel.evaluate(intent, presenter=presenter)
         if decision.outcome == "allow" and decision.permit is not None:
             self.kernel._state.bind_permit_to_directive(
                 decision.permit,
