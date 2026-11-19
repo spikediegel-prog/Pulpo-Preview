@@ -4,16 +4,19 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from hashlib import sha256
+from pathlib import Path
 import hmac
 import json
+import os
 import secrets
+import stat
 import time
 from typing import Any, Callable
 
 from .authority import ApprovalEnvelope, ApprovalVerifier, AuthorityTrust, PolicyEnvelope
 from .audit_parallel import AuditVerificationEngine, audit_row_has_valid_types
 from .ceremony import CeremonyEvidence, CeremonyTrust, CeremonyVerifier
-from .state import ApprovalUse, InMemoryKernelState, KernelState, StateClockError
+from .state import ApprovalUse, InMemoryKernelState, KernelState, SQLiteKernelState, StateClockError
 
 
 # Reuse the unchanged encoder configuration; per-call state stays in encode().
@@ -40,6 +43,76 @@ def _is_sha256(value: Any) -> bool:
         and value == value.lower()
         and all(character in "0123456789abcdef" for character in value)
     )
+
+
+def _observe_artifact_file(path: str | Path) -> tuple[str, str, int]:
+    """Hash one stable regular file through a descriptor-bound observation.
+
+    The resolved path, descriptor identity, byte count, size, and metadata
+    must remain stable for the whole observation. A writer racing the read
+    therefore cannot produce completion evidence for a mixed or replaced
+    artifact snapshot. This is the single implementation: the target
+    reconciliation projection delegates here, and the kernel's
+    ``record_target_completion`` verb observes through it, so a caller can
+    never substitute a self-asserted hash for an observed one.
+    """
+
+    try:
+        resolved = Path(path).expanduser().resolve(strict=True)
+    except (OSError, RuntimeError) as exc:
+        raise ValueError("artifact_not_found") from exc
+
+    flags = os.O_RDONLY
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(resolved, flags)
+    except FileNotFoundError as exc:
+        raise ValueError("artifact_changed_during_observation") from exc
+    except OSError as exc:
+        raise ValueError("artifact_unreadable") from exc
+
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode):
+            raise ValueError("artifact_not_file")
+        if before.st_size <= 0:
+            raise ValueError("artifact_empty")
+
+        digest = sha256()
+        bytes_read = 0
+        try:
+            while True:
+                chunk = os.read(descriptor, 1024 * 1024)
+                if not chunk:
+                    break
+                bytes_read += len(chunk)
+                digest.update(chunk)
+            after = os.fstat(descriptor)
+            path_after = os.stat(resolved, follow_symlinks=False)
+        except OSError as exc:
+            raise ValueError("artifact_changed_during_observation") from exc
+
+        stable_descriptor = (
+            before.st_dev == after.st_dev
+            and before.st_ino == after.st_ino
+            and before.st_size == after.st_size
+            and before.st_mtime_ns == after.st_mtime_ns
+            and before.st_ctime_ns == after.st_ctime_ns
+        )
+        stable_path = (
+            after.st_dev == path_after.st_dev
+            and after.st_ino == path_after.st_ino
+            and after.st_size == path_after.st_size
+        )
+        if bytes_read != before.st_size or not stable_descriptor or not stable_path:
+            raise ValueError("artifact_changed_during_observation")
+
+        return str(resolved), digest.hexdigest(), bytes_read
+    finally:
+        os.close(descriptor)
 
 
 @dataclass(frozen=True)
@@ -939,6 +1012,79 @@ class GovernanceKernel:
             return "permit_clock_invalid"
         return self._state.revalidate_consumed_permit(permit, digest, now_ns, policy_hash=self.policy_hash, issuer_hash=self._permit_issuer)
 
+    def verify_audit_report(self) -> dict[str, Any]:
+        """Verify the audit chain and report its signing coverage.
+
+        Returns ``ok`` plus, for every record, whether it was accepted
+        as signed or as legacy. The signature field is excluded from
+        the hashed body (it is a sibling of ``hash``, not part of it),
+        so the unkeyed chain math is identical to before signing
+        existed. When the state carries no signer, every record
+        verifies legacy-style and ``signing_enabled`` is False — the
+        exact pre-signing behavior. When a signer is configured,
+        every record at or after the legacy prefix must carry a valid
+        signature: a missing one fails as ``audit_signature_missing``,
+        a present-but-wrong one as ``audit_signature_invalid``. A
+        signature that is present anywhere must verify, including on
+        legacy-prefix records — a record carries no signature it cannot
+        prove. Malformed records fail as ``audit_record_malformed``
+        instead of raising, so callers that treat verification as a
+        boolean (boot included) fail closed the same way.
+        """
+
+        signer = getattr(self._state, "audit_signer", None)
+        try:
+            legacy_records = int(getattr(self._state, "legacy_audit_records", 0) or 0)
+        except (TypeError, ValueError):
+            legacy_records = 0
+        report: dict[str, Any] = {
+            "ok": True,
+            "reason": None,
+            "total_records": 0,
+            "signed_records": 0,
+            "unsigned_records": 0,
+            "legacy_records": legacy_records,
+            "signing_enabled": signer is not None,
+            "failed_record": None,
+        }
+        previous = "0" * 64
+        try:
+            records = self.audit
+        except Exception:
+            report.update({"ok": False, "reason": "audit_record_malformed"})
+            return report
+        for index, record in enumerate(records):
+            report["total_records"] = index + 1
+            try:
+                body = {key: value for key, value in record.items() if key not in ("hash", "signature")}
+                if body["previous_hash"] != previous:
+                    report.update({"ok": False, "reason": "audit_previous_hash_mismatch", "failed_record": index})
+                    return report
+                expected = sha256(_canonical(body)).hexdigest()
+                if not hmac.compare_digest(str(record["hash"]), expected):
+                    report.update({"ok": False, "reason": "audit_hash_mismatch", "failed_record": index})
+                    return report
+            except (AttributeError, KeyError, TypeError, ValueError):
+                report.update({"ok": False, "reason": "audit_record_malformed", "failed_record": index})
+                return report
+            signature = record.get("signature") if isinstance(record, dict) else None
+            if signature is not None:
+                if signer is None or not signer.verify(record["hash"], signature):
+                    # With no signer configured there is nothing a
+                    # signature could be verified against, so a present
+                    # signature on an unsigned chain is itself a
+                    # forgery-shaped anomaly: fail rather than ignore.
+                    report.update({"ok": False, "reason": "audit_signature_invalid", "failed_record": index})
+                    return report
+                report["signed_records"] += 1
+            elif signer is not None and index >= legacy_records:
+                report.update({"ok": False, "reason": "audit_signature_missing", "failed_record": index})
+                return report
+            else:
+                report["unsigned_records"] += 1
+            previous = record["hash"]
+        return report
+
     def verify_audit(self) -> bool:
         engine = self._audit_verification_engine
         raw_reader = getattr(self._state, "audit_verification_rows", None)
@@ -958,6 +1104,253 @@ class GovernanceKernel:
                 return False
             previous = record["hash"]
         return True
+
+    def directive_status(self, directive_id: str, version: int, directive_hash: str) -> str:
+        """Facade read: the recorded status of one exact directive version."""
+
+        return self._state.directive_status(directive_id, version, directive_hash)
+
+    def directive_hash_status(self, directive_hash: str) -> str:
+        """Facade read: the recorded status of a directive by its hash."""
+
+        return self._state.directive_hash_status(directive_hash)
+
+    def bind_permit_to_directive(
+        self,
+        permit: str,
+        intent_hash: str,
+        binding: DirectivePermitBinding,
+        timestamp_ns: int,
+    ) -> None:
+        """Facade verb: bind an issued permit to its live directive."""
+
+        self._state.bind_permit_to_directive(permit, intent_hash, binding, timestamp_ns)
+
+    def record_target_completion(
+        self,
+        *,
+        target_id: str,
+        version: int,
+        target_hash: str,
+        intent_hash: str,
+        artifact_path: str | Path,
+        timestamp_ns: int,
+    ) -> dict[str, Any]:
+        """Facade verb: observe an artifact and append its completion record.
+
+        Fixed schema, verified at the append surface (Codex P1 fix on
+        PR #359): the verb takes an artifact *path*, never a
+        caller-supplied completion dict or hash. It resolves the
+        locked target, cross-checks the exact target and intent
+        hashes, and observes the file itself through
+        ``_observe_artifact_file`` — the same descriptor-bound stable
+        observation the governed projection performs — so evidence
+        naming a nonexistent or unobserved file cannot be recorded.
+        Returns the completion dict exactly as recorded.
+        """
+
+        target = self.get_locked_target(target_id, version=version)
+        if target is None:
+            raise ValueError("target_not_locked")
+        if not isinstance(target_hash, str):
+            raise ValueError("target_hash_mismatch")
+        if not hmac.compare_digest(target.target_hash, target_hash):
+            raise ValueError("target_hash_mismatch")
+        expected_intent_hash = self.intent_hash(target.intent)
+        if not isinstance(intent_hash, str):
+            raise ValueError("target_intent_mismatch")
+        if not hmac.compare_digest(expected_intent_hash, intent_hash):
+            raise ValueError("target_intent_mismatch")
+        if timestamp_ns < target.created_at_ns:
+            raise RuntimeError("artifact_observed_before_target")
+
+        resolved_path, artifact_sha256, size_bytes = _observe_artifact_file(artifact_path)
+        completion: dict[str, Any] = {
+            "target_id": target.target_id,
+            "version": target.version,
+            "target_hash": target.target_hash,
+            "intent_hash": expected_intent_hash,
+            "artifact_path": resolved_path,
+            "artifact_sha256": artifact_sha256,
+            "size_bytes": size_bytes,
+            "observed_at_ns": timestamp_ns,
+            "schema": "pulpo.target-artifact-completion.v0",
+        }
+        completion_hash = sha256(_canonical(completion)).hexdigest()
+        self._state.append(
+            "target_completed",
+            {
+                "target_id": target.target_id,
+                "version": target.version,
+                "target_hash": target.target_hash,
+                "intent_hash": expected_intent_hash,
+                "completion": completion,
+                "completion_hash": completion_hash,
+                "authority_effect": "none",
+            },
+            timestamp_ns,
+        )
+        return completion
+
+    def record_domain_outcome_memory(
+        self,
+        *,
+        reconciliation_transition_hash: str,
+        payload: dict[str, Any],
+        timestamp_ns: int,
+    ) -> dict[str, Any] | None:
+        """Facade verb: verify, then append-once, a domain outcome-memory record.
+
+        Fixed schema: the ``domain_outcome_memory`` event, unique on
+        ``reconciliation_transition_hash``. Returns the existing
+        payload when a record with that identity already exists (the
+        state layer's ``append_unique`` contract), else None.
+
+        Verified at the append surface (Codex P1 fix on PR #359): a
+        self-asserted payload is refused — with a distinct
+        ``outcome_memory_*`` ``ValueError`` and nothing appended —
+        unless its identity hash recomputes, its policy hash is this
+        kernel's, exactly one projected custody-transition evidence
+        record backs its transition hash with a receipt bound to its
+        order hash and epoch, its classification is consistent with
+        that receipt's transition type, and exactly one locked target
+        in the audit carries its target and intent hashes. The kernel
+        cannot re-derive the custody layer's observation/budget
+        checks; those remain the projection's authority (see the
+        change record).
+        """
+
+        if not isinstance(payload, dict):
+            raise ValueError("outcome_memory_payload_invalid")
+        if payload.get("reconciliation_transition_hash") != reconciliation_transition_hash:
+            raise ValueError("outcome_memory_transition_hash_mismatch")
+        if payload.get("schema") != "pulpo.domain-outcome-memory.v0":
+            raise ValueError("outcome_memory_schema_mismatch")
+        if payload.get("authority_effect") != "none":
+            raise ValueError("outcome_memory_authority_effect_mismatch")
+        if payload.get("governed_effect") != "canonical_outcome_memory":
+            raise ValueError("outcome_memory_governed_effect_mismatch")
+
+        identity = {
+            "schema": "pulpo.domain-outcome-memory.v0",
+            "attempt_id": payload.get("attempt_id"),
+            "order_hash": payload.get("order_hash"),
+            "target_hash": payload.get("target_hash"),
+            "intent_hash": payload.get("intent_hash"),
+            "policy_hash": payload.get("policy_hash"),
+            "observation_hash": payload.get("observation_hash"),
+            "reconciliation_transition_hash": payload.get("reconciliation_transition_hash"),
+            "reconciliation_epoch": payload.get("reconciliation_epoch"),
+            "reconciliation_outcome": payload.get("reconciliation_outcome"),
+            "classification": payload.get("classification"),
+            "reason": payload.get("reason"),
+            "reusable": payload.get("reusable"),
+            "authority_effect": "none",
+            "governed_effect": "canonical_outcome_memory",
+        }
+        expected_memory_id = sha256(_canonical(identity)).hexdigest()
+        memory_id = payload.get("memory_id")
+        if not isinstance(memory_id, str):
+            raise ValueError("outcome_memory_memory_id_mismatch")
+        if not hmac.compare_digest(expected_memory_id, memory_id):
+            raise ValueError("outcome_memory_memory_id_mismatch")
+
+        if payload.get("policy_hash") != self.policy_hash:
+            raise ValueError("outcome_memory_policy_hash_mismatch")
+
+        custody_matches: list[dict[str, Any]] = []
+        for record in self.audit:
+            if record.get("event") != "custody_transition":
+                continue
+            record_payload = record.get("payload")
+            if not isinstance(record_payload, dict):
+                continue
+            if record_payload.get("transition_hash") == reconciliation_transition_hash:
+                custody_matches.append(record_payload)
+        if len(custody_matches) != 1:
+            if not custody_matches:
+                raise ValueError("outcome_memory_custody_evidence_missing")
+            raise ValueError("outcome_memory_custody_evidence_ambiguous")
+        evidence = custody_matches[0]
+        receipt = evidence.get("receipt")
+        if (
+            evidence.get("schema") != "pulpo.custody-evidence-projection.v0"
+            or not isinstance(receipt, dict)
+            or receipt.get("transition_hash") != reconciliation_transition_hash
+            or receipt.get("object_hash") != payload.get("order_hash")
+            or receipt.get("epoch") != payload.get("reconciliation_epoch")
+        ):
+            raise ValueError("outcome_memory_custody_evidence_mismatch")
+
+        transition_type = receipt.get("transition_type")
+        outcome = payload.get("reconciliation_outcome")
+        classification = payload.get("classification")
+        reusable = payload.get("reusable")
+        if transition_type == "reconciled_success":
+            consistent = (
+                outcome == "success"
+                and classification == "SUCCESS_VERIFIED"
+                and reusable is True
+            )
+        elif transition_type == "reconciled_failure":
+            consistent = (
+                outcome == "failure"
+                and classification in {"RECONCILIATION_FAILURE", "RECONCILIATION_MISMATCH"}
+                and reusable is False
+            )
+        elif transition_type == "unresolved":
+            consistent = (
+                outcome == "unresolved"
+                and classification == "EVIDENCE_FAILURE"
+                and reusable is False
+            )
+        else:
+            raise ValueError("outcome_memory_custody_transition_type_invalid")
+        if not consistent:
+            raise ValueError("outcome_memory_classification_mismatch")
+
+        target_matches: list[dict[str, Any]] = []
+        for record in self.audit:
+            if record.get("event") != "target_locked":
+                continue
+            record_payload = record.get("payload")
+            if not isinstance(record_payload, dict):
+                continue
+            if record_payload.get("target_hash") == payload.get("target_hash"):
+                target_matches.append(record_payload)
+        if len(target_matches) != 1:
+            if not target_matches:
+                raise ValueError("outcome_memory_target_missing")
+            raise ValueError("outcome_memory_target_ambiguous")
+        if target_matches[0].get("intent_hash") != payload.get("intent_hash"):
+            raise ValueError("outcome_memory_target_intent_mismatch")
+
+        return self._state.append_unique(
+            "domain_outcome_memory",
+            "reconciliation_transition_hash",
+            reconciliation_transition_hash,
+            payload,
+            timestamp_ns,
+        )
+
+    def state_source_id(self) -> str:
+        """Opaque process-scoped identifier for this kernel's backend.
+
+        Read-only identification for evidence derivation (the incident
+        channel stamps its reports with which backend instance they
+        were derived from). Exposing an identifier is not exposing the
+        handle: callers learn a stable name for the backend in this
+        process, never the object. A SQLite backend whose connection
+        carries an ``activity_id`` reports that id, as before.
+        """
+
+        backend = self._state
+        source_id = sha256(f"{os.getpid()}:{id(backend)}".encode()).hexdigest()[:32]
+        if type(backend) is SQLiteKernelState:
+            activity_id = getattr(backend._connection, "activity_id", None)
+            if type(activity_id) is str and activity_id:
+                source_id = activity_id
+        return source_id
 
     def _decide(self, outcome: str, reason: str, digest: str, permit: str | None = None) -> Decision:
         decision = Decision(outcome, reason, digest, permit)
