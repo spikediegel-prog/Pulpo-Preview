@@ -1,0 +1,79 @@
+{
+  "schema": "pulpo.clinical-test-summary.v0.1",
+  "recorded_at_ns": 1792976366449307244,
+  "runtime": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "host_platform": "linux",
+  "scope": "Selected local synthetic tests only. Host execution is not hypervisor or production qualification.",
+  "results": [
+    {
+      "name": "clinical-canonical",
+      "exit_code": 0,
+      "passed": true,
+      "seconds": 0.233,
+      "argv": [
+        "evaluate.py",
+        "--engine",
+        "canonical",
+        "--out",
+        "/mnt/c/Users/spike/Documents/Codex/2026-10-25/referenced-chatgpt-conversation-this-is-an-2/outputs/Pulpo-Clinical-Evaluation-Kit-v0.1/evidence/qualified-wsl-run/canonical"
+      ]
+    },
+    {
+      "name": "upstream-canonical",
+      "exit_code": 0,
+      "passed": true,
+      "seconds": 0.126,
+      "argv": [
+        "-m",
+        "unittest",
+        "tests.test_kernel",
+        "tests.test_directives",
+        "tests.test_authority",
+        "-v"
+      ]
+    },
+    {
+      "name": "clinical-preview",
+      "exit_code": 0,
+      "passed": true,
+      "seconds": 0.246,
+      "argv": [
+        "evaluate.py",
+        "--engine",
+        "preview",
+        "--out",
+        "/mnt/c/Users/spike/Documents/Codex/2026-10-25/referenced-chatgpt-conversation-this-is-an-2/outputs/Pulpo-Clinical-Evaluation-Kit-v0.1/evidence/qualified-wsl-run/preview"
+      ]
+    },
+    {
+      "name": "upstream-preview",
+      "exit_code": 0,
+      "passed": true,
+      "seconds": 1.28,
+      "argv": [
+        "-m",
+        "unittest",
+        "tests.test_kernel",
+        "tests.test_directives",
+        "tests.test_authority",
+        "tests.test_external_authority_boundaries",
+        "tests.test_permit_lifetime",
+        "tests.test_guarded_recovery",
+        "-v"
+      ]
+    },
+    {
+      "name": "observer-and-config",
+      "exit_code": 0,
+      "passed": true,
+      "seconds": 0.056,
+      "argv": [
+        "-m",
+        "unittest",
+        "test_clinical",
+        "-v"
+      ]
+    }
+  ],
+  "result": "PASS"
+}

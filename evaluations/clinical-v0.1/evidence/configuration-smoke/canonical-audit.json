@@ -1,0 +1,1062 @@
+[
+  {
+    "event": "approval_verified",
+    "hash": "b35326aa673c182ac22b394997f9bdcebe31f125c4f8a7e3515558bff6c79d64",
+    "payload": {
+      "algorithm": "hmac-sha256-test-only",
+      "approval_id": "fixture-1",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "27851dd251010ba1f3a2a865611434a4b7cd64a903142bb84a2139c4234e9ce0",
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "504e317ac34174c90a7f1c516a2191404062b9650cef82b5d62250c41d98357f",
+      "issued_at_ns": 1000000000000,
+      "key_fingerprint": "c0d4282378c959913c7f62a748798a931c7f45ac18527fb1a0b0ca5ec939cf35",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "signing_payload_hash": "d56f879311a4563ef6ec93f8c2af19e18dcc3487f489a1fd7fa74f78f249aeb9",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verified_at_ns": 1000000000000,
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "f69814c711ece92fd206760e9d667281dbf039741fd672d788cdbc8d2e8d2c5a",
+    "payload": {
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "504e317ac34174c90a7f1c516a2191404062b9650cef82b5d62250c41d98357f",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "verified_approval"
+    },
+    "previous_hash": "b35326aa673c182ac22b394997f9bdcebe31f125c4f8a7e3515558bff6c79d64",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "97e77166d2f272bf9f6c2d75dbd0f337cc45ac998820b8c99146e33533be53ad",
+    "payload": {
+      "intent_hash": "504e317ac34174c90a7f1c516a2191404062b9650cef82b5d62250c41d98357f"
+    },
+    "previous_hash": "f69814c711ece92fd206760e9d667281dbf039741fd672d788cdbc8d2e8d2c5a",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "directive_activated",
+    "hash": "54bd39dada5b7fffa1cf7f5313758522e02deafffe28bc30a1be7e4d8358f965",
+    "payload": {
+      "authority_evidence": {
+        "approval_id": "fixture-1",
+        "authority_id": "authority:test-owner",
+        "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+        "directive_id": "site-east",
+        "directive_version": 1,
+        "envelope_hash": "27851dd251010ba1f3a2a865611434a4b7cd64a903142bb84a2139c4234e9ce0",
+        "intent_hash": "504e317ac34174c90a7f1c516a2191404062b9650cef82b5d62250c41d98357f",
+        "operation": "activate_directive",
+        "parent_directive_hash": null,
+        "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f"
+      },
+      "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+      "directive_id": "site-east",
+      "version": 1
+    },
+    "previous_hash": "97e77166d2f272bf9f6c2d75dbd0f337cc45ac998820b8c99146e33533be53ad",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "acf7fb5245c41ca5653ad59dcfee888db3ff47cb6ce7b54c9c3c841a4eef0e7f",
+    "payload": {
+      "intent_hash": "4a701009619bf89320cc5e024a3549b4cf9aa43684f33ad083f97a4f6321450d",
+      "outcome": "deny",
+      "reason": "agent_resource_not_allowed"
+    },
+    "previous_hash": "54bd39dada5b7fffa1cf7f5313758522e02deafffe28bc30a1be7e4d8358f965",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "0b9352462d864f1a2bfbab715a06e40a624e993f82703d342e1ad1f852a03140",
+    "payload": {
+      "intent_hash": "90fb943fd52779e8b39263105c52f0400805693cd230a03f8266aacc9d43dd62",
+      "outcome": "deny",
+      "reason": "agent_resource_not_allowed"
+    },
+    "previous_hash": "acf7fb5245c41ca5653ad59dcfee888db3ff47cb6ce7b54c9c3c841a4eef0e7f",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "e07837a075537c45918d13b8a4144d1ac2fb2739f998ee2843913b2525f9280f",
+    "payload": {
+      "intent_hash": "4b0a3f97c47b39eaf747e565e2febe038d40e91fba544e00645e793188ffdfe0",
+      "outcome": "deny",
+      "reason": "action_not_allowed"
+    },
+    "previous_hash": "0b9352462d864f1a2bfbab715a06e40a624e993f82703d342e1ad1f852a03140",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "f33df277287165924b83d2704810e9dd4f31715ce862703ebbd21bae3280f8d1",
+    "payload": {
+      "intent_hash": "10678bff6d89ef0a879934d0a381b992759fd91413b398e44491120836b8bc56",
+      "outcome": "deny",
+      "reason": "agent_resource_not_allowed"
+    },
+    "previous_hash": "e07837a075537c45918d13b8a4144d1ac2fb2739f998ee2843913b2525f9280f",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "642ecac05e0cd78a9bb9118114598a9a78b902b8fdbb0f3ec95a37807e17a04d",
+    "payload": {
+      "intent_hash": "c143ea83bb83b690347022ba7f95141cc703e46bb254f523be83e45141116712"
+    },
+    "previous_hash": "f33df277287165924b83d2704810e9dd4f31715ce862703ebbd21bae3280f8d1",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "bb43f777835bd240f8f83fedf380fb8ad8b92c1db59d78f7839200c5a5e59be6",
+    "payload": {
+      "expires_at_ns": 1300000000000,
+      "intent_hash": "c143ea83bb83b690347022ba7f95141cc703e46bb254f523be83e45141116712",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "642ecac05e0cd78a9bb9118114598a9a78b902b8fdbb0f3ec95a37807e17a04d",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "6021f9ada875a0d1704314cd6f760332d6b88a2422df9b071c281d7e42c319f3",
+    "payload": {
+      "directive_expires_at_ns": 1030000000000,
+      "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+      "directive_id": "site-east",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_version": 1,
+      "intent_hash": "c143ea83bb83b690347022ba7f95141cc703e46bb254f523be83e45141116712"
+    },
+    "previous_hash": "bb43f777835bd240f8f83fedf380fb8ad8b92c1db59d78f7839200c5a5e59be6",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "612c3228a06eb3f8cc4b63bd2c67d019c775558af458fd96f69cf7f55b12499f",
+    "payload": {
+      "directive_expires_at_ns": 1030000000000,
+      "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+      "directive_id": "site-east",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "51dc6f1cc4ed0b80ff38706aa1e7cc2745c81e39df3b413903a3c2b93af0281b"
+    },
+    "previous_hash": "6021f9ada875a0d1704314cd6f760332d6b88a2422df9b071c281d7e42c319f3",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "9c14d4b9c6b5db54dfa9734757691fec738b37ff0d0ae015e9232f9e718582d2",
+    "payload": {
+      "directive_expires_at_ns": 1030000000000,
+      "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+      "directive_id": "site-east",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "c143ea83bb83b690347022ba7f95141cc703e46bb254f523be83e45141116712"
+    },
+    "previous_hash": "612c3228a06eb3f8cc4b63bd2c67d019c775558af458fd96f69cf7f55b12499f",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "de8bf61232466cdd3ca16cf97cfbad8fa55ba45f7970239971f4e34a41d6a5e9",
+    "payload": {
+      "directive_expires_at_ns": 1030000000000,
+      "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+      "directive_id": "site-east",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "c143ea83bb83b690347022ba7f95141cc703e46bb254f523be83e45141116712"
+    },
+    "previous_hash": "9c14d4b9c6b5db54dfa9734757691fec738b37ff0d0ae015e9232f9e718582d2",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "1768c4d5b05bed9dda38421400c4a1d160216e7941e325cfa9f4c882d10ffca8",
+    "payload": {
+      "approval_id": "fixture-1",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "27851dd251010ba1f3a2a865611434a4b7cd64a903142bb84a2139c4234e9ce0",
+      "intent_hash": "504e317ac34174c90a7f1c516a2191404062b9650cef82b5d62250c41d98357f",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "approval_id_replayed",
+      "signing_payload_hash": "d56f879311a4563ef6ec93f8c2af19e18dcc3487f489a1fd7fa74f78f249aeb9",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "de8bf61232466cdd3ca16cf97cfbad8fa55ba45f7970239971f4e34a41d6a5e9",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "b802879da5df9192563a73401721381b8ee84d962cdce394d9e338ae572e2bd7",
+    "payload": {
+      "intent_hash": "504e317ac34174c90a7f1c516a2191404062b9650cef82b5d62250c41d98357f",
+      "outcome": "deny",
+      "reason": "approval_id_replayed"
+    },
+    "previous_hash": "1768c4d5b05bed9dda38421400c4a1d160216e7941e325cfa9f4c882d10ffca8",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "7ce37562481c5f6add3262ef1e6bb407b5f5ff3d26a2ea41d14dc21d698e8285",
+    "payload": {
+      "expires_at_ns": 1300000000000,
+      "intent_hash": "eeab6f20a6be274d039d6bf0a061eff8844c3ac36de2cd8b96896bd091dee435",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "b802879da5df9192563a73401721381b8ee84d962cdce394d9e338ae572e2bd7",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "437d01736812a8116b4aa1c5373a033ab431bc0df9b6585f64c0af1843abc2cb",
+    "payload": {
+      "directive_expires_at_ns": 1030000000000,
+      "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+      "directive_id": "site-east",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_version": 1,
+      "intent_hash": "eeab6f20a6be274d039d6bf0a061eff8844c3ac36de2cd8b96896bd091dee435"
+    },
+    "previous_hash": "7ce37562481c5f6add3262ef1e6bb407b5f5ff3d26a2ea41d14dc21d698e8285",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "approval_verified",
+    "hash": "52acca2625b45533b4e72e69b46dee400df66a0edc21182555bc01cb927c4270",
+    "payload": {
+      "algorithm": "hmac-sha256-test-only",
+      "approval_id": "fixture-3",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "728b397179e2369b95a802cbfaea73fb805fc369ede87aef6cfda0e3f8259781",
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "88dfa660a5948aae69b0eb4c976bf95ad372c4295981ba435d25600ba3e89d87",
+      "issued_at_ns": 1000000000000,
+      "key_fingerprint": "c0d4282378c959913c7f62a748798a931c7f45ac18527fb1a0b0ca5ec939cf35",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "signing_payload_hash": "b2bc8ccb30a0e3e95fa3b3bbf5eab00039ccc589e3a2312822dfbce4b8b261a4",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verified_at_ns": 1000000000000,
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "437d01736812a8116b4aa1c5373a033ab431bc0df9b6585f64c0af1843abc2cb",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "ca631456ab62241753ea8a72794183540c84bf1a3f845b9ba7f402b49422da8f",
+    "payload": {
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "88dfa660a5948aae69b0eb4c976bf95ad372c4295981ba435d25600ba3e89d87",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "verified_approval"
+    },
+    "previous_hash": "52acca2625b45533b4e72e69b46dee400df66a0edc21182555bc01cb927c4270",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "af1e022ffcd0bcc4c473086d9f44d0936fc708d93df35d143990f4a798febabe",
+    "payload": {
+      "intent_hash": "88dfa660a5948aae69b0eb4c976bf95ad372c4295981ba435d25600ba3e89d87"
+    },
+    "previous_hash": "ca631456ab62241753ea8a72794183540c84bf1a3f845b9ba7f402b49422da8f",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "directive_revoked",
+    "hash": "00591ec33446a06808fe695402ee6eb80617a8e0a8dbf127b640d40140582465",
+    "payload": {
+      "authority_evidence": {
+        "approval_id": "fixture-3",
+        "authority_id": "authority:test-owner",
+        "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+        "directive_id": "site-east",
+        "directive_version": 1,
+        "envelope_hash": "728b397179e2369b95a802cbfaea73fb805fc369ede87aef6cfda0e3f8259781",
+        "intent_hash": "88dfa660a5948aae69b0eb4c976bf95ad372c4295981ba435d25600ba3e89d87",
+        "operation": "revoke_directive",
+        "parent_directive_hash": null,
+        "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f"
+      },
+      "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+      "directive_id": "site-east",
+      "version": 1
+    },
+    "previous_hash": "af1e022ffcd0bcc4c473086d9f44d0936fc708d93df35d143990f4a798febabe",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "c0d6cd02b3c5451023fb74a382ef2a4a20279cad3c42757d79cbd4c7430f3496",
+    "payload": {
+      "directive_expires_at_ns": 1030000000000,
+      "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+      "directive_id": "site-east",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "directive_revoked",
+      "directive_version": 1,
+      "intent_hash": "eeab6f20a6be274d039d6bf0a061eff8844c3ac36de2cd8b96896bd091dee435"
+    },
+    "previous_hash": "00591ec33446a06808fe695402ee6eb80617a8e0a8dbf127b640d40140582465",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "approval_verified",
+    "hash": "28cac9a4a3b02270745cfb3941323650bc083e6b48748333dd2541907950cc76",
+    "payload": {
+      "algorithm": "hmac-sha256-test-only",
+      "approval_id": "fixture-4",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "8ff5a7430bf6dbd5d173c0f1f91676edcb6e8f3d5739707341b8208cdf050dc0",
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "f7e20bb9287a33687a5acd75a62da46f135c847adc0f9405b3c7ade711cc94cf",
+      "issued_at_ns": 1000000000000,
+      "key_fingerprint": "c0d4282378c959913c7f62a748798a931c7f45ac18527fb1a0b0ca5ec939cf35",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "signing_payload_hash": "f5ffde2aaf7840f6b386d3fd14c9e59582d662ce532368781adaf4e785efd028",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verified_at_ns": 1000000000000,
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "c0d6cd02b3c5451023fb74a382ef2a4a20279cad3c42757d79cbd4c7430f3496",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "c64aebfe0eb05e0c4462a0c32d152d4c824e39d64bf73ffafae4313fdd362f7f",
+    "payload": {
+      "expires_at_ns": 1001000000000,
+      "intent_hash": "f7e20bb9287a33687a5acd75a62da46f135c847adc0f9405b3c7ade711cc94cf",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "verified_approval"
+    },
+    "previous_hash": "28cac9a4a3b02270745cfb3941323650bc083e6b48748333dd2541907950cc76",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "69df9dca46e8885c9e9b686a61603a4035d5535b621bd766b4144c86b287ff5a",
+    "payload": {
+      "intent_hash": "f7e20bb9287a33687a5acd75a62da46f135c847adc0f9405b3c7ade711cc94cf"
+    },
+    "previous_hash": "c64aebfe0eb05e0c4462a0c32d152d4c824e39d64bf73ffafae4313fdd362f7f",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "directive_activated",
+    "hash": "4a86a875bb025c6cb872b20901701e152f5274770ed9191f20d6598a1f7a3b54",
+    "payload": {
+      "authority_evidence": {
+        "approval_id": "fixture-4",
+        "authority_id": "authority:test-owner",
+        "directive_hash": "a0da7365218a56d674f243c3ba6d3909b4c1f9b4150b5f651771d4e6579fa19b",
+        "directive_id": "site-east-expiry",
+        "directive_version": 1,
+        "envelope_hash": "8ff5a7430bf6dbd5d173c0f1f91676edcb6e8f3d5739707341b8208cdf050dc0",
+        "intent_hash": "f7e20bb9287a33687a5acd75a62da46f135c847adc0f9405b3c7ade711cc94cf",
+        "operation": "activate_directive",
+        "parent_directive_hash": null,
+        "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f"
+      },
+      "directive_hash": "a0da7365218a56d674f243c3ba6d3909b4c1f9b4150b5f651771d4e6579fa19b",
+      "directive_id": "site-east-expiry",
+      "version": 1
+    },
+    "previous_hash": "69df9dca46e8885c9e9b686a61603a4035d5535b621bd766b4144c86b287ff5a",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "decision",
+    "hash": "5b4043f4cabdb90adc70691e417af559098f48380d3596e4acf448cfbfd8672e",
+    "payload": {
+      "expires_at_ns": 1300000000000,
+      "intent_hash": "afb2e933d9c8917d0011c966596d8fcfd977d858af59578ba4b0bb301116449f",
+      "issued_at_ns": 1000000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "4a86a875bb025c6cb872b20901701e152f5274770ed9191f20d6598a1f7a3b54",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "8e4f826b30e483f7a07ce1fa6c854a2ea22729fd37780b67126dbcae63a46589",
+    "payload": {
+      "directive_expires_at_ns": 1030000000000,
+      "directive_hash": "a0da7365218a56d674f243c3ba6d3909b4c1f9b4150b5f651771d4e6579fa19b",
+      "directive_id": "site-east-expiry",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_version": 1,
+      "intent_hash": "afb2e933d9c8917d0011c966596d8fcfd977d858af59578ba4b0bb301116449f"
+    },
+    "previous_hash": "5b4043f4cabdb90adc70691e417af559098f48380d3596e4acf448cfbfd8672e",
+    "timestamp_ns": 1000000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "d97632b82cfc7471cb161781d30131d29fe4ed5d771e8a6b4bb0c58e87bf2e57",
+    "payload": {
+      "directive_expires_at_ns": 1030000000000,
+      "directive_hash": "a0da7365218a56d674f243c3ba6d3909b4c1f9b4150b5f651771d4e6579fa19b",
+      "directive_id": "site-east-expiry",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "directive_inactive",
+      "directive_version": 1,
+      "intent_hash": "afb2e933d9c8917d0011c966596d8fcfd977d858af59578ba4b0bb301116449f"
+    },
+    "previous_hash": "8e4f826b30e483f7a07ce1fa6c854a2ea22729fd37780b67126dbcae63a46589",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "approval_verified",
+    "hash": "4cbafcb0119acc36832d1282d2b13c9c4d0e454ce5b8e7ad983d5a60ebc79586",
+    "payload": {
+      "algorithm": "hmac-sha256-test-only",
+      "approval_id": "fixture-5",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "a95117967c9c62f92751315e8b52e55ad86a7b466bdd68191b1c44eed9b39517",
+      "expires_at_ns": 1031000000000,
+      "intent_hash": "f30476209198924c3cfa4ada7b3c11921cdd5c180077f7c909a07b6bc680f479",
+      "issued_at_ns": 1030000000000,
+      "key_fingerprint": "c0d4282378c959913c7f62a748798a931c7f45ac18527fb1a0b0ca5ec939cf35",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "signing_payload_hash": "6e24ae38ae37a77f5de71a9400292e1ebdf60d95858688b0913536cef8ebe3c3",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verified_at_ns": 1030000000000,
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "d97632b82cfc7471cb161781d30131d29fe4ed5d771e8a6b4bb0c58e87bf2e57",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "decision",
+    "hash": "11789ba1e8538461bac67d66951033f53bfa3f8437a09a27eaddcbd2c26f20ee",
+    "payload": {
+      "expires_at_ns": 1031000000000,
+      "intent_hash": "f30476209198924c3cfa4ada7b3c11921cdd5c180077f7c909a07b6bc680f479",
+      "issued_at_ns": 1030000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "verified_approval"
+    },
+    "previous_hash": "4cbafcb0119acc36832d1282d2b13c9c4d0e454ce5b8e7ad983d5a60ebc79586",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "b94082439b74a93b0f3dae9444e5a15a59ec191d1c0a666c9fb48b2c8b5b14df",
+    "payload": {
+      "intent_hash": "f30476209198924c3cfa4ada7b3c11921cdd5c180077f7c909a07b6bc680f479"
+    },
+    "previous_hash": "11789ba1e8538461bac67d66951033f53bfa3f8437a09a27eaddcbd2c26f20ee",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "directive_activated",
+    "hash": "ae96b43d41f2a12a32ae01ded93e7c1caa63cd86105cdd0bb57497b9fa3c21a3",
+    "payload": {
+      "authority_evidence": {
+        "approval_id": "fixture-5",
+        "authority_id": "authority:test-owner",
+        "directive_hash": "f6df16656155eb99ac4d180d70d5789d7292bcfc54d3007db0a614d81dd07b06",
+        "directive_id": "site-east-future",
+        "directive_version": 1,
+        "envelope_hash": "a95117967c9c62f92751315e8b52e55ad86a7b466bdd68191b1c44eed9b39517",
+        "intent_hash": "f30476209198924c3cfa4ada7b3c11921cdd5c180077f7c909a07b6bc680f479",
+        "operation": "activate_directive",
+        "parent_directive_hash": null,
+        "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f"
+      },
+      "directive_hash": "f6df16656155eb99ac4d180d70d5789d7292bcfc54d3007db0a614d81dd07b06",
+      "directive_id": "site-east-future",
+      "version": 1
+    },
+    "previous_hash": "b94082439b74a93b0f3dae9444e5a15a59ec191d1c0a666c9fb48b2c8b5b14df",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "f2e437699e77bca12f788df5c3c19a4b0061b0ccf4c636fe5d3f06cb265a2ed2",
+    "payload": {
+      "approval_id": "fixture-6",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "bb4bd876c4c3ad9414298ea2424eb878260f99da5b70f9faffed8afeb23548e2",
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "approval_signature_invalid",
+      "signing_payload_hash": "7fa0cb83baf0e8e081819b190a1a5ddcd869444769b37bc7f3df621b2b33c820",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "ae96b43d41f2a12a32ae01ded93e7c1caa63cd86105cdd0bb57497b9fa3c21a3",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "decision",
+    "hash": "2d0f4f06e3ec49250b098a18abd5bcdcce797c4d08f7bcadf615cb525de646f0",
+    "payload": {
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "outcome": "deny",
+      "reason": "approval_signature_invalid"
+    },
+    "previous_hash": "f2e437699e77bca12f788df5c3c19a4b0061b0ccf4c636fe5d3f06cb265a2ed2",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "55c3e2f2e8254f04ea2dceccd25f8e682ecb435e3806ee39462f68f35ddc4b94",
+    "payload": {
+      "approval_id": "fixture-7",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "9cc79c36f982464da30c2ffe395ffd567045050eeaed8798cb124afbba8e970f",
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "approval_session_mismatch",
+      "signing_payload_hash": "4796ba1b692de155e92bb4a5fe73e2eb12dd05057eea7386985a732f7ee308e8",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "2d0f4f06e3ec49250b098a18abd5bcdcce797c4d08f7bcadf615cb525de646f0",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "decision",
+    "hash": "80a02fa812451edb5cdeae88eba8720604dafd7c975ea867c5965bdcdbd8273c",
+    "payload": {
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "outcome": "deny",
+      "reason": "approval_session_mismatch"
+    },
+    "previous_hash": "55c3e2f2e8254f04ea2dceccd25f8e682ecb435e3806ee39462f68f35ddc4b94",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "2e78d0ffb1a2b139becd7f1d3493f5d9baa891a84116e33ff8c4fceece41cb2e",
+    "payload": {
+      "approval_id": "fixture-8",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "36d017710da226da9f52cf2fed4c3fdd9bb63df9e964cd4706566f7a9b5a75e4",
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "approval_principal_mismatch",
+      "signing_payload_hash": "20797437bfee3c3ea5a77df392855bdaa4344d5724e18b656c6539f6fcb8889d",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "80a02fa812451edb5cdeae88eba8720604dafd7c975ea867c5965bdcdbd8273c",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "decision",
+    "hash": "8a8b809784b1fdb13d4523d2b54fcd58c088af60feb3d0e83498582eeb4403b1",
+    "payload": {
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "outcome": "deny",
+      "reason": "approval_principal_mismatch"
+    },
+    "previous_hash": "2e78d0ffb1a2b139becd7f1d3493f5d9baa891a84116e33ff8c4fceece41cb2e",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "444d3273ea22c9dd1818aee32a4c27359a04835139db65d65e205a882e99eadd",
+    "payload": {
+      "approval_id": "fixture-9",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "other-deployment",
+      "envelope_hash": "4d99d4aa6b4ab11a7d384460be8178b093b8fdd1b28b6917af60ce6d1319230e",
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "approval_deployment_mismatch",
+      "signing_payload_hash": "48bc9f546ad82cfcdadec64ff5eb513c299c81edc914b0c02e195b459ccad88d",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "8a8b809784b1fdb13d4523d2b54fcd58c088af60feb3d0e83498582eeb4403b1",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "decision",
+    "hash": "bc23fb55c517a6466a782fc751e1b3a42bd5c8e7656b271a36067a5dae1d9187",
+    "payload": {
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "outcome": "deny",
+      "reason": "approval_deployment_mismatch"
+    },
+    "previous_hash": "444d3273ea22c9dd1818aee32a4c27359a04835139db65d65e205a882e99eadd",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "b15b906d0f172ee8a4edc84e04e97f703494f008ccf8d07157efb26922b92799",
+    "payload": {
+      "approval_id": "fixture-10",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "30b85ad6a474fdae4ed0ad4f21078ca5922b458b235c7530a6cf62340ee8318c",
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "approval_policy_mismatch",
+      "signing_payload_hash": "5394f97cfd902e5e654951c6cf06b0ba1beff017295576efc65ab46c64869873",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "bc23fb55c517a6466a782fc751e1b3a42bd5c8e7656b271a36067a5dae1d9187",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "decision",
+    "hash": "0f142cf50573d70e746879fc59e90d3ffdf2d7ac39e888b1ddb5739649ec4130",
+    "payload": {
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "outcome": "deny",
+      "reason": "approval_policy_mismatch"
+    },
+    "previous_hash": "b15b906d0f172ee8a4edc84e04e97f703494f008ccf8d07157efb26922b92799",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "c1da8542d0e6a311182b04bd8a7be3c67212323cc95564a8e3cbe1a9c4cb0f21",
+    "payload": {
+      "approval_id": "fixture-11",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "c9894a3bf232e7868279c209606dc5fce23c5a191dd2f3c08bf1f2ec370406cd",
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "approval_intent_mismatch",
+      "signing_payload_hash": "269180bb784dc97703e9c0e144cbae47e3b88d46388c3a6d9e0ab1cce75830a2",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "0f142cf50573d70e746879fc59e90d3ffdf2d7ac39e888b1ddb5739649ec4130",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "decision",
+    "hash": "a1550350fdbadabc435a4ff85db59c3b917a7ca7f56ef9853a0461c43bbb79cc",
+    "payload": {
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "outcome": "deny",
+      "reason": "approval_intent_mismatch"
+    },
+    "previous_hash": "c1da8542d0e6a311182b04bd8a7be3c67212323cc95564a8e3cbe1a9c4cb0f21",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "9fa6a22ed0c158369573f318d13bd05b702ef9b32ae0ff14ddaf866746780d2d",
+    "payload": {
+      "approval_id": "fixture-12",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "d0e2097d1df75a1b64bb7c9465c278e9feb378e1051d71dd73bfce43a59dc0a0",
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "key_id": "key:other",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "approval_key_mismatch",
+      "signing_payload_hash": "5a23ab4cc8cde15914b8d74e98707763bb11d437a8db0445cfbdfe80eef40ba1",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "a1550350fdbadabc435a4ff85db59c3b917a7ca7f56ef9853a0461c43bbb79cc",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "decision",
+    "hash": "a0e7f0133c1bf6a821c41df55a515d870886541a0ea7b6f5b36c7211914538c3",
+    "payload": {
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "outcome": "deny",
+      "reason": "approval_key_mismatch"
+    },
+    "previous_hash": "9fa6a22ed0c158369573f318d13bd05b702ef9b32ae0ff14ddaf866746780d2d",
+    "timestamp_ns": 1030000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "42186440f2aab2dad6e5e779ea7fbdece12f7902e0b219fda467dc346f1331cc",
+    "payload": {
+      "approval_id": "fixture-13",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "0064b015e636eae546db379dec775aeedf332893cb8d458ec4996b0c51e84fc7",
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "approval_expired",
+      "signing_payload_hash": "d4f0ab2782f513ebfea2a7081acfbd2cc7dace487246b4cc1cc610dfb7436a3e",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "a0e7f0133c1bf6a821c41df55a515d870886541a0ea7b6f5b36c7211914538c3",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "decision",
+    "hash": "804d86fe65d61be8640bf151103197c77fc72c368a8942e244981b4ff4ad1b9e",
+    "payload": {
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "outcome": "deny",
+      "reason": "approval_expired"
+    },
+    "previous_hash": "42186440f2aab2dad6e5e779ea7fbdece12f7902e0b219fda467dc346f1331cc",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "db3c4f290654f820d697e513eba25e2f06370a5268535026d5f1756d117812a3",
+    "payload": {
+      "intent_hash": "c143ea83bb83b690347022ba7f95141cc703e46bb254f523be83e45141116712"
+    },
+    "previous_hash": "804d86fe65d61be8640bf151103197c77fc72c368a8942e244981b4ff4ad1b9e",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "approval_rejected",
+    "hash": "b37b6a61282f46baf07c32b647479c3e93bace14fb45cf8af08c69c18b8d11d1",
+    "payload": {
+      "approval_id": "fixture-14",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "0ac321cfc8705fac5d4acd3b4cec9aaca90d433d59586be5e65b399e3f1e9eef",
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "approval_verifier_unavailable",
+      "signing_payload_hash": "bf0f164cc2d32211f9f3a50b0a7a4fe56297f45db99afce3000fc603fada161c",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "db3c4f290654f820d697e513eba25e2f06370a5268535026d5f1756d117812a3",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "decision",
+    "hash": "83d3f834ccd448057d8aedf71c584420f5cbeb97215e05075004354d65b224a4",
+    "payload": {
+      "intent_hash": "5d4ddbe97fd9450f7435e77ab08632982695e564a8b181b4f78df0676b8b8353",
+      "outcome": "deny",
+      "reason": "approval_verifier_unavailable"
+    },
+    "previous_hash": "b37b6a61282f46baf07c32b647479c3e93bace14fb45cf8af08c69c18b8d11d1",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "approval_verified",
+    "hash": "b562e35228fb7411df9b9af6ec3d88ae9a77edba03bc240bb894f51887eac782",
+    "payload": {
+      "algorithm": "hmac-sha256-test-only",
+      "approval_id": "fixture-15",
+      "authority_id": "authority:test-owner",
+      "deployment_id": "clinical-lab",
+      "envelope_hash": "7fd6bb1637cad33ebd0ef77c7649d3d9aa38d5a47b3d24cc299ac1800c40dbc5",
+      "expires_at_ns": 1032000000000,
+      "intent_hash": "30a5adc467c84e3fa8b2c667cf33f4b9f1290f443041fe029290a43738515562",
+      "issued_at_ns": 1031000000000,
+      "key_fingerprint": "c0d4282378c959913c7f62a748798a931c7f45ac18527fb1a0b0ca5ec939cf35",
+      "key_id": "key:test-only:v1",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "signing_payload_hash": "56ad29e6a16858fbb55e33e920153bffb4e0f80a0a8f3bc788b8670c7148f26a",
+      "trust_hash": "43d2e9b36b6e6896a93fe97f0ec14fe26a149608e81a389c5960732d79d0833e",
+      "verified_at_ns": 1031000000000,
+      "verifier_id": "verifier:test-only"
+    },
+    "previous_hash": "83d3f834ccd448057d8aedf71c584420f5cbeb97215e05075004354d65b224a4",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "decision",
+    "hash": "cc03f22f497ee78fdead957227c8b584da35d43aed76f36790ade889d41f310c",
+    "payload": {
+      "expires_at_ns": 1032000000000,
+      "intent_hash": "30a5adc467c84e3fa8b2c667cf33f4b9f1290f443041fe029290a43738515562",
+      "issued_at_ns": 1031000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "verified_approval"
+    },
+    "previous_hash": "b562e35228fb7411df9b9af6ec3d88ae9a77edba03bc240bb894f51887eac782",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "d3ba443ae9e40757f4139713fe92db1520f672f7df666624ec37c2c02fe7970c",
+    "payload": {
+      "intent_hash": "30a5adc467c84e3fa8b2c667cf33f4b9f1290f443041fe029290a43738515562"
+    },
+    "previous_hash": "cc03f22f497ee78fdead957227c8b584da35d43aed76f36790ade889d41f310c",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "directive_activated",
+    "hash": "c6e09ecc03a5ad89b64b9810b7a2345ff7733151c0740284852f343e11552aff",
+    "payload": {
+      "authority_evidence": {
+        "approval_id": "fixture-15",
+        "authority_id": "authority:test-owner",
+        "directive_hash": "3a0ac81bbb88daf181ba96f4e13a2b8ad36d362047891878270a8656d864c70c",
+        "directive_id": "site-west-offline-window",
+        "directive_version": 1,
+        "envelope_hash": "7fd6bb1637cad33ebd0ef77c7649d3d9aa38d5a47b3d24cc299ac1800c40dbc5",
+        "intent_hash": "30a5adc467c84e3fa8b2c667cf33f4b9f1290f443041fe029290a43738515562",
+        "operation": "activate_directive",
+        "parent_directive_hash": null,
+        "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f"
+      },
+      "directive_hash": "3a0ac81bbb88daf181ba96f4e13a2b8ad36d362047891878270a8656d864c70c",
+      "directive_id": "site-west-offline-window",
+      "version": 1
+    },
+    "previous_hash": "d3ba443ae9e40757f4139713fe92db1520f672f7df666624ec37c2c02fe7970c",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "decision",
+    "hash": "3327ba839202b87dbc16770b49be482e8916250fe6a49f2c9154dd8fdbd860a1",
+    "payload": {
+      "expires_at_ns": 1331000000000,
+      "intent_hash": "2d5bca75fb0a344c21312a70a4c6c185d21adea4e1b23fc649c4ec394101e7d5",
+      "issued_at_ns": 1031000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "c6e09ecc03a5ad89b64b9810b7a2345ff7733151c0740284852f343e11552aff",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "9d5c49089a29cb70510ddd2e895120f3334e328a3f237c676a2a2f9547fe0e39",
+    "payload": {
+      "directive_expires_at_ns": 1061000000000,
+      "directive_hash": "3a0ac81bbb88daf181ba96f4e13a2b8ad36d362047891878270a8656d864c70c",
+      "directive_id": "site-west-offline-window",
+      "directive_issued_at_ns": 1031000000000,
+      "directive_version": 1,
+      "intent_hash": "2d5bca75fb0a344c21312a70a4c6c185d21adea4e1b23fc649c4ec394101e7d5"
+    },
+    "previous_hash": "3327ba839202b87dbc16770b49be482e8916250fe6a49f2c9154dd8fdbd860a1",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "eed2efe5938b43fa23e076be0155d53ea13bcd3fdfe3cb10735efbc05dcf8c60",
+    "payload": {
+      "directive_expires_at_ns": 1061000000000,
+      "directive_hash": "3a0ac81bbb88daf181ba96f4e13a2b8ad36d362047891878270a8656d864c70c",
+      "directive_id": "site-west-offline-window",
+      "directive_issued_at_ns": 1031000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "2d5bca75fb0a344c21312a70a4c6c185d21adea4e1b23fc649c4ec394101e7d5"
+    },
+    "previous_hash": "9d5c49089a29cb70510ddd2e895120f3334e328a3f237c676a2a2f9547fe0e39",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "decision",
+    "hash": "737fe96ebda5cb1c40bb8a8c3f2a74169b91aa2763874ba2b895a2f7b6ca313d",
+    "payload": {
+      "expires_at_ns": 1331000000000,
+      "intent_hash": "bb86a2f7e93ec6f7c728c6908afc3052437faa566d1dffadbbc950c38a0139b5",
+      "issued_at_ns": 1031000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "eed2efe5938b43fa23e076be0155d53ea13bcd3fdfe3cb10735efbc05dcf8c60",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "e12b8a0caf78cb2e100a04c2eda5c705c6db62518888b50816cc9c7e5ced09f4",
+    "payload": {
+      "directive_expires_at_ns": 1061000000000,
+      "directive_hash": "3a0ac81bbb88daf181ba96f4e13a2b8ad36d362047891878270a8656d864c70c",
+      "directive_id": "site-west-offline-window",
+      "directive_issued_at_ns": 1031000000000,
+      "directive_version": 1,
+      "intent_hash": "bb86a2f7e93ec6f7c728c6908afc3052437faa566d1dffadbbc950c38a0139b5"
+    },
+    "previous_hash": "737fe96ebda5cb1c40bb8a8c3f2a74169b91aa2763874ba2b895a2f7b6ca313d",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "09f8581b4d26ba86940a796cc443ad4ab612a1ba1f05d83f33f1665372aaf516",
+    "payload": {
+      "directive_expires_at_ns": 1030000000000,
+      "directive_hash": "d2ca160fbcfb0bf9a3205edcdcf4805f7602f20fe7ba7d6e80f756659e5ebec8",
+      "directive_id": "site-east",
+      "directive_issued_at_ns": 1000000000000,
+      "directive_status": "directive_revoked",
+      "directive_version": 1,
+      "intent_hash": "c143ea83bb83b690347022ba7f95141cc703e46bb254f523be83e45141116712"
+    },
+    "previous_hash": "e12b8a0caf78cb2e100a04c2eda5c705c6db62518888b50816cc9c7e5ced09f4",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "4d3b5535ee22a8a784a2144bae6a600097fe5cbb366cb9b536c8a816cb4f1c24",
+    "payload": {
+      "directive_expires_at_ns": 1061000000000,
+      "directive_hash": "3a0ac81bbb88daf181ba96f4e13a2b8ad36d362047891878270a8656d864c70c",
+      "directive_id": "site-west-offline-window",
+      "directive_issued_at_ns": 1031000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "bb86a2f7e93ec6f7c728c6908afc3052437faa566d1dffadbbc950c38a0139b5"
+    },
+    "previous_hash": "09f8581b4d26ba86940a796cc443ad4ab612a1ba1f05d83f33f1665372aaf516",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "decision",
+    "hash": "89794c953a377537c3fe5db8611439a69d69b8eb7c6f5b55332a4d2df39ac16b",
+    "payload": {
+      "expires_at_ns": 1331000000000,
+      "intent_hash": "b6e22afb69140f4ead498a3b08b71fa05e2e80a8bdddf8b2e8b159cf29cd4b4f",
+      "issued_at_ns": 1031000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "4d3b5535ee22a8a784a2144bae6a600097fe5cbb366cb9b536c8a816cb4f1c24",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_bound_to_directive",
+    "hash": "e6facf2538f3d460cec7052d155e1bfbd5a3aaa55424f56eed8584eeb7ff9586",
+    "payload": {
+      "directive_expires_at_ns": 1061000000000,
+      "directive_hash": "3a0ac81bbb88daf181ba96f4e13a2b8ad36d362047891878270a8656d864c70c",
+      "directive_id": "site-west-offline-window",
+      "directive_issued_at_ns": 1031000000000,
+      "directive_version": 1,
+      "intent_hash": "b6e22afb69140f4ead498a3b08b71fa05e2e80a8bdddf8b2e8b159cf29cd4b4f"
+    },
+    "previous_hash": "89794c953a377537c3fe5db8611439a69d69b8eb7c6f5b55332a4d2df39ac16b",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_consumed",
+    "hash": "1a113fbc023143806b751585feed4a3c26bed5663af607fb6827ab0736eca175",
+    "payload": {
+      "directive_expires_at_ns": 1061000000000,
+      "directive_hash": "3a0ac81bbb88daf181ba96f4e13a2b8ad36d362047891878270a8656d864c70c",
+      "directive_id": "site-west-offline-window",
+      "directive_issued_at_ns": 1031000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "b6e22afb69140f4ead498a3b08b71fa05e2e80a8bdddf8b2e8b159cf29cd4b4f"
+    },
+    "previous_hash": "e6facf2538f3d460cec7052d155e1bfbd5a3aaa55424f56eed8584eeb7ff9586",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "5aca2581b82a45a76897dfd7be6ffdc10ea169feac09b3ca9c86b5720889dabe",
+    "payload": {
+      "directive_expires_at_ns": 1061000000000,
+      "directive_hash": "3a0ac81bbb88daf181ba96f4e13a2b8ad36d362047891878270a8656d864c70c",
+      "directive_id": "site-west-offline-window",
+      "directive_issued_at_ns": 1031000000000,
+      "directive_status": "active",
+      "directive_version": 1,
+      "intent_hash": "b6e22afb69140f4ead498a3b08b71fa05e2e80a8bdddf8b2e8b159cf29cd4b4f"
+    },
+    "previous_hash": "1a113fbc023143806b751585feed4a3c26bed5663af607fb6827ab0736eca175",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "decision",
+    "hash": "42b0111db2132afe88e701e2ec8181312303051e4eaf7846fa7ae2adf0f33e01",
+    "payload": {
+      "expires_at_ns": 1331000000000,
+      "intent_hash": "543eae9f8f31ad2a96450c0d3b3e0769b5c539bfbe220a0b03e1dd46d6baeb2f",
+      "issued_at_ns": 1031000000000,
+      "issuer_hash": "b20cacb038d6dc78c354df25f17cbca0116ca383fbc7fdb4f294d062291890d6",
+      "outcome": "allow",
+      "policy_hash": "0cae5451bed4fedeb63c35510d117cfcba316243705787af0e601430c7ff469f",
+      "reason": "policy_satisfied"
+    },
+    "previous_hash": "5aca2581b82a45a76897dfd7be6ffdc10ea169feac09b3ca9c86b5720889dabe",
+    "timestamp_ns": 1031000000000
+  },
+  {
+    "event": "permit_rejected",
+    "hash": "57339b08fcdbe4e663571377ac24d90c7f90db38bc6a6d065f84a674596dd6de",
+    "payload": {
+      "intent_hash": "543eae9f8f31ad2a96450c0d3b3e0769b5c539bfbe220a0b03e1dd46d6baeb2f"
+    },
+    "previous_hash": "42b0111db2132afe88e701e2ec8181312303051e4eaf7846fa7ae2adf0f33e01",
+    "timestamp_ns": 1332000000000
+  }
+]

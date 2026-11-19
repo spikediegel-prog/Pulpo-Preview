@@ -1,0 +1,16 @@
+test_duplicate_json_keys_refused (test_clinical.ClinicalTests.test_duplicate_json_keys_refused) ... ok
+test_export_escapes_untrusted_text_and_is_offline (test_clinical.ClinicalTests.test_export_escapes_untrusted_text_and_is_offline) ... ok
+test_invalid_selection_withdraws_previous_ui_observation (test_clinical.ClinicalTests.test_invalid_selection_withdraws_previous_ui_observation) ... ok
+test_large_config_refused (test_clinical.ClinicalTests.test_large_config_refused) ... ok
+test_live_connection_and_credentials_refused (test_clinical.ClinicalTests.test_live_connection_and_credentials_refused) ... ok
+test_malformed_false_status_and_oversize_report_refused (test_clinical.ClinicalTests.test_malformed_false_status_and_oversize_report_refused) ... ok
+test_no_kernel_writer_signer_or_provider_import_in_clinical_ui (test_clinical.ClinicalTests.test_no_kernel_writer_signer_or_provider_import_in_clinical_ui) ... ok
+test_non_synthetic_and_malformed_configuration_refused (test_clinical.ClinicalTests.test_non_synthetic_and_malformed_configuration_refused) ... ok
+test_platform_profiles (test_clinical.ClinicalTests.test_platform_profiles) ... ok
+test_reader_cannot_retain_injected_permit_or_writer (test_clinical.ClinicalTests.test_reader_cannot_retain_injected_permit_or_writer) ... ok
+test_report_projection_accepts_snapshot_without_trusting_enforcement (test_clinical.ClinicalTests.test_report_projection_accepts_snapshot_without_trusting_enforcement) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.007s
+
+OK

@@ -1,0 +1,8 @@
+{
+  "Clinical-Control-Center.html": "6c1757ef62aec35a870d943b593ad90394d72935d360533faa8cb704775d1705",
+  "canonical-audit.json": "1f18e0d39cf70620fa460312051dd00c4f9cc0f51745f22dce33f1b6ac000699",
+  "config.json": "5ed2a803f29a6584b95060888b2a8fc85a1439d5f92b6d88b6fcea52c5f4c93e",
+  "report.json": "7023b072c36eff9c12606506466c684d4a1197a7a40460d7fbb64051d78d13fe",
+  "simulate_dicom.json": "fc7c804f68dcee277279848ceeb21fdaa13528637a2f3c1294ba64d5dcfb14f7",
+  "simulate_fhir.json": "507c5674b097d02956f7fc1c938c1fd9a32f9603c8977dfdb8d17832230e6d20"
+}

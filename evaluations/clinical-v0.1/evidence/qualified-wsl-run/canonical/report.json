@@ -1,0 +1,316 @@
+{
+  "audit_records": 76,
+  "audit_tip": "95c334349e31dc698ec4d1820f8ed8d5ecd1fbd60b173d81db4825041d525458",
+  "authority_model": "same-process public test double; no human authority proof",
+  "checks": [
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "unactivated directive denies",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "verified_approval",
+      "name": "central activates site window",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "agent_resource_not_allowed",
+      "name": "site operator cannot activate another site",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "cross-site worker denied",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "unknown worker denied",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "prefix sibling denied",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "live action name denied",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "live resource denied",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "other ring denied by directive",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "different update denied by directive",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "cost expansion denied",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "missing permit rejected",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "permit issued for exact synthetic patch",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "substituted update rejected",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "simulated patch consequence observed",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "one-use permit replay denied",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "approval_id_replayed",
+      "name": "activation approval replay denied",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "verified_approval",
+      "name": "revocation accepted by canonical controller",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "already-issued permit rejected after revocation",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "new request rejected after revocation",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "directive-bound permit expires at exact boundary",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "expired window denies new request",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "future window denies",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "approval_signature_invalid",
+      "name": "forged approval rejected",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "approval_session_mismatch",
+      "name": "approval substitution denied: session_id",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "approval_principal_mismatch",
+      "name": "approval substitution denied: principal",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "approval_deployment_mismatch",
+      "name": "approval substitution denied: deployment_id",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "approval_policy_mismatch",
+      "name": "approval substitution denied: policy_hash",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "approval_intent_mismatch",
+      "name": "approval substitution denied: intent_hash",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "approval_key_mismatch",
+      "name": "approval substitution denied: key_id",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "approval_expired",
+      "name": "expired approval rejected",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "unknown permit rejected",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "approval_verifier_unavailable",
+      "name": "offline authority cannot activate",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "offline authority absence does not erase revocation",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "Verified limitation: no distributed revocation freshness is established",
+      "name": "offline local permit boundary demonstrated",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "canonical audit survives SQLite restart",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "spent permit remains spent after restart",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "unspent permit survives ordinary same-state restart",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "simulate_fhir governed fixture access",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "simulate_dicom governed fixture access",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "AUTHORIZED / ATTEMPTED / CONSEQUENCE UNKNOWN; no replacement permit issued by this scenario",
+      "name": "lost consequence receipt blocks permit retry",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "Canonical: no bare permit TTL; Preview: default 300 second TTL. Directive window binding is tested separately.",
+      "name": "bare permit expiry behavior at source pin",
+      "passed": true
+    },
+    {
+      "classification": "Verified",
+      "detail": "",
+      "name": "canonical evidence chain verifies at export",
+      "passed": true
+    }
+  ],
+  "config": {
+    "deployment": "clinical-lab",
+    "optional_simulations": true,
+    "patch_ring": "pilot",
+    "platform": "esxi",
+    "schema": "pulpo.clinical-config.v0.1",
+    "sites": [
+      "central",
+      "clinic-a",
+      "clinic-b"
+    ],
+    "synthetic_only": true,
+    "window_seconds": 300
+  },
+  "consequence_unknown": 1,
+  "enforcement": "Unknown for production; local synthetic assertions only",
+  "engine": "canonical",
+  "inventory": {
+    "central": {
+      "device": "device-001",
+      "patch_state": "pending",
+      "source": "synthetic",
+      "update": "KB-SYNTH-001"
+    },
+    "clinic-a": {
+      "device": "device-001",
+      "patch_state": "installed-simulated",
+      "source": "synthetic",
+      "update": "KB-SYNTH-001"
+    },
+    "clinic-b": {
+      "device": "device-001",
+      "patch_state": "pending",
+      "source": "synthetic",
+      "update": "KB-SYNTH-001"
+    }
+  },
+  "observations": [
+    {
+      "classification": "Recorded",
+      "intent_hash": "8b7cd76b07ec0d160441c2c237fcf08cabf6cf5ac7c8bf2ef0d8d9fc637a303e",
+      "observation": "installed-simulated",
+      "site": "clinic-a"
+    }
+  ],
+  "policy_hash": "3f92fc920631de3880bb3c598c4002c9008dd74252b768fb5a89010df11b001c",
+  "recorded_at_ns": 1792976364663169545,
+  "result": "PASS",
+  "schema": "pulpo.clinical-evaluation.v0.1",
+  "source_pin": "6b3caacbc28a7b40ebf5ea6295bc8058804de6e3",
+  "synthetic_only": true
+}

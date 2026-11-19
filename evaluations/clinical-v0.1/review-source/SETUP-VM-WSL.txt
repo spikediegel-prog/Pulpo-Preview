@@ -1,0 +1,84 @@
+DISPOSABLE CLINICAL LAB SETUP
+
+Profile selection
+Rodaney's ESXi environment is the first operator setup path. Hyper-V is an
+alternative he can evaluate. WSL is the development/smoke-test path already used
+for this package. These are setup profiles, not support certifications.
+No hypervisor automation or network provisioning is included.
+
+ESXi or Hyper-V
+1. Create a new disposable Ubuntu guest through the hypervisor's normal console.
+   An initial lab sizing hypothesis is 2 vCPU, 4 GiB RAM and 20 GiB local disk.
+   This is not a measured minimum or capacity recommendation. Begin small and
+   record actual run times before changing resources.
+2. Use an isolated virtual network without a production uplink, clinic VPN,
+   domain membership or access to production subnets. ESXi: an isolated port
+   group with no uplink; Hyper-V: a private virtual switch. The operator must
+   inspect the actual topology; merely naming a switch 'isolated' proves nothing.
+   A single local guest is sufficient. Extra clinic VMs are not required and
+   distributed multi-kernel governance is not implemented by this kit.
+3. Prepare Python 3.11+ and, for the native desktop UI, Tkinter before disconnecting
+   the lab. No package download is part of the evaluation. Use a supported guest
+   image from your normal IT process; this kit does not install an OS or services.
+4. Transfer the reviewed ZIP using an approved offline mechanism. Do not mount
+   production shares or copy real clinical databases, exports, tokens, browser
+   profiles or human authority keys into the guest.
+5. Extract under the guest user's home lab directory. Keep working files and
+   canonical SQLite state on the guest's local filesystem, outside shared host
+   folders. Do not install into an existing Pulpo environment.
+6. Run `python3 verify_package.py`, then `python3 validate_all.py --out runs/vm-01`.
+   Review TEST-SUMMARY.json and the canonical/Preview report.json files. A PASS
+   means only the selected assertions passed in that guest.
+7. For a desktop guest run `python3 control_center_clinical.py`. Select the new
+   report explicitly through Clinical lab. No report is refreshed, trusted or
+   converted into authority merely by loading it.
+8. Export only the resulting synthetic evidence directory and the run's reviewed
+   configuration. Record guest OS, Python, hypervisor/version, source manifest,
+   run time and test exit status in your evaluation notes. Review the export
+   before sharing; paths can contain operator account names.
+
+WSL lessons used
+- Put the extracted lab under the Linux filesystem, such as ~/pulpo-clinical-lab,
+  for normal evaluation. The recorded WSL run used an isolated /tmp source copy;
+  report output was written back to the Windows deliverable directory.
+- Host, guest, file selection and source implementation are separate context.
+  A selected ESXi/Hyper-V profile is configuration, not hypervisor detection.
+- Start with existing serial/default settings. Do not copy benchmark settings
+  from another machine or treat speed as enforcement proof. This kit introduces
+  no tuning or performance control path.
+- Remembered paths and configuration do not restore live observations. Read new
+  reports explicitly. Missing or invalid input withdraws the old clinical view.
+- WSLg/Tk availability affects desktop display. A missing GUI does not require
+  installing or replacing the kernel: use CLI evaluation and the HTML report.
+- No automatic startup, background collector, firewall change, credential probe,
+  live discovery, policy editing or recovery service is added.
+
+Snapshots, restarts and offline behavior
+An ordinary SQLite close/reopen of the same state is tested. VM snapshot restore
+is a different operation: old snapshots can resurrect unspent authority. A valid
+hash chain alone does not prove the database is current. Revert a disposable VM
+only to begin a NEW test with new ephemeral fixture authority and a new output
+directory. Never resume consequential work from restored state based on this kit.
+
+Preview includes an explicit guarded SQLite recovery API; its upstream tests
+are included and exercised. It requires a separately trusted current checkpoint
+and does not solve co-rollback of the state and checkpoint. Canonical at the pin
+does not provide that API. No automated snapshot restore path is supplied here.
+
+This is one local canonical state per evaluation. Satellite sites are namespaces
+in a synthetic topology, not separately connected autonomous governors. No remote
+revocation channel, partition-safe replication or trusted offline clock exists.
+Do not adapt the preissued-permit demonstration into production clinic behavior.
+
+Troubleshooting
+- Existing destination: select a new run name; do not erase evidence to rerun.
+- Invalid configuration: compare field names and bounds with the example.
+  Unknown fields, URLs as identifiers and disabled synthetic mode are rejected.
+- No Tk window: check your prepared Ubuntu Tkinter/desktop installation. The
+  Windows bundled runtime in this session could not initialize Tcl. Do not label
+  widget construction or report screenshots as proof of visible WSLg rendering.
+- Windows regression file errors: upstream tests use Linux-friendly temporary
+  file lifecycles. Use Ubuntu for the included regression suite. The clinical
+  runner itself was also exercised on Windows; this is not a Windows installer.
+- Unknown consequence: preserve evidence and stop; no automatic retry, replacement
+  permit, replay-table clearing or snapshot rollback is a reconciliation method.
