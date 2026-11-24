@@ -1231,6 +1231,25 @@ class GovernanceKernel:
                 )
                 return False
         else:
+            # Intent binding (ported from upstream PR #355, Codex P1):
+            # the authenticated token is also bound to the presented
+            # intent HERE, before the store is consulted. The store's
+            # check against the permit row's stored intent hash is a
+            # column the state-file writer controls, outside the audit
+            # chain -- a writer holding any genuine token could
+            # rewrite its row's intent hash and spend the token for an
+            # intent the kernel never authorized. The token's own
+            # authenticated digest is the one statement of the
+            # authorized intent the writer cannot alter, so it is the
+            # one the presented intent is compared against.
+            embedded_digest = claims[0]
+            if not hmac.compare_digest(embedded_digest.encode(), digest.encode()):
+                self._state.append(
+                    "permit_rejected",
+                    {"intent_hash": digest, "reason": "permit_intent_mismatch"},
+                    now_ns,
+                )
+                return False
             refusal = self._presenter_refusal(claims, digest, permit, presenter, presenter_proof)
             if refusal is not None:
                 self._state.append(

@@ -122,7 +122,8 @@ HUMAN_REPORT_EVENT = "human_incident_report"
 HUMAN_REPORT_SCHEMA = "pulpo.incident-human-report.v1"
 
 # Audit events that are refusals: caught before any consequential effect.
-_AUDIT_NEAR_MISS_EVENTS = frozenset({"purchase_revalidation_failed", "permit_rejected", "approval_rejected"})
+_AUDIT_NEAR_MISS_EVENTS = frozenset({"purchase_revalidation_failed", "permit_rejected", "approval_rejected", "directive_denial"})
+CLAIM_CLASSIFICATIONS = frozenset({"Verified", "Recorded", "Inferred", "Proposed", "Unknown"})
 # Custody states that emit a record, and the (kind, resolution) each maps to.
 # reconciled_success resolves an earlier unknown into a near-miss; it emits
 # no record by itself (see _derive_records).
@@ -176,6 +177,7 @@ class IncidentRecord:
     # when the claim was filed, never the claimed time.
     claimed_at_ns: int = 0
     reporter: str = ""
+    claim_classification: str = "Recorded"
     schema: str = INCIDENT_SCHEMA
 
     def __post_init__(self):
@@ -197,6 +199,7 @@ class IncidentRecord:
                 or (self.lifecycle == "not_applicable") != (self.kind == "near_miss")
                 or not _number(self.lifecycle_at_ns)
                 or type(self.lifecycle_actor) is not str
+                or self.claim_classification not in CLAIM_CLASSIFICATIONS
                 or not _number(self.claimed_at_ns) or type(self.reporter) is not str
                 or (self.source == "human_report") != (self.claimed_at_ns > 0)
                 or (self.source == "human_report") != (self.reporter != "")):
@@ -302,7 +305,21 @@ def _record_lifecycle(lifecycle_states, record_id, kind, first_seen_ns):
     return state, at_ns, actor
 
 
-def _derive_records(audit, custody):
+def _claim_classification(*, source, merged, audit_valid):
+    # Conservative classification of the record's operative claim. A merged
+    # resolution is a join across two sources, so it is Inferred while the
+    # audit chain holds and Unknown when it does not. A single-source audit
+    # fact is Recorded under a valid chain, Unknown under a broken one. A
+    # custody-store fact is stated directly by the store and does not rest
+    # on the audit chain, so it stays Recorded.
+    if merged:
+        return "Inferred" if audit_valid else "Unknown"
+    if source == "canonical_audit":
+        return "Recorded" if audit_valid else "Unknown"
+    return "Recorded"
+
+
+def _derive_records(audit, custody, audit_valid):
     attempts = {}
     attempts_by_object = {}
     custody_time_ns = None
@@ -330,10 +347,14 @@ def _derive_records(audit, custody):
                 anchors = _audit_anchors(record_hash, payload) + (
                     ("custody_authorization", snapshot.authorization_hash),)
                 last_seen_ns = max(timestamp_ns, custody_time_ns)
+                classification = _claim_classification(
+                    source="canonical_audit", merged=True, audit_valid=audit_valid)
             else:
                 kind, resolution = "incident", "unresolved"
                 anchors = _audit_anchors(record_hash, payload)
                 last_seen_ns = timestamp_ns
+                classification = _claim_classification(
+                    source="canonical_audit", merged=False, audit_valid=audit_valid)
             reason = payload.get("reason") or "external_consequence_not_yet_verified"
             prefix = "incident" if kind == "incident" else "near-miss"
             record_id = f"{prefix}:{record_hash}"
@@ -342,7 +363,8 @@ def _derive_records(audit, custody):
             records.append(IncidentRecord(
                 record_id, kind, "canonical_audit", event,
                 timestamp_ns, last_seen_ns, anchors, reason, resolution, record_hash,
-                lifecycle, lifecycle_at_ns, lifecycle_actor))
+                lifecycle, lifecycle_at_ns, lifecycle_actor,
+                claim_classification=classification))
         elif event == "purchase_revalidation_failed":
             # A refusal is the terminal record for its custody attempt: no
             # effect happened, so the attempt must not also surface as an
@@ -374,7 +396,9 @@ def _derive_records(audit, custody):
                 record_id, "near_miss", "canonical_audit", event,
                 timestamp_ns, last_seen_ns, anchors,
                 reason, "not_applicable", record_hash,
-                lifecycle, lifecycle_at_ns, lifecycle_actor))
+                lifecycle, lifecycle_at_ns, lifecycle_actor,
+                claim_classification=_claim_classification(
+                    source="canonical_audit", merged=False, audit_valid=audit_valid)))
         elif event in _AUDIT_NEAR_MISS_EVENTS:
             reason = payload.get("reason") or event
             record_id = f"near-miss:{record_hash}"
@@ -384,7 +408,9 @@ def _derive_records(audit, custody):
                 record_id, "near_miss", "canonical_audit", event,
                 timestamp_ns, timestamp_ns, _audit_anchors(record_hash, payload),
                 reason, "not_applicable", record_hash,
-                lifecycle, lifecycle_at_ns, lifecycle_actor))
+                lifecycle, lifecycle_at_ns, lifecycle_actor,
+                claim_classification=_claim_classification(
+                    source="canonical_audit", merged=False, audit_valid=audit_valid)))
         elif event == "decision" and payload.get("outcome") == "deny":
             reason = payload.get("reason") or "denied"
             record_id = f"near-miss:{record_hash}"
@@ -394,7 +420,9 @@ def _derive_records(audit, custody):
                 record_id, "near_miss", "canonical_audit", event,
                 timestamp_ns, timestamp_ns, _audit_anchors(record_hash, payload),
                 reason, "not_applicable", record_hash,
-                lifecycle, lifecycle_at_ns, lifecycle_actor))
+                lifecycle, lifecycle_at_ns, lifecycle_actor,
+                claim_classification=_claim_classification(
+                    source="canonical_audit", merged=False, audit_valid=audit_valid)))
         elif event == HUMAN_REPORT_EVENT:
             # A human claim, filed as an envelope and derived like any
             # audit feed. The claim is validated strictly here: a malformed
@@ -434,7 +462,9 @@ def _derive_records(audit, custody):
                 human_record_id, kind, "human_report", HUMAN_REPORT_EVENT,
                 timestamp_ns, timestamp_ns, tuple(anchors), description, resolution, record_hash,
                 lifecycle, lifecycle_at_ns, lifecycle_actor,
-                claimed_at_ns=claimed_at_ns, reporter=reporter))
+                claimed_at_ns=claimed_at_ns, reporter=reporter,
+                claim_classification=_claim_classification(
+                    source="human_report", merged=False, audit_valid=audit_valid)))
     if custody is not None:
         for attempt_id, snapshot in attempts.items():
             if attempt_id in consumed_attempts:
@@ -456,7 +486,9 @@ def _derive_records(audit, custody):
                 record_id, kind, "custody_store", snapshot.state,
                 custody_time_ns, custody_time_ns, anchors,
                 f"custody_attempt_{snapshot.state}", resolution,
-                snapshot.authorization_hash, lifecycle, lifecycle_at_ns, lifecycle_actor))
+                snapshot.authorization_hash, lifecycle, lifecycle_at_ns, lifecycle_actor,
+                claim_classification=_claim_classification(
+                    source="custody_store", merged=False, audit_valid=audit_valid)))
     records.sort(key=lambda record: (record.first_seen_ns, record.record_id))
     return records
 
@@ -479,7 +511,7 @@ def freeze_incident_report(orchestrator, *, custody=None):
         source_id = backend._connection.activity_id
     audit = kernel.audit
     valid = kernel.verify_audit()
-    records = _derive_records(audit, custody)
+    records = _derive_records(audit, custody, valid)
     return IncidentReport(
         source_id, time.time_ns(), valid, len(audit),
         incidents=sum(1 for record in records if record.kind == "incident"),
