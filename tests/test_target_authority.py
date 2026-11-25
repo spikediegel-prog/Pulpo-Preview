@@ -2,7 +2,7 @@ import unittest
 
 from pulpo import GovernanceKernel, Intent, Policy
 from pulpo.targets import evaluate_locked_target_with_approval
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 class TargetAuthorityTests(unittest.TestCase):
@@ -17,7 +17,12 @@ class TargetAuthorityTests(unittest.TestCase):
                 authority_trust=trust_for(self.verifier),
             ),
             secret=b"target-authority-secret",
-            approval_verifier=self.verifier,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(Policy(
+                frozenset({"push"}),
+                100,
+                approval_actions=frozenset({"push"}),
+                authority_trust=trust_for(self.verifier),
+            ), self.verifier),
             clock=lambda: self.now,
         )
         self.intent = Intent(

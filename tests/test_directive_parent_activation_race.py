@@ -3,7 +3,7 @@ import unittest
 from pulpo import GovernanceKernel, Policy
 from pulpo.directives import Directive, DirectiveAuthorityController
 from pulpo.state import InMemoryKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 2_000_000
@@ -46,7 +46,7 @@ class DirectiveParentActivationRaceTests(unittest.TestCase):
         kernel = GovernanceKernel(
             policy,
             secret=b"directive-parent-race",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
             state=state,
         )

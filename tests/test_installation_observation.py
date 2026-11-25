@@ -27,17 +27,31 @@ class InstallationObservationTests(unittest.TestCase):
         self.name = "usr/lib/pulpo-control-center/pulpo_control_center/cli.py"
         self.target = self.system / self.name
         self.target.parent.mkdir(parents=True)
+        self._make_system_dirs_trusted(self.target.parent)
         self.target.write_bytes(b"# public installed application fixture\n")
         self.target.chmod(0o644)
         self.document = {"schema": 1, "package": "pulpo-control-center", "version": "0.1.0~test.1",
             "source_revision": "a" * 40, "files": {self.name: hashlib.sha256(self.target.read_bytes()).hexdigest()}}
         self.manifest = self.system / app.MANIFEST
         self.manifest.parent.mkdir(parents=True)
+        self._make_system_dirs_trusted(self.manifest.parent)
         self.save_manifest()
         for attribute, value in (("SYSTEM_ROOT", self.system), ("SYSTEM_UID", os.getuid())):
             context = patch.object(app, attribute, value)
             context.start()
             self.addCleanup(context.stop)
+
+    def _make_system_dirs_trusted(self, leaf):
+        # mkdir(parents=True) honours the process umask, so intermediate
+        # directories can be group-writable (e.g. 0o775 under umask 0002)
+        # and _read_system_file rejects them as untrusted. The fixture
+        # owns these directories, so pin the chain to 0o755.
+        path = leaf
+        while True:
+            path.chmod(0o755)
+            if path == self.system:
+                return
+            path = path.parent
 
     def save_manifest(self):
         self.manifest.write_text(json.dumps(self.document), encoding="utf-8")

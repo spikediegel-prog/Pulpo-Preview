@@ -22,7 +22,12 @@ from pulpo.custody import SQLiteGovernanceCustody
 from pulpo.kernel import GovernanceKernel, Policy
 from pulpo.namecom_proposal import NameComSandboxProposal
 from pulpo.state import SQLiteKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import (
+    HmacTestVerifier,
+    signed_envelope,
+    signed_policy_envelope,
+    trust_for,
+)
 
 from pulpo_custody_service.api import create_app
 from pulpo_custody_service.core import DomainCustodyService
@@ -129,6 +134,7 @@ class ApprovalChallengeTests(unittest.TestCase):
                     policy,
                     secret=b"approval-challenge-kernel",
                     approval_verifier=verifier,
+                    policy_envelope=signed_policy_envelope(policy, verifier),
                     clock=lambda: NOW,
                     state=state,
                 )
@@ -238,6 +244,7 @@ class ApprovalChallengeTests(unittest.TestCase):
             policy,
             secret=b"approval-challenge-kernel",
             approval_verifier=verifier,
+            policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
         )
         envelope = signed_envelope(

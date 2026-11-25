@@ -1,12 +1,17 @@
 import os
+from hashlib import sha256
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 from pulpo.mcp_tunnel import (
     MCPTunnelBindingError,
+    _open_pinned_tunnel_client,
     build_stdio_command,
+    resolve_tunnel_client,
     run_secure_tunnel,
     validate_tunnel_id,
 )
@@ -60,6 +65,56 @@ class MCPTunnelBindingTests(unittest.TestCase):
         self.assertNotIn("executor", command)
         self.assertNotIn("permit", command)
 
+    def test_tunnel_client_requires_independently_pinned_sha256(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "tunnel-client"
+            content = b"test-only executable bytes"
+            binary.write_bytes(content)
+            digest = sha256(content).hexdigest()
+            with patch("pulpo.mcp_tunnel.os.access", return_value=True):
+                self.assertEqual(
+                    str(binary.resolve()),
+                    resolve_tunnel_client(str(binary), digest),
+                )
+                with self.assertRaisesRegex(
+                    MCPTunnelBindingError,
+                    "pulpo_tunnel_client_sha256_mismatch",
+                ):
+                    resolve_tunnel_client(str(binary), "0" * 64)
+                with self.assertRaisesRegex(
+                    MCPTunnelBindingError,
+                    "pulpo_tunnel_client_sha256_missing",
+                ):
+                    resolve_tunnel_client(str(binary))
+
+    @unittest.skipUnless(sys.platform.startswith("linux"), "Linux descriptor execution required")
+    def test_tunnel_client_executes_the_verified_inode_after_path_replacement(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "tunnel-client"
+            replacement = Path(directory) / "replacement"
+            original_bytes = b"#!/bin/sh\nprintf original\n"
+            binary.write_bytes(original_bytes)
+            binary.chmod(0o700)
+            replacement.write_text("#!/bin/sh\nprintf replacement\n", encoding="utf-8")
+            replacement.chmod(0o700)
+
+            executable, descriptor = _open_pinned_tunnel_client(
+                str(binary), sha256(original_bytes).hexdigest()
+            )
+            try:
+                os.replace(replacement, binary)
+                completed = subprocess.run(
+                    [executable],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    pass_fds=(descriptor,),
+                )
+            finally:
+                os.close(descriptor)
+
+            self.assertEqual("original", completed.stdout)
+
     def test_binding_fails_closed_without_runtime_key(self):
         with tempfile.TemporaryDirectory() as directory:
             snapshot = Path(directory) / "mcp-read-snapshot.json"
@@ -94,8 +149,8 @@ class MCPTunnelBindingTests(unittest.TestCase):
                 return Completed()
 
             with patch(
-                "pulpo.mcp_tunnel.resolve_tunnel_client",
-                return_value="/usr/local/bin/tunnel-client",
+                "pulpo.mcp_tunnel._open_pinned_tunnel_client",
+                return_value=("/usr/local/bin/tunnel-client", None),
             ), patch(
                 "pulpo.mcp_tunnel.subprocess.run",
                 side_effect=fake_run,
@@ -106,6 +161,7 @@ class MCPTunnelBindingTests(unittest.TestCase):
                     doctor_only=True,
                     env={
                         "CONTROL_PLANE_API_KEY": "secret-runtime-key",
+                        "PULPO_TUNNEL_CLIENT_SHA256": "a" * 64,
                         "CONTROL_PLANE_TUNNEL_ID": "tunnel_ffffffffffffffffffffffffffffffff",
                         "CONTROL_PLANE_BASE_URL": "https://example.invalid",
                         "MCP_COMMAND": "dangerous-command",
@@ -155,8 +211,26 @@ class MCPTunnelBindingTests(unittest.TestCase):
             "OPENAI_ADMIN_KEY",
             "OPENAI_API_KEY",
             "TUNNEL_CLIENT_CONFIG",
+            "PULPO_TUNNEL_CLIENT_SHA256",
         ):
             self.assertNotIn(forbidden, runtime_env)
+
+    def test_binding_fails_closed_without_binary_digest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "mcp-read-snapshot.json"
+            self.write_snapshot(snapshot)
+            with patch("pulpo.mcp_tunnel.subprocess.run") as runner:
+                with self.assertRaisesRegex(
+                    MCPTunnelBindingError,
+                    "pulpo_tunnel_client_sha256_missing",
+                ):
+                    run_secure_tunnel(
+                        tunnel_id=VALID_TUNNEL_ID,
+                        snapshot_path=snapshot,
+                        doctor_only=True,
+                        env={"CONTROL_PLANE_API_KEY": "secret-runtime-key"},
+                    )
+                runner.assert_not_called()
 
     def test_binding_rejects_snapshot_before_transport_launch(self):
         with tempfile.TemporaryDirectory() as directory:

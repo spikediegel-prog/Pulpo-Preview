@@ -38,6 +38,9 @@ from pulpo.proposal_commitment import (
 )
 
 
+from .sql_qos import SQLAdmissionGate, SQLQoSSettings, sql_admitted
+
+
 class ServiceRejected(RuntimeError):
     """A request failed the canonical custody/service boundary."""
 
@@ -105,7 +108,14 @@ class DomainCustodyService:
         observer_id: str,
         executor_id: str,
         proposal_builder: NameComSandboxProposalBuilder | None = None,
+        reuse_evidence_connection: bool = False,
+        sql_qos_settings: SQLQoSSettings | None = None,
     ) -> None:
+        if type(reuse_evidence_connection) is not bool:
+            raise ValueError("reuse evidence option must be a host boolean")
+        if sql_qos_settings is not None and type(sql_qos_settings) is not SQLQoSSettings:
+            raise ValueError("trusted SQLQoSSettings required")
+        self._sql_qos = SQLAdmissionGate(sql_qos_settings) if sql_qos_settings is not None else None
         if not callable(kernel_factory):
             raise ValueError("kernel_factory is required")
         if not observer_id or not executor_id:
@@ -122,7 +132,7 @@ class DomainCustodyService:
         with self._kernel_session():
             pass
         self.proposals = SQLiteProposalCommitments(custody.path)
-        self.evidence = SQLiteCustodyEvidenceConvergence(custody)
+        self.evidence = SQLiteCustodyEvidenceConvergence(custody, reuse_connection=reuse_evidence_connection)
         self.executor = TrustedDomainExecutor(
             custody,
             executor_id=executor_id,
@@ -164,6 +174,7 @@ class DomainCustodyService:
     def _target_id(order: DomainPurchaseOrder) -> str:
         return f"custody-domain:{order.order_hash}"
 
+    @sql_admitted
     def prepare_proposal(
         self,
         domain: str,
@@ -219,6 +230,7 @@ class DomainCustodyService:
                 approval_required=approval_required,
             )
 
+    @sql_admitted
     def authorize_commitment(
         self,
         commitment_id: str,
@@ -341,6 +353,7 @@ class DomainCustodyService:
         except Exception as exc:
             raise ServiceRejected("attempt_authorization_invalid") from exc
 
+    @sql_admitted
     def execute(self, handle: AttemptHandle) -> ProviderAttemptClaim | None:
         ref, order = self._ref_and_order(handle)
         self._project_evidence()
@@ -353,6 +366,7 @@ class DomainCustodyService:
                 raise
             raise ServiceRejected(f"execution_rejected:{exc}") from exc
 
+    @sql_admitted
     def reconcile(self, handle: AttemptHandle) -> DomainReconciliationResult:
         ref, order = self._ref_and_order(handle)
         self._project_evidence()

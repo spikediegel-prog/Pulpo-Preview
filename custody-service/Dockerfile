@@ -2,7 +2,8 @@ FROM python:3.11.17-slim-trixie@sha256:cce12316475d7d56d605f76e1d811d0dc4e7227f2
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONPATH=/opt/pulpo
 
 RUN groupadd --system pulpo && useradd --system --gid pulpo --home-dir /nonexistent --shell /usr/sbin/nologin pulpo
 

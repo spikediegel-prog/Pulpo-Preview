@@ -23,7 +23,7 @@ from pulpo.commerce import (
 )
 from pulpo.kernel import GovernanceKernel, Policy
 from pulpo.profiles import ESSENTIAL_AGENT_GRANTS
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 1_000_000
@@ -97,7 +97,13 @@ class CommerceProofTests(unittest.TestCase):
                 authority_trust=trust_for(verifier),
             ),
             secret=b"test-secret",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(Policy(
+                actions,
+                3_000,
+                frozenset({"purchase_domain"}),
+                ESSENTIAL_AGENT_GRANTS,
+                authority_trust=trust_for(verifier),
+            ), verifier),
             clock=lambda: NOW,
         )
         budget = BudgetAccount()
@@ -127,7 +133,13 @@ class CommerceProofTests(unittest.TestCase):
                 authority_trust=trust_for(verifier),
             ),
             secret=b"test-secret",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(Policy(
+                actions,
+                3_000,
+                frozenset({"purchase_domain"}),
+                ESSENTIAL_AGENT_GRANTS,
+                authority_trust=trust_for(verifier),
+            ), verifier),
             clock=lambda: NOW,
         )
         intent = purchase_intent(order)
@@ -240,6 +252,26 @@ class CommerceProofTests(unittest.TestCase):
                 now_ns=NOW,
             )
         self.assertEqual(0, registrar.calls)
+
+    def test_autorenew_choice_is_bound_into_request_and_order_identity(self):
+        # Adapted from upstream #267: Preview names the field
+        # auto_renew_enabled (fork spelling) and validates with
+        # "auto_renew_enabled must be boolean".
+        disabled = self.assessment().order
+        enabled_request = DomainPurchaseRequest(
+            **(self.request.__dict__ | {"auto_renew_enabled": True})
+        )
+        enabled = self.assessment(request=enabled_request).order
+
+        self.assertFalse(disabled.auto_renew_enabled)
+        self.assertTrue(enabled.auto_renew_enabled)
+        self.assertNotEqual(self.request.request_hash, enabled_request.request_hash)
+        self.assertNotEqual(disabled.order_hash, enabled.order_hash)
+
+        with self.assertRaisesRegex(CommerceViolation, "auto_renew_enabled must be boolean"):
+            DomainPurchaseRequest(
+                **(self.request.__dict__ | {"auto_renew_enabled": 1})
+            )
 
     def test_authorized_paid_delivered_accepted_and_valuable_are_separate(self):
         order = self.assessment().order

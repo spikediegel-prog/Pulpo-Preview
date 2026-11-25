@@ -9,7 +9,7 @@ from pulpo.directives import DirectiveAuthorityController, GovernedDirectiveProj
 from pulpo.orchestrator import OrchestrationError, PulpoOrchestrator
 from pulpo.state import InMemoryKernelState, SQLiteKernelState
 from pulpo.traffic import Backpressure, Lane, Path, TrafficControl
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 from tests.test_directives import directive
 
 
@@ -147,7 +147,10 @@ class TrafficTests(unittest.TestCase):
             frozenset({"write", "activate_directive", "revoke_directive"}), 100,
             frozenset({"activate_directive", "revoke_directive"}),
             authority_trust=trust_for(verifier)), secret=b"fixture",
-            approval_verifier=verifier, clock=lambda: self.now[0], state=state)
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(Policy(
+            frozenset({"write", "activate_directive", "revoke_directive"}), 100,
+            frozenset({"activate_directive", "revoke_directive"}),
+            authority_trust=trust_for(verifier)), verifier), clock=lambda: self.now[0], state=state)
         return kernel, verifier
 
     def activate(self, state):

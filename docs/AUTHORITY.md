@@ -42,6 +42,33 @@ mismatch, issue-time or lifetime failure, expiry, replay, missing or untrusted
 verifier, non-boolean verification, clock rollback, and verifier exceptions all
 fail closed and append public approval evidence to the same audit chain.
 
+## Optional ceremony-evidence gate
+
+Policies may opt selected approval-gated actions into a second, independent
+evidence check with `ceremony_actions` and a pinned `CeremonyTrust`. Ceremony
+actions must be a subset of approval actions, and the ceremony public-key
+fingerprint must differ from the approval key fingerprint. Opt-in policy fields
+are included in the policy hash; legacy policies without them retain their
+existing hash.
+
+For an opted-in action, the kernel requires separately signed
+`CeremonyEvidence` binding the exact approval envelope hash and ID, intent and
+policy hashes, principal, session, approval nonce, ceremony trust, method, and
+bounded issue/expiry times. The kernel verifies this evidence before issuing a
+permit. Evidence IDs are replay-checked and recorded atomically with the
+existing `approval_verified` event and permit issuance; this adds no state
+backend, ledger, or alternate authority route. Missing or invalid ceremony
+evidence denies the action. Non-opted actions retain the existing approval
+path.
+
+`AuthorityClient` transports optional `ceremony_evidence` returned with an
+approved poll, and the orchestrator passes it to the kernel without
+interpreting it. The external service in this repository is only a contract:
+there is no production ceremony issuer or verified WebAuthn integration. An
+opt-in action therefore remains unavailable until deployment supplies evidence
+signed by the independently pinned ceremony key. This verifies a configured
+signature and its bindings; it does not prove that a human ceremony occurred.
+
 ## What this proves
 
 The tests prove trust and public-key pinning, envelope binding, configured-
@@ -51,11 +78,39 @@ boolean bypass, bounded trusted-clock semantics, and malformed-envelope denial.
 The SQLite proof reopens the same state and proves consumed approval IDs,
 nonces, and permits remain unusable, while persisted audit tampering blocks
 kernel bootstrap. Concurrent presentation of one approval allows exactly once.
+The ceremony tests additionally cover separate trust, exact evidence binding,
+signature and expiry failures, legacy policy-hash compatibility, evidence
+replay across SQLite restart and concurrent issuance, and verification-only
+Ed25519/P-256 public-key verifiers. These are synthetic software tests, not
+evidence of a production human ceremony.
 The commerce proof uses this path and can place its bounded budget state in the
 optional `SQLiteBudgetAccount`. That backend preserves reservations, attempted
 orders, reconciliation evidence, and spend across ordinary restart; it does not
 protect its database from a worker or host with file mutation or rollback
 authority.
+
+## Adversarial transformation review
+
+For the opt-in ceremony gate:
+
+| Pass | Assessment |
+|---|---|
+| Flip | A compromised caller can omit or substitute evidence; the kernel rejects missing or mismatched evidence. Trust in the configured verifier and bootstrap remains a deployment dependency. |
+| Reverse | An unauthorized permit would require approval and ceremony evidence accepted by the kernel; the earliest blocking boundary is the kernel's policy, pinned verifiers, bindings, and atomic replay check. |
+| Invert | A consequential outcome alone is not success; only a permit issued after both configured verifications is classified as governed. External effects remain outside this proof. |
+| Inside-Out | The worker transports evidence but cannot configure the kernel verifier per call. The same deployment must still protect kernel bootstrap and must not let one signer self-attest both trust domains. |
+| Darken | Threat case: an attacker controlling the ceremony signing key or its trusted issuer can create false ceremony attestations within policy bounds. This implementation cannot establish the issuer's real-world ceremony. |
+| Lighten | The least severe supported interpretation is that the code verifies supplied signatures and exact bindings; production ceremony behavior is **Unknown**, not disproved or established. |
+| Amplify | Evidence-ID reuse is checked in canonical state and at permit issuance, including concurrent SQLite calls. Fleet-wide key compromise, state rollback, and issuer outages are not proved away. |
+| Negate | No second router or ledger is needed: the existing authority poll carries optional evidence to the existing kernel, and the existing audit event records its use. |
+
+**Classification:** code-path and synthetic-test behavior is **Verified** by
+the repository tests; the external service remains a **Recorded** contract;
+real human participation and protected production bootstrap are **Unknown**.
+Decision: continue with this opt-in, fail-closed kernel gate; do not describe it
+as a production WebAuthn proof. The smallest next proof is an independently
+operated issuer and deployment test that demonstrates the exact ceremony,
+key-separation, bootstrap, replay, and failure properties.
 
 ## Boundary still open
 
@@ -83,6 +138,12 @@ Independent authority requires deployment evidence that:
 Until that deployment exists, claim **externally-verifiable approval-envelope
 semantics with pinned asymmetric trust**, not independently human-authenticated
 authority.
+
+No historical Preview checkpoint with the same separate ceremony-evidence
+gate was identified for temporal transfer. The merged Pulpo 1.0
+ceremony-evidence change discussed during this work informed the implementation;
+its code and control path were not copied. Preview's existing kernel, policy,
+and canonical audit path remain the only permit and state authority.
 
 See [the independent authority proof gate](INDEPENDENT_AUTHORITY_PROOF.md) for
 the mandatory external acceptance tests, and see

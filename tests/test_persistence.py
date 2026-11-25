@@ -16,7 +16,7 @@ from pulpo import (
     SQLiteKernelState,
     StateIntegrityError,
 )
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 1_000_000
@@ -45,7 +45,7 @@ class RestartSafeStateTests(unittest.TestCase):
         return GovernanceKernel(
             self.policy,
             secret=b"permit-secret",
-            approval_verifier=self.verifier,
+            approval_verifier=self.verifier, policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=lambda: NOW,
             state=state,
         )
@@ -168,6 +168,31 @@ class RestartSafeStateTests(unittest.TestCase):
         ]
         self.assertEqual(1, len(replay_reads))
 
+    def test_iter_audit_streams_without_materializing(self):
+        state = self.make_state()
+        self.addCleanup(state.close)
+        for index, event in enumerate(("first", "second", "first")):
+            state.append(
+                event,
+                {"index": index, "authority_effect": "none"},
+                NOW + index,
+            )
+        streamed = state.iter_audit()
+        self.assertFalse(isinstance(streamed, list))
+        rows = list(streamed)
+        self.assertEqual(
+            ["first", "second", "first"], [row["event"] for row in rows]
+        )
+        self.assertEqual([0, 1, 2], [row["payload"]["index"] for row in rows])
+        self.assertEqual(
+            ["second"],
+            [row["event"] for row in state.iter_audit(event="second")],
+        )
+        self.assertEqual(
+            ["first", "second", "first"],
+            [row["event"] for row in state.iter_audit(reverse=True)],
+        )
+
     def test_verified_approval_and_permit_are_committed_with_one_transaction(self):
         state = self.make_state()
         self.addCleanup(state.close)
@@ -180,7 +205,7 @@ class RestartSafeStateTests(unittest.TestCase):
         self.assertEqual(1, connection.execute("SELECT COUNT(*) FROM approvals").fetchone()[0])
         self.assertEqual(1, connection.execute("SELECT COUNT(*) FROM permits").fetchone()[0])
         self.assertEqual(
-            ["approval_verified", "decision"],
+            ["policy_head_accepted", "approval_verified", "decision"],
             [row[0] for row in connection.execute("SELECT event FROM audit ORDER BY sequence")],
         )
         self.assertTrue(kernel.consume(decision.permit, self.intent))
@@ -208,7 +233,11 @@ class RestartSafeStateTests(unittest.TestCase):
         with closing(sqlite3.connect(self.path)) as connection, connection:
             self.assertEqual(0, connection.execute("SELECT COUNT(*) FROM approvals").fetchone()[0])
             self.assertEqual(0, connection.execute("SELECT COUNT(*) FROM permits").fetchone()[0])
-            self.assertEqual(0, connection.execute("SELECT COUNT(*) FROM audit").fetchone()[0])
+            self.assertEqual(1, connection.execute("SELECT COUNT(*) FROM audit").fetchone()[0])
+            self.assertEqual(
+                ["policy_head_accepted"],
+                [row[0] for row in connection.execute("SELECT event FROM audit ORDER BY sequence")],
+            )
 
     def test_failed_consumption_audit_rolls_back_spent_permit(self):
         state = self.make_state()
@@ -337,7 +366,7 @@ class RestartSafeStateTests(unittest.TestCase):
             """)
         with self.assertRaisesRegex(sqlite3.IntegrityError, "second audit failure"):
             kernel.evaluate_with_approval(self.intent, envelope)
-        self.assertEqual([], state.audit)
+        self.assertEqual(["policy_head_accepted"], [record["event"] for record in state.audit])
         for table in ("approvals", "permits"):
             self.assertEqual(0, state._connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0])
         with closing(sqlite3.connect(self.path)) as connection, connection:
@@ -358,7 +387,7 @@ class RestartSafeStateTests(unittest.TestCase):
                 kernel.evaluate_with_approval(self.intent, envelope)
             self.assertFalse(state._connection.in_transaction)
             reader.rollback()
-        self.assertEqual([], state.audit)
+        self.assertEqual(["policy_head_accepted"], [record["event"] for record in state.audit])
         self.assertIsNone(state.approval_replay_reason(envelope.approval_id, envelope.nonce))
         self.assertEqual(0, state._connection.execute("SELECT COUNT(*) FROM permits").fetchone()[0])
         self.assertEqual("allow", kernel.evaluate_with_approval(self.intent, envelope).outcome)
@@ -427,7 +456,10 @@ class RestartSafeStateTests(unittest.TestCase):
         )
         self.assertEqual(1, sum("SELECT hash FROM audit ORDER BY sequence DESC LIMIT 1" in sql
                                 for sql in statements))
-        self.assertEqual(["approval_verified", "decision"], [row["event"] for row in state.audit])
+        self.assertEqual(
+            ["policy_head_accepted", "approval_verified", "decision"],
+            [row["event"] for row in state.audit],
+        )
         self.assertTrue(kernel.verify_audit())
 
 

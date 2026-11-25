@@ -5,8 +5,11 @@ from dataclasses import asdict
 import hashlib
 import importlib.metadata
 import json
+import os
 from pathlib import Path
+import select
 import sqlite3
+import subprocess
 import sys
 import tempfile
 
@@ -95,8 +98,72 @@ async def sdk_probe():
         finally:
             state.close()
 
+def stdio_probe():
+    """Exercise actual MCP JSON-RPC stdio framing, discovery, and repeated calls."""
+    with tempfile.TemporaryDirectory(prefix='pulpo-mcp-stdio-') as folder:
+        snapshot = freeze_mcp_snapshot(PulpoOrchestrator(
+            GovernanceKernel(Policy(frozenset({'read'}), 0),
+                secret=b'non-authority-stdio-test', clock=lambda:1234)))
+        path = Path(folder) / 'snapshot.json'
+        path.write_text(json.dumps(asdict(snapshot), separators=(',', ':')) + '\n', encoding='utf-8')
+        if os.name == 'posix':
+            path.chmod(0o600)
+        process = subprocess.Popen(
+            [sys.executable, '-m', 'pulpo.mcp_plugin', '--snapshot', str(path)],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, bufsize=1, cwd=ROOT)
+        responses = {}
+        def exchange(request_id, method, params):
+            process.stdin.write(json.dumps({'jsonrpc':'2.0','id':request_id,
+                'method':method,'params':params}, separators=(',', ':')) + '\n')
+            process.stdin.flush()
+            ready, _, _ = select.select([process.stdout], [], [], 20)
+            if not ready:
+                raise AssertionError(f'MCP stdio timed out waiting for response {request_id}')
+            message = json.loads(process.stdout.readline())
+            if message.get('id') != request_id or 'error' in message:
+                raise AssertionError(f'MCP stdio returned an invalid response: {message}')
+            responses[request_id] = message
+            return message
+        try:
+            exchange(1, 'initialize', {
+                'protocolVersion':'2025-06-18','capabilities':{},
+                'clientInfo':{'name':'pulpo-security-probe','version':'1'}})
+            process.stdin.write(json.dumps({'jsonrpc':'2.0',
+                'method':'notifications/initialized','params':{}}, separators=(',', ':')) + '\n')
+            process.stdin.flush()
+            tools_message = exchange(2, 'tools/list', {})
+            tools = tools_message.get('result', {}).get('tools', [])
+            if {tool.get('name') for tool in tools} != {'pulpo_propose_intent','pulpo_get_evidence'}:
+                raise AssertionError('MCP stdio discovery returned an unexpected tool set')
+            for request_id in (3, 4):
+                response = exchange(request_id, 'tools/call', {
+                    'name':'pulpo_propose_intent','arguments':{
+                        'target_id':'stdio-probe','principal':'agent:test',
+                        'action':'read','resource':'repo:file'}})
+                result = response.get('result', {})
+                document = result.get('structuredContent')
+                if document is None:
+                    content = result.get('content', [])
+                    document = json.loads(content[0]['text']) if content else {}
+                if document.get('currentness') != 'not_asserted' or document.get('canonical_state_mutation') is not False:
+                    raise AssertionError('MCP stdio proposal lost frozen/non-mutating markers')
+        finally:
+            if process.stdin:
+                process.stdin.close()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.terminate()
+                process.wait(timeout=5)
+        stderr = process.stderr.read() if process.stderr else ''
+        if process.returncode != 0:
+            raise AssertionError(f'MCP stdio server failed: {stderr[-2000:]}')
+        return {'protocol':'MCP JSON-RPC stdio','tools':sorted(tool['name'] for tool in tools),
+            'repeated_calls':2,'provider_calls':0,'stdout_only_protocol_messages':True}
+
 async def main():
-    result = {'repository':str(ROOT),'sdk':await sdk_probe(),
+    result = {'repository':str(ROOT),'sdk':await sdk_probe(), 'stdio':stdio_probe(),
         'custody_admission':[await request_probe(declared=True),await request_probe(declared=False)]}
     if args.expect_limited:
         assert all(item['status'] == 413 and item['stub_service_calls'] == 0

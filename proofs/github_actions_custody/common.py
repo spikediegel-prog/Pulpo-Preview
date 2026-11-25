@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 import base64
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from hashlib import sha256
 import json
 
-from pulpo import AuthorityTrust, Ed25519ApprovalVerifier, GovernanceKernel, Intent, Policy
+from pulpo import (
+    AuthorityTrust,
+    Ed25519ApprovalVerifier,
+    GovernanceKernel,
+    Intent,
+    Policy,
+    PolicyEnvelope,
+)
+from pulpo.kernel import policy_hash_for
 
 ACTION = "create_proof_artifact"
 PRINCIPAL = "github-actions:executor"
@@ -42,7 +50,9 @@ def build_action(repository: str, ref: str, sha: str, run_id: str, run_attempt: 
     return Intent(PRINCIPAL, ACTION, resource, 0, session_id), artifact_name, payload
 
 
-def build_kernel(public_key: bytes, now_ns: int):
+def build_policy(public_key: bytes):
+    """The exact policy the authority signs envelopes for; deterministic."""
+
     verifier = Ed25519ApprovalVerifier(
         authority_id=AUTHORITY_ID,
         verifier_id=VERIFIER_ID,
@@ -59,7 +69,34 @@ def build_kernel(public_key: bytes, now_ns: int):
         max_approval_ttl_ns=TTL_NS,
     )
     policy = Policy(frozenset({ACTION}), 0, frozenset({ACTION}), authority_trust=trust)
-    return GovernanceKernel(policy, approval_verifier=verifier, clock=lambda: now_ns), trust
+    return verifier, trust, policy
+
+
+def sign_policy_envelope(policy, trust, sign):
+    """Sign the policy's versioned hash; the signer holds the issuer key."""
+
+    unsigned = PolicyEnvelope(
+        policy_hash=policy_hash_for(policy),
+        version=policy.version,
+        previous_policy_hash=policy.previous_policy_hash,
+        authority_id=trust.authority_id,
+        verifier_id=trust.verifier_id,
+        key_id=trust.key_id,
+        deployment_id=trust.deployment_id,
+        trust_hash=trust.trust_hash,
+        signature="",
+    )
+    return replace(unsigned, signature=sign(unsigned.signing_bytes()))
+
+
+def build_kernel(public_key: bytes, now_ns: int, *, policy_envelope=None):
+    verifier, _trust, policy = build_policy(public_key)
+    return GovernanceKernel(
+        policy,
+        approval_verifier=verifier,
+        clock=lambda: now_ns,
+        policy_envelope=policy_envelope,
+    ), _trust
 
 
 def b64(data: bytes) -> str:

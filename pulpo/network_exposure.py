@@ -133,14 +133,29 @@ def parse_linux_ss(text: str) -> tuple[Listener, ...]:
         if not line:
             continue
         fields = line.split()
-        if len(fields) < 5:
+        if len(fields) < 6:
             raise NetworkExposureError(f"unparseable ss row: {line}")
         protocol = fields[0].lower()
         if protocol not in {"tcp", "udp"}:
-            continue
+            # The collector requests TCP/UDP only. An unexpected row means
+            # enumeration is not understood, not that no listener exists.
+            raise NetworkExposureError(f"unsupported ss protocol: {protocol}")
+        if fields[1] != {"tcp": "LISTEN", "udp": "UNCONN"}[protocol] or any(
+            re.fullmatch(r"[0-9]+", field) is None for field in fields[2:4]
+        ):
+            raise NetworkExposureError("invalid ss state or queue")
         local = fields[4]
-        host, port = _split_host_port(local)
-        listeners.add(Listener(protocol, host, port))
+        try:
+            host, port = _split_host_port(local)
+            # -n requests numeric addresses/ports. Unknown local endpoints must
+            # not become exact allowlist matches or misleading loopback proof.
+            if host != "*":
+                ipaddress.ip_address(host.split("%", 1)[0])
+            if not 1 <= port <= 65535 or not re.search(r":[0-9]+$", local):
+                raise ValueError("invalid local port")
+            listeners.add(Listener(protocol, host, port))
+        except ValueError as exc:
+            raise NetworkExposureError("invalid ss local endpoint") from exc
     return tuple(sorted(listeners))
 
 

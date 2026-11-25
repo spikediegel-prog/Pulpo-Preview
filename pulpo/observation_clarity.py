@@ -1,5 +1,6 @@
 """Cache-only presentation helpers; names and labels never authenticate sources."""
 from .evidence_observation import freshness
+from pathlib import Path
 import time
 
 
@@ -18,6 +19,14 @@ def source_paths(center):
 
 def test_named(path):
     return path is not None and "test-only" in str(path).casefold()
+
+
+def _same_path(left, right):
+    """Compare path labels using the current platform's lexical path rules."""
+    try:
+        return Path(left) == Path(right)
+    except (TypeError, ValueError):
+        return False
 
 
 def elapsed_age(timestamp_ns, now_ns=None):
@@ -57,7 +66,8 @@ def machine_description(value):
 
 def context_text(paths, labels, compact=False):
     hints = [name for name, path in paths.items() if test_named(path)]
-    marked = [name for name, path in paths.items() if labels.get(name) == str(path)]
+    marked = [name for name, path in paths.items()
+              if name in labels and _same_path(path, labels[name])]
     if compact and (hints or marked):
         basis = "filename hint + operator label" if hints and marked else "filename hint" if hints else "operator label"
         return f"Test context · {basis}, not authenticated."

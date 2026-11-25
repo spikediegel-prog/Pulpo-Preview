@@ -8,7 +8,7 @@ from . import evidence_tuning as tuning
 from .control_center_theme import PALETTE, configure, surface
 
 
-PAGES = ("Overview", "Connections", "Governance", "Activity", "Evidence", "System")
+PAGES = ("Overview", "Connections", "Governance", "Activity", "Evidence", "Sextant", "System")
 
 
 def profile_observation(profile):
@@ -183,6 +183,8 @@ class ControlCenter:
         from .evidence_page import EvidencePage
         self.evidence_view = EvidencePage(self)
         self._activity()
+        from .sextant_page import SextantPage
+        self.sextant = SextantPage(self)
         self._system()
         self.show("Overview")
         if self.system_view.session is not None:
@@ -230,6 +232,8 @@ class ControlCenter:
             self.connections_view.set_active(name == "Connections")
         if hasattr(self, "activity_view"):
             self.activity_view.set_active(name == "Activity")
+        if hasattr(self, "sextant"):
+            self.sextant.set_active(name == "Sextant")
         if name == "Governance":
             self.decision_explorer.render()
         self.refresh_attention()

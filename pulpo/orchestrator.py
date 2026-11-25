@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from contextlib import contextmanager
+from typing import TYPE_CHECKING, Callable
 
 from .authority import ApprovalEnvelope
 from .authority_client import AuthorityApprovalRequest, AuthorityClient, AuthorityPoll
@@ -24,6 +25,9 @@ from .directives import Directive, DirectiveAuthorityController, GovernedDirecti
 from .kernel import Decision, GovernanceKernel, Intent, LockedTarget, TargetResolution
 from .targets import evaluate_locked_target_with_approval
 from .traffic import TrafficControl
+
+if TYPE_CHECKING:
+    from .custody_domain import GovernedDomainAttemptCoordinator
 
 
 class OrchestrationError(RuntimeError):
@@ -168,6 +172,7 @@ class PulpoOrchestrator:
             handle.target_hash,
             poll.envelope,
             version=handle.version,
+            ceremony_evidence=poll.ceremony_evidence,
         )
         return AuthorizationAttempt(
             handle=handle,
@@ -260,10 +265,27 @@ class PulpoOrchestrator:
         reservation_id: str,
         *,
         now_ns: int,
+        coordinator: GovernedDomainAttemptCoordinator | None = None,
+        target_id: str | None = None,
+        expected_target_hash: str | None = None,
+        target_version: int = 1,
+        evidence_projector: Callable[[], None] | None = None,
     ) -> CommerceOutcome:
-        """Delegate one exact purchase to the canonical bounded executor."""
+        """Delegate one exact purchase to the canonical bounded executor.
 
-        return DomainCommerceExecutor().execute(
+        With a custody coordinator, consumption runs through it (locked-target
+        resolution, canonical consume, audit-tip check, custody attempt);
+        without one, the executor's direct path runs with the same
+        pre-purchase revalidation and durable unknown-outcome record.
+        `evidence_projector`, when supplied, is passed through so custody
+        transitions on the coordinator path reach the canonical audit
+        (SQLiteCustodyEvidenceConvergence.project_all); without one the
+        attempt still reconciles, but only the custody store sees it.
+        """
+
+        return DomainCommerceExecutor(
+            coordinator=coordinator, evidence_projector=evidence_projector,
+        ).execute(
             self.kernel,
             order,
             permit,
@@ -271,6 +293,9 @@ class PulpoOrchestrator:
             budget,
             reservation_id,
             now_ns=now_ns,
+            target_id=target_id,
+            expected_target_hash=expected_target_hash,
+            target_version=target_version,
         )
 
     def evidence_snapshot(self) -> EvidenceSnapshot:

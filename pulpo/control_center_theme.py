@@ -74,6 +74,8 @@ def configure(root):
     style.configure("Card.TFrame", background=p["surface"])
     style.configure("Card.TLabel", background=p["surface"])
     style.configure("CardHeading.TLabel", background=p["surface"], font=("TkDefaultFont", 13, "bold"))
+    style.configure("CardValue.TLabel", background=p["surface"], foreground=p["accent"],
+                    font=("TkDefaultFont", 30, "bold"))
     style.configure("Range.TButton", padding=(8, 5), font=("TkDefaultFont", 9))
     style.configure("Active.Range.TButton", background=p["selected"])
     style.configure("Row.TButton", background=p["surface"], foreground=p["text"], anchor="w", borderwidth=0,

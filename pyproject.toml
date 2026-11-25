@@ -1,12 +1,18 @@
+[build-system]
+requires = ["setuptools>=83.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "pulpo"
 version = "0.1.0"
-description = "A minimal governed-execution kernel for agentic systems"
+description = "A minimal AI governance and evidence kernel"
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
 authority = ["cryptography==50.0.2"]
 mcp = ["mcp[cli]>=2,<3"]
+gpu = ["torch>=2.5"]
+test = ["pytest==9.1.1"]
 
 [project.scripts]
 pulpo = "pulpo.cli:main"
@@ -14,7 +20,7 @@ pulpo-git-clarity = "pulpo.git_clarity:main"
 pulpo-mcp-tunnel = "pulpo.mcp_tunnel:main"
 
 [tool.setuptools]
-packages = ["pulpo"]
+packages = ["pulpo", "pulpo.verifier"]
 
 [tool.setuptools.package-data]
 pulpo = ["assets/*.png"]

@@ -9,6 +9,7 @@ from urllib.parse import quote, urlparse
 from urllib.request import Request
 
 from .authority import ApprovalEnvelope, _require_sha256, _require_text
+from .ceremony import CeremonyEvidence
 from .resource_limits import ResourceLimitError, load_bounded_json
 from .transport import build_secure_opener
 
@@ -31,6 +32,7 @@ class AuthorityApprovalRequest:
     deployment_id: str
     requested_ttl_ns: int
     schema: str = "pulpo.authority-request.v1"
+    provenance_hash: str | None = None
 
     def __post_init__(self) -> None:
         for value, field in (
@@ -45,6 +47,8 @@ class AuthorityApprovalRequest:
                 raise ValueError(f"{field} exceeds the authority request limit")
         _require_sha256(self.intent_hash, "intent_hash")
         _require_sha256(self.policy_hash, "policy_hash")
+        if self.provenance_hash is not None:
+            _require_sha256(self.provenance_hash, "provenance_hash")
         if isinstance(self.cost, bool) or not isinstance(self.cost, int) or self.cost < 0:
             raise ValueError("cost must be a non-negative integer")
         if (
@@ -62,12 +66,15 @@ class AuthorityPoll:
     status: str
     envelope: ApprovalEnvelope | None = None
     reason: str | None = None
+    ceremony_evidence: CeremonyEvidence | None = None
 
     def __post_init__(self) -> None:
         if self.status not in {"pending", "approved", "denied", "expired"}:
             raise ValueError("unsupported authority poll status")
         if (self.status == "approved") != (self.envelope is not None):
             raise ValueError("only approved polls contain an envelope")
+        if self.status != "approved" and self.ceremony_evidence is not None:
+            raise ValueError("only approved polls contain ceremony evidence")
 
 
 Transport = Callable[[str, str, dict[str, object] | None], dict[str, Any]]
@@ -114,10 +121,16 @@ class AuthorityClient:
             raise ValueError("authority returned an invalid status")
         envelope_value = result.get("envelope")
         envelope = ApprovalEnvelope(**envelope_value) if isinstance(envelope_value, dict) else None
+        ceremony_value = result.get("ceremony_evidence")
+        if ceremony_value is not None and not isinstance(ceremony_value, dict):
+            raise ValueError("authority returned invalid ceremony evidence")
+        ceremony_evidence = (
+            CeremonyEvidence(**ceremony_value) if isinstance(ceremony_value, dict) else None
+        )
         reason = result.get("reason")
         if reason is not None and not isinstance(reason, str):
             raise ValueError("authority returned an invalid reason")
-        return AuthorityPoll(status, envelope, reason)
+        return AuthorityPoll(status, envelope, reason, ceremony_evidence)
 
     def _https_transport(
         self,

@@ -16,7 +16,7 @@ from pulpo.custody_domain import GovernedDomainAttemptCoordinator
 from pulpo.directives import Directive, DirectiveAuthorityController, GovernedDirectiveProjection
 from pulpo.kernel import GovernanceKernel, Policy
 from pulpo.state import SQLiteKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 8_000_000
@@ -168,7 +168,12 @@ class CustodyDomainIntegrationTests(unittest.TestCase):
                 authority_trust=trust_for(verifier),
             ),
             secret=b"directive-domain-kernel",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(Policy(
+                frozenset({"purchase_domain", "activate_directive", "revoke_directive"}),
+                3_000,
+                frozenset({"activate_directive", "revoke_directive"}),
+                authority_trust=trust_for(verifier),
+            ), verifier),
             clock=lambda: NOW,
             state=state,
         )

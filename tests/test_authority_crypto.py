@@ -16,6 +16,8 @@ from pulpo import (
     Policy,
 )
 
+from tests.authority_support import signed_policy_envelope
+
 
 CRYPTOGRAPHY_AVAILABLE = importlib.util.find_spec("cryptography") is not None
 NOW = 1_000_000
@@ -57,6 +59,11 @@ class Ed25519AuthorityTests(unittest.TestCase):
             self.policy,
             approval_verifier=self.verifier,
             clock=lambda: NOW,
+            policy_envelope=signed_policy_envelope(
+                self.policy,
+                self.verifier,
+                sign=lambda payload: self._private_key.sign(payload).hex(),
+            ),
         )
         self.intent = Intent("agent:publisher", "push", "repo:origin/main", 0, "session:1")
 

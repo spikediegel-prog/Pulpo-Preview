@@ -15,7 +15,7 @@ from pulpo.directives import Directive, DirectiveAuthorityController
 from pulpo.kernel import GovernanceKernel, Intent, Policy
 from pulpo.orchestrator import ApprovalHandle, PulpoOrchestrator
 from pulpo.state import InMemoryKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 5_000_000
@@ -82,7 +82,12 @@ class OrchestratorProofTests(unittest.TestCase):
                 authority_trust=trust_for(verifier),
             ),
             secret=b"orchestrator-proof",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(Policy(
+                frozenset(actions),
+                3_000,
+                frozenset(approval_actions),
+                authority_trust=trust_for(verifier),
+            ), verifier),
             clock=lambda: NOW,
             state=state,
         )
@@ -132,7 +137,7 @@ class OrchestratorProofTests(unittest.TestCase):
                 local_kernel = GovernanceKernel(
                     kernel.policy,
                     secret=b"orchestrator-proof",
-                    approval_verifier=verifier,
+                    approval_verifier=verifier, policy_envelope=signed_policy_envelope(kernel.policy, verifier),
                     clock=lambda: NOW,
                 )
                 client = FakeAuthorityClient(local_kernel, verifier, status=status)

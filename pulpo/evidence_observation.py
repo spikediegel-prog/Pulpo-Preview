@@ -1,4 +1,38 @@
-"""Capability-free evidence telemetry contract and bounded rate history."""
+"""Capability-free evidence telemetry contract and bounded rate history.
+
+Evidence-state vocabulary (v9.1 review section 6a): AUTHORIZED / ATTEMPTED /
+CONSEQUENCE UNKNOWN is one vocabulary across the kernel decision outcomes,
+the custody attempt lifecycle, and the canonical audit chain -- not three
+separate names for the same states.
+
+    AUTHORIZED          -> outcome "allowed"
+                           Kernel Decision("allow", ...) and the permit it
+                           issues; audit event "permit_consumed".
+    ATTEMPTED           -> outcome "attempted"
+                           An authorized attempt is in flight. Custody
+                           lifecycle states (pulpo/custody.py):
+                           attempt_authorized, attempt_claimed,
+                           request_transmitted, reconciliation_required;
+                           audit event "reconciliation_required".
+    CONSEQUENCE UNKNOWN -> outcome "unknown"
+                           The consequence of an attempt is not yet
+                           verified. Custody UNRESOLVED ("unresolved"),
+                           effect-reconcile "uncertain"
+                           (pulpo/effect_reconcile.py), and
+                           ExternalConsequenceUnknown
+                           (pulpo/custody_executor.py); audit event
+                           "unresolved".
+
+STATE_OUTCOMES maps each name the custody and effect-reconciliation layers
+already use onto the one canonical outcome, so the projection in
+pulpo/evidence_export.py and any later emitter agree on what a name means.
+"unknown" is a terminal recorded state, never a synonym for success or
+failure: projection preserves it, and only a later, separately recorded
+event may supersede it. A reconciled terminal state ("reconciled_success" /
+"reconciled_failure") is deliberately NOT mapped: reconciliation resolves
+an unknown, it does not rewrite it, and "allowed" means authorized, not
+succeeded.
+"""
 from collections import deque
 from dataclasses import dataclass, fields
 import time
@@ -9,8 +43,21 @@ COUNTERS = ("reads", "writes", "commits", "rollbacks", "errors", "database_bytes
             "volume_total", "volume_free", "allowed", "denied", "approval_required", "permit_consumed",
             "permit_rejected", "approval_rejected", "approval_expired", "approval_replayed")
 EVENT_NAMES = {"decision", "approval_verified", "approval_rejected", "permit_consumed", "permit_rejected",
-               "directive_activated", "directive_revoked", "other"}
-OUTCOMES = {"allowed", "denied", "blocked_by_policy", "approval_required", "rejected", "recorded"}
+               "directive_activated", "directive_revoked", "reconciliation_required", "unresolved", "other"}
+OUTCOMES = {"allowed", "denied", "blocked_by_policy", "approval_required", "rejected", "recorded",
+            "attempted", "unknown"}
+# Custody attempt-lifecycle and effect-reconciliation state names mapped onto
+# the canonical evidence outcomes above. Keys are the exact strings already
+# used by pulpo/custody.py (ATTEMPT_*, RECONCILIATION_REQUIRED, UNRESOLVED)
+# and pulpo/effect_reconcile.py ("uncertain"); "reconciliation_required" and
+# "unresolved" double as audit event names, which is how the projection in
+# pulpo/evidence_export.py carries them into EvidenceEvent outcomes.
+STATE_OUTCOMES = {"attempt_authorized": "attempted",
+                  "attempt_claimed": "attempted",
+                  "request_transmitted": "attempted",
+                  "reconciliation_required": "attempted",
+                  "unresolved": "unknown",
+                  "uncertain": "unknown"}
 
 
 def number(value, optional=True):

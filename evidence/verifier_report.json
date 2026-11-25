@@ -1,0 +1,211 @@
+{
+  "check_counts": {
+    "fail": 0,
+    "pass": 6,
+    "total": 17,
+    "unverifiable": 11
+  },
+  "checks": [
+    {
+      "category": "constitutional",
+      "check_id": "policy-constraints",
+      "claim_classification": "Verified",
+      "evidence": [
+        "allowed_at_limit=allow",
+        "over_budget=deny:budget_exceeded",
+        "unknown_action=deny:action_not_allowed"
+      ],
+      "status": "PASS",
+      "summary": "Configured action and cost constraints were enforced."
+    },
+    {
+      "category": "constitutional",
+      "check_id": "target-binding",
+      "claim_classification": "Verified",
+      "evidence": [
+        "exact_target=match:target_exact_match",
+        "substituted_hash=deny:target_hash_mismatch"
+      ],
+      "status": "PASS",
+      "summary": "Only the exact locked target resolved."
+    },
+    {
+      "category": "replay",
+      "check_id": "permit-replay-protection",
+      "claim_classification": "Verified",
+      "evidence": [
+        "issuance=allow:policy_satisfied",
+        "first_use=True",
+        "second_use=False"
+      ],
+      "status": "PASS",
+      "summary": "The isolated one-use permit was consumed once and replay was denied."
+    },
+    {
+      "category": "replay",
+      "check_id": "durable-permit-replay-protection",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "The one-use replay probe used fresh in-memory state.",
+        "Restart and storage-backend guarantees were not inferred."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "No configured persistent kernel state was supplied."
+    },
+    {
+      "category": "replay",
+      "check_id": "directive-revocation",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "The verifier does not activate or revoke canonical directives.",
+        "The repository's governed directive path requires external approval; this probe does not synthesize it."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "No deployment authority verifier or live directive state was supplied."
+    },
+    {
+      "category": "constitutional",
+      "check_id": "constitution-signature",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "Policy behavior was probed; signature validity for a deployment constitution was not assessed."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "No separately signed constitutional artifact is exposed to this verifier."
+    },
+    {
+      "category": "constitutional",
+      "check_id": "unauthorized-policy-mutation",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "Isolated policy fixtures do not establish which principals can mutate deployed policy."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "The verifier is not connected to a deployed policy-mutation boundary."
+    },
+    {
+      "category": "authority",
+      "check_id": "mutation-approval-gate",
+      "claim_classification": "Verified",
+      "evidence": [
+        "decision=require_approval:approval_required",
+        "permit_issued=False"
+      ],
+      "status": "PASS",
+      "summary": "The approval-gated mutation received no permit without approval."
+    },
+    {
+      "category": "authority",
+      "check_id": "authority-separation",
+      "claim_classification": "Verified",
+      "evidence": [
+        "decision=require_approval:approval_required",
+        "permit_issued=False"
+      ],
+      "status": "PASS",
+      "summary": "The unapproved evaluator did not grant mutation authority."
+    },
+    {
+      "category": "authority",
+      "check_id": "independent-approval",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "No signature was generated, accepted, or attributed to a human.",
+        "Self-approval and signer/principal separation cannot be established from an isolated policy probe."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "No trusted external verifier or approver identity was configured."
+    },
+    {
+      "category": "authority",
+      "check_id": "approval-signature-validation",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "The verifier creates no signature fixture and cannot claim external signature validity.",
+        "Approval-gate behavior was checked without issuing a permit."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "No deployment-pinned public verifier or signed approval envelope was supplied."
+    },
+    {
+      "category": "authority",
+      "check_id": "direct-execution-boundary",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "Permit-gating behavior does not prove that an external executor requires the permit."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "No executor or deployed execution boundary was supplied."
+    },
+    {
+      "category": "custody",
+      "check_id": "custody-approval-binding",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "Approval recorded, signed, intent-linked, and unexpired were not assessed.",
+        "The verifier does not load custody signing material or a custody store."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "No live custody receipt or approval evidence was supplied."
+    },
+    {
+      "category": "custody",
+      "check_id": "custody-required-for-execution",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "An isolated kernel permit probe cannot prove that a provider call is custody-gated.",
+        "No executor or provider was invoked."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "No deployed execution handoff was available to verify custody enforcement."
+    },
+    {
+      "category": "audit",
+      "check_id": "audit-chain-integrity",
+      "claim_classification": "Verified",
+      "evidence": [
+        "valid_chain=True"
+      ],
+      "status": "PASS",
+      "summary": "The isolated kernel audit chain verified."
+    },
+    {
+      "category": "audit",
+      "check_id": "audit-tamper-detection",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "Tamper detection is covered by kernel tests, not by this report run."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "The verifier does not mutate audit state to create a tamper fixture."
+    },
+    {
+      "category": "audit",
+      "check_id": "audit-event-completeness",
+      "claim_classification": "Unknown",
+      "evidence": [
+        "Hash-chain integrity cannot establish that every consequential event was recorded."
+      ],
+      "status": "UNVERIFIABLE",
+      "summary": "The verifier has no independent event source for detecting missing audit events."
+    }
+  ],
+  "generated_at": "2026-10-31T21:15:04.122736+00:00",
+  "governance_score": {
+    "passed": 6,
+    "percentage": 35.3,
+    "total": 17
+  },
+  "schema": "pulpo.verifier-report.v1",
+  "scope": {
+    "authority_effect": "none_outside_ephemeral_probe; no permit leaves the probe scope",
+    "boundary": "External approval signatures, custody receipts, executor behavior, and event completeness require deployment evidence and are not inferred by these probes.",
+    "canonical_state_mutation": "ephemeral probe state only; no live canonical state is read or changed",
+    "execution": "isolated in-memory kernel probes",
+    "governed_effect": "ephemeral kernel decisions, permit consumption, target, and audit writes",
+    "live_system": "not connected to a configured deployment or canonical state store",
+    "temporal_replay": "not performed; this report makes no claim that a lesson transfers across historical checkpoints"
+  },
+  "status": "UNVERIFIABLE",
+  "version": "0.1.0"
+}

@@ -1,14 +1,26 @@
 """Pulpo governed-execution kernel."""
 
+__version__ = "0.1.0"
+
+from .accountability import AccountableContext, AccountableContextObservation, AccountableGovernance
+
 from .authority import (
     ApprovalEnvelope,
     ApprovalVerifier,
     AuthorityTrust,
     Ed25519ApprovalVerifier,
     P256ApprovalVerifier,
+    PolicyEnvelope,
 )
 from .authority_client import AuthorityApprovalRequest, AuthorityClient, AuthorityPoll
 from .audit_parallel import AuditDigestCache, AuditVerificationEngine
+from .ceremony import (
+    CeremonyEvidence,
+    CeremonyTrust,
+    CeremonyVerifier,
+    Ed25519CeremonyVerifier,
+    P256CeremonyVerifier,
+)
 from .commerce import SQLiteBudgetAccount
 from .kernel import (
     AgentGrant,
@@ -18,8 +30,11 @@ from .kernel import (
     Intent,
     LockedTarget,
     Policy,
+    PolicyEnvelopeError,
+    PresenterVerifier,
     StateIntegrityError,
     TargetResolution,
+    policy_hash_for,
 )
 from .namecom import NameComCoreAdapter
 from .performance_tuning import (
@@ -28,6 +43,7 @@ from .performance_tuning import (
     PerformanceProfile,
     SystemFingerprint,
 )
+from .provenance import SemanticProvenance, artifact_hash
 from .orchestrator import (
     ApprovalHandle,
     AuthorizationAttempt,
@@ -35,7 +51,7 @@ from .orchestrator import (
     OrchestrationError,
     PulpoOrchestrator,
 )
-from .state import InMemoryKernelState, KernelState, SQLiteKernelState, StateRecoveryError
+from .state import InMemoryKernelState, KernelState, SQLiteKernelState, StateClockError, StateRecoveryError, capture_recovery_pin
 from .resources import ResourceScope
 from .target_reconcile import (
     ArtifactCompletionEvidence,
@@ -46,8 +62,13 @@ from .targets import evaluate_locked_target_with_approval
 
 __all__ = [
     "StateRecoveryError",
+    "StateClockError",
+    "capture_recovery_pin",
     "ResourceScope",
     "AdaptiveAuditVerificationEngine",
+    "AccountableContext",
+    "AccountableContextObservation",
+    "AccountableGovernance",
     "AgentGrant",
     "ApprovalEnvelope",
     "ApprovalHandle",
@@ -58,12 +79,16 @@ __all__ = [
     "ApprovalVerifier",
     "AuthorityTrust",
     "AuthorityTrustError",
+    "CeremonyEvidence",
+    "CeremonyTrust",
+    "CeremonyVerifier",
     "AuditDigestCache",
     "AuditVerificationEngine",
     "AuditPerformanceTuner",
     "AuthorizationAttempt",
     "Decision",
     "Ed25519ApprovalVerifier",
+    "Ed25519CeremonyVerifier",
     "EvidenceSnapshot",
     "GovernanceKernel",
     "GovernedTargetReconciliation",
@@ -74,14 +99,21 @@ __all__ = [
     "NameComCoreAdapter",
     "OrchestrationError",
     "P256ApprovalVerifier",
+    "P256CeremonyVerifier",
     "PerformanceProfile",
     "Policy",
+    "PolicyEnvelope",
+    "PolicyEnvelopeError",
+    "PresenterVerifier",
     "PulpoOrchestrator",
+    "policy_hash_for",
     "SQLiteBudgetAccount",
     "SQLiteKernelState",
+    "SemanticProvenance",
     "StateIntegrityError",
     "SystemFingerprint",
     "TargetObligationStatus",
     "TargetResolution",
+    "artifact_hash",
     "evaluate_locked_target_with_approval",
 ]

@@ -15,6 +15,7 @@ from pulpo import (
     Intent,
     Policy,
 )
+from tests.authority_support import signed_policy_envelope
 from pulpo_authority_service import (
     ApprovalRequest,
     AuthorityConfig,
@@ -96,9 +97,13 @@ class AuthorityServiceTests(unittest.TestCase):
             frozenset({"push"}),
             authority_trust=self.trust,
         )
+        self.signer = Ed25519TestSigner(self.private_key, self.approval_verifier)
         self.kernel = GovernanceKernel(
             self.policy,
             approval_verifier=self.approval_verifier,
+            policy_envelope=signed_policy_envelope(
+                self.policy, self.approval_verifier, sign=self.signer.sign
+            ),
             clock=lambda: NOW,
         )
         self.intent = Intent("agent:publisher", "push", "repo:origin/main", 0, "session:1")
@@ -113,7 +118,7 @@ class AuthorityServiceTests(unittest.TestCase):
             AuthorityConfig(self.service_trust, "example.com", "https://authority.example.com"),
             self.state,
             self.webauthn,
-            Ed25519TestSigner(self.private_key, self.approval_verifier),
+            self.signer,
             self.evidence,
             clock=lambda: NOW,
             random_token=lambda _: next(tokens),
@@ -151,6 +156,35 @@ class AuthorityServiceTests(unittest.TestCase):
         self.assertEqual(("allow", "verified_approval"), (decision.outcome, decision.reason))
         with self.assertRaisesRegex(RuntimeError, "not pending"):
             self.service.approve(request_id, self.primary.credential_id, "second-assertion")
+
+    def test_provenance_hash_is_displayed_and_bound_to_signed_intent(self):
+        provenance_hash = "a" * 64
+        bound_intent = replace(self.intent, provenance_hash=provenance_hash)
+        bound_request = replace(
+            self.request,
+            provenance_hash=provenance_hash,
+            intent_hash=self.kernel.intent_hash(bound_intent),
+        )
+
+        with self.assertRaisesRegex(ValueError, "intent hash"):
+            self.service.request_approval(
+                replace(bound_request, provenance_hash="b" * 64)
+            )
+
+        request_id, _ = self.service.request_approval(bound_request)
+        displayed = self.service.display(request_id)
+        self.assertEqual(provenance_hash, displayed["provenance_hash"])
+
+        envelope = self.service.approve(
+            request_id,
+            self.primary.credential_id,
+            "raw-assertion-json",
+        )
+        decision = self.kernel.evaluate_with_approval(
+            bound_intent,
+            PulpoApprovalEnvelope(**asdict(envelope)),
+        )
+        self.assertEqual(("allow", "verified_approval"), (decision.outcome, decision.reason))
 
     def test_challenge_binds_request_payload_expiry_and_service_nonce(self):
         request_id, _ = self.service.request_approval(self.request)

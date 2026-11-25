@@ -1,0 +1,40 @@
+---
+# Pulpo Preview — Calamares branding.
+#
+# Colours are the Control Center's: dark #1E1A26, white text, and
+# exactly one neon-green accent (#39FF14) for the current step —
+# the eye-catcher, not all green.
+#
+# Images are copies of installer/assets/ (made by the ISO build,
+# not committed twice): logo/icon are the square boot logo, welcome
+# is the UEFI boot splash. The installer-welcome mockup is NOT
+# used here: it carries an invented version string (real Preview
+# is 0.1.0) and copy urging an internet connection, which conflicts
+# with the no-internet-by-default gateway principle.
+componentName: pulpo
+
+windowExpanding: fullscreen
+
+strings:
+    productName:         Pulpo Preview
+    shortProductName:    Pulpo
+    version:             0.1.0
+    shortVersion:        0.1.0
+    versionedName:       Pulpo Preview 0.1.0
+    shortVersionedName:  Pulpo Preview 0.1.0
+    bootloaderEntryName: Pulpo
+    productUrl:          https://github.com/spikediegel-prog/Pulpo-Preview
+
+images:
+    productLogo:         "logo.png"
+    productIcon:         "icon.png"
+    productWelcome:      "welcome.png"
+
+slideshow:               "show.qml"
+
+slideshowAPI:            1
+
+style:
+   SidebarBackground:    "#1E1A26"
+   SidebarText:          "#FFFFFF"
+   SidebarTextCurrent:   "#39FF14"

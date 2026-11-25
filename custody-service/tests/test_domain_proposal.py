@@ -12,7 +12,12 @@ from pulpo.kernel import GovernanceKernel, Policy
 from pulpo.namecom_core import NameComCoreClient, NameComCoreConfig, NameComResponse
 from pulpo.namecom_proposal import NameComSandboxProposalBuilder
 from pulpo.state import SQLiteKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import (
+    HmacTestVerifier,
+    signed_envelope,
+    signed_policy_envelope,
+    trust_for,
+)
 
 from pulpo_custody_service.api import create_app
 from pulpo_custody_service.core import DomainCustodyService
@@ -90,6 +95,7 @@ class DomainProposalApiTests(unittest.TestCase):
                     self.policy,
                     secret=b"domain-proposal-kernel-secret",
                     approval_verifier=self.verifier,
+                    policy_envelope=signed_policy_envelope(self.policy, self.verifier),
                     clock=lambda: NOW,
                     state=state,
                 )
@@ -122,6 +128,7 @@ class DomainProposalApiTests(unittest.TestCase):
             self.policy,
             secret=b"domain-proposal-kernel-secret",
             approval_verifier=self.verifier,
+            policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=lambda: NOW,
         )
 

@@ -12,6 +12,7 @@ from unittest.mock import patch
 from pulpo.control_center import ControlCenter, PAGES, profile_observation
 from pulpo import evidence_tuning as tuning
 from pulpo import tuning_app
+from pulpo.control_center_theme import PALETTE
 from pulpo.local_resources import Metric, ResourceHistory, ResourceSample
 
 
@@ -831,9 +832,236 @@ class ControlCenterTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.center.show("Injected page")
 
+    def test_sextant_keeps_audit_evidence_separate_from_workload_metrics(self):
+        from pulpo.evidence_observation import EvidenceEvent, EvidenceObservation
+
+        monitor = self.center.sextant
+        self.assertIn("Unknown", monitor.metric_labels["accuracy"].cget("text"))
+        self.assertIn("Unknown", monitor.metric_labels["drift"].cget("text"))
+        self.assertIn("No workload events", monitor.empty.cget("text"))
+        self.assertEqual(0, len(monitor.events.get_children()))
+
+        source = self.center.evidence_view
+        source.snapshot = EvidenceObservation(
+            "a" * 32, time.time_ns(), True, 1,
+            events=(EvidenceEvent(time.time_ns(), "decision", "allowed", "b" * 64),),
+        )
+        monitor.render()
+        self.assertIn("No workload data selected", monitor.source_summary.cget("text"))
+        self.assertEqual(0, len(monitor.events.get_children()))
+        self.assertIn("baseline", monitor.details.get("1.0", "end").lower())
+        monitor.select_period("Week")
+        self.assertEqual("Week", monitor.period)
+        source.snapshot = EvidenceObservation("a" * 32, time.time_ns() - 20_000_000_000, True, 1)
+        monitor.render()
+        self.assertIn("No workload data selected", monitor.source_summary.cget("text"))
+        self.assertEqual(0, len(monitor.events.get_children()))
+
+        monitor.cadence.set("Off")
+        monitor.set_cadence()
+        monitor.set_active(True)
+        self.assertIsNone(monitor.timer)
+        monitor.path = Path(self.temporary.name) / "observation.json"
+        with patch.object(monitor, "refresh_source") as workload_refresh:
+            monitor.refresh()
+            workload_refresh.assert_called_once_with()
+        self.assertIn("Display last refreshed locally", monitor.updated.cget("text"))
+        monitor.cadence.set("30 seconds")
+        monitor.set_cadence()
+        monitor.set_active(True)
+        self.assertIsNotNone(monitor.timer)
+        monitor.toggle_pause()
+        self.assertIsNone(monitor.timer)
+        monitor.toggle_pause()
+        self.assertIsNotNone(monitor.timer)
+        monitor.set_active(False)
+        monitor.path = None
+        self.center.show("Sextant")
+        self.root.geometry("640x600")
+        self.root.update()
+        controls = monitor.cadence_box.master
+        self.assertLessEqual(monitor.cadence_box.winfo_x() + monitor.cadence_box.winfo_width(),
+                             controls.winfo_width())
+
+    def test_sextant_synthetic_demo_is_memory_only_and_clears_to_unknown(self):
+        monitor = self.center.sextant
+        source = self.center.evidence_view
+        self.center.show("Sextant")
+        self.root.update()
+        self.assertIsNone(monitor.demo_observation)
+        self.assertTrue(monitor.clear_demo_button.instate(("disabled",)))
+        self.assertLess(monitor.graphs.winfo_rooty(), monitor.source_summary.winfo_rooty())
+        for canvas in monitor.graph_canvases.values():
+            self.assertTrue(any("Run synthetic demo" in text for text in [
+                canvas.itemcget(item, "text")
+                for item in canvas.find_all()
+                if canvas.type(item) == "text"
+            ]))
+        with patch.object(source, "refresh", side_effect=AssertionError("Synthetic demo must not read sources")):
+            monitor.demo_button.invoke()
+            self.root.update()
+            self.assertFalse(monitor.clear_demo_button.instate(("disabled",)))
+            self.assertEqual(10, len(monitor.events.get_children()))
+            self.assertIn("SIMULATION ONLY", monitor.summary.cget("text"))
+            self.assertEqual("Accuracy", monitor.metric_labels["accuracy"].cget("text"))
+            self.assertNotIn("Synthetic", monitor.metric_labels["drift"].cget("text"))
+            self.assertIn("Investigate", monitor.metric_labels["drift"].cget("text"))
+            self.assertEqual("75%", monitor.metric_values["accuracy"].cget("text"))
+            self.assertEqual("+21.4%", monitor.metric_values["drift"].cget("text"))
+            for key in ("accuracy", "drift"):
+                self.assertEqual("center", str(monitor.metric_labels[key].cget("anchor")))
+                self.assertEqual("center", str(monitor.metric_values[key].cget("anchor")))
+                self.assertEqual("center", str(monitor.metric_details[key].cget("justify")))
+            self.assertEqual("", monitor.metric_details["accuracy"].winfo_manager())
+            self.assertEqual("", monitor.metric_details["drift"].winfo_manager())
+            self.assertEqual(
+                "6/8 generated labels correct · Wilson 95% CI: 41%–93%",
+                monitor.metric_details["accuracy"].cget("text"),
+            )
+            self.assertEqual(
+                "Mean: 121.4 ms · Baseline: 100.0 ms · "
+                "z-score: 2.96 (threshold: 2.0) · n=10",
+                monitor.metric_details["drift"].cget("text"),
+            )
+            self.assertIn("No real workload", monitor.source_summary.cget("text"))
+            self.assertEqual({"latency", "accuracy"}, set(monitor.graph_canvases))
+            for title in monitor.graph_titles.values():
+                self.assertEqual("center", str(title.cget("anchor")))
+            for key, zero_label in (
+                ("latency", "CALIBRATED ZERO"),
+                ("accuracy", "95% TARGET"),
+            ):
+                canvas = monitor.graph_canvases[key]
+                center_x = canvas.winfo_width() / 2
+                rails = []
+                for item in canvas.find_all():
+                    if canvas.type(item) != "line":
+                        continue
+                    x1, y1, x2, y2 = canvas.coords(item)
+                    if x1 == x2 and y1 == 42 and y2 == canvas.winfo_height() - 28:
+                        rails.append(x1)
+                rails.sort()
+                self.assertEqual(3, len(rails), key)
+                self.assertAlmostEqual(center_x, rails[1], delta=2, msg=key)
+                self.assertAlmostEqual(rails[1] - rails[0], rails[2] - rails[1], delta=2, msg=key)
+                self.assertIn(zero_label, [
+                    canvas.itemcget(item, "text")
+                    for item in canvas.find_all()
+                    if canvas.type(item) == "text"
+                ])
+            self.assertIn("All values below are generated", monitor.summary_detail.cget("text"))
+            self.assertIn("+21.4%", monitor.graph_canvases["latency"].itemcget(
+                next(item for item in monitor.graph_canvases["latency"].find_all()
+                     if monitor.graph_canvases["latency"].type(item) == "text"
+                     and "+21.4%" in monitor.graph_canvases["latency"].itemcget(item, "text")),
+                "text",
+            ))
+            self.assertIn("-20 pp", monitor.graph_canvases["accuracy"].itemcget(
+                next(item for item in monitor.graph_canvases["accuracy"].find_all()
+                     if monitor.graph_canvases["accuracy"].type(item) == "text"
+                     and "-20 pp" in monitor.graph_canvases["accuracy"].itemcget(item, "text")),
+                "text",
+            ))
+            monitor.events.selection_set("1")
+            monitor.events.event_generate("<<TreeviewSelect>>")
+            selected_detail = monitor.details.get("1.0", "end")
+            self.assertIn("SIMULATION ONLY · Sample 1", selected_detail)
+            self.assertIn("Outcome label: labeled correct", selected_detail)
+            self.assertIn("these generated values, labels, and references are not evidence", selected_detail)
+            monitor.events.selection_remove("1")
+            monitor.render_synthetic_demo()
+            self.assertIn("Freshness is not measured", monitor.details.get("1.0", "end"))
+            self.assertNotIn("stale", monitor.details.get("1.0", "end").lower())
+            monitor.select_period("Week")
+            self.assertIn("Workload event counts · Week", monitor.histogram.itemcget(
+                monitor.histogram.find_all()[-1], "text"
+            ))
+            histogram_text = [
+                monitor.histogram.itemcget(item, "text")
+                for item in monitor.histogram.find_all()
+                if monitor.histogram.type(item) == "text"
+            ]
+            self.assertIn("Earlier", histogram_text)
+            self.assertIn("Most recent", histogram_text)
+            self.assertIn("1", histogram_text)
+            for item in monitor.histogram.find_all():
+                if monitor.histogram.type(item) == "text" and monitor.histogram.itemcget(item, "text") in (
+                    "Earlier", "Most recent", "1",
+                ):
+                    self.assertEqual(PALETTE["chart_muted"], monitor.histogram.itemcget(item, "fill"))
+            self.assertIsNone(source.snapshot)
+            self.assertIsNone(source.path)
+            monitor.clear_demo_button.invoke()
+
+        self.assertIsNone(monitor.demo_observation)
+        self.assertEqual(0, len(monitor.events.get_children()))
+        self.assertIn("Unknown", monitor.metric_labels["accuracy"].cget("text"))
+        self.assertIn("Unknown", monitor.metric_labels["drift"].cget("text"))
+        self.assertEqual("Unknown", monitor.metric_values["accuracy"].cget("text"))
+        self.assertEqual("Unknown", monitor.metric_values["drift"].cget("text"))
+        self.assertEqual("pack", monitor.metric_details["accuracy"].winfo_manager())
+        self.assertEqual("pack", monitor.metric_details["drift"].winfo_manager())
+        self.assertTrue(monitor.clear_demo_button.instate(("disabled",)))
+        for key in ("latency", "accuracy"):
+            self.assertEqual(0, len([
+                item for item in monitor.graph_canvases[key].find_all()
+                if monitor.graph_canvases[key].type(item) == "line"
+                and len(monitor.graph_canvases[key].coords(item)) == 4
+                and monitor.graph_canvases[key].coords(item)[0]
+                == monitor.graph_canvases[key].coords(item)[2]
+                and monitor.graph_canvases[key].coords(item)[1] == 42
+                and monitor.graph_canvases[key].coords(item)[3]
+                == monitor.graph_canvases[key].winfo_height() - 28
+            ]))
+        self.assertIn("No reviewed", monitor.summary_detail.cget("text"))
+        empty_histogram_text = [
+            monitor.histogram.itemcget(item, "text")
+            for item in monitor.histogram.find_all()
+            if monitor.histogram.type(item) == "text"
+        ]
+        self.assertIn("Earlier", empty_histogram_text)
+        self.assertIn("Most recent", empty_histogram_text)
+        self.assertEqual([], list(Path(self.temporary.name).iterdir()))
+
     def test_small_window_reflows_and_scrolls_and_keyboard_changes_page(self):
         wide = self.center.labels[0].cget("wraplength")
+        self.root.geometry("1000x800")
+        self.root.update()
+        self.center.show("Sextant")
+        self.root.update()
+        metric_columns = self.center.sextant.metric_columns
+        self.assertEqual([0, 0], [int(metric.grid_info()["row"]) for metric in metric_columns])
+        self.assertEqual([0, 2], [int(metric.grid_info()["column"]) for metric in metric_columns])
+        self.assertLessEqual(
+            abs(metric_columns[0].winfo_width() - metric_columns[1].winfo_width()), 16,
+        )
+        self.assertEqual("vertical", str(self.center.sextant.metric_separator.cget("orient")))
+        metric_center = (
+            self.center.sextant.metric_separator.winfo_rootx()
+            + self.center.sextant.metric_separator.winfo_width() / 2
+        )
+        graph_gap_center = (
+            self.center.sextant.graph_cards[0].winfo_rootx()
+            + self.center.sextant.graph_cards[0].winfo_width()
+            + self.center.sextant.graph_cards[1].winfo_rootx()
+        ) / 2
+        self.assertLessEqual(abs(metric_center - graph_gap_center), 3)
+        self.root.update()
+        for metric, key in zip(metric_columns, ("latency", "accuracy")):
+            metric_center = metric.winfo_rootx() + metric.winfo_width() / 2
+            canvas = self.center.sextant.graph_canvases[key]
+            canvas_center = canvas.winfo_rootx() + canvas.winfo_width() / 2
+            self.assertLessEqual(abs(metric_center - canvas_center), 3)
         self.root.geometry("640x600")
+        self.root.update()
+        self.assertEqual([0, 2], [int(metric.grid_info()["row"]) for metric in metric_columns])
+        self.assertEqual([0, 0], [int(metric.grid_info()["column"]) for metric in metric_columns])
+        self.assertEqual("horizontal", str(self.center.sextant.metric_separator.cget("orient")))
+        self.assertLessEqual(
+            metric_columns[0].winfo_x() + metric_columns[0].winfo_width(),
+            metric_columns[0].master.winfo_width(),
+        )
+        self.center.show("Overview")
         self.root.update()
         self.assertLess(self.center.labels[0].cget("wraplength"), wide)
         self.assertEqual(1, int(self.center.monitor.choices.grid_info()["row"]))
@@ -847,6 +1075,70 @@ class ControlCenterTests(unittest.TestCase):
         self.root.event_generate("<Alt-Key-1>")
         self.root.update()
         self.assertEqual("Overview", self.center.current)
+
+    def test_recorded_metric_explanations_reflow_at_narrow_width(self):
+        from pulpo.sextant_observation import (
+            SextantCalibration,
+            SextantEvent,
+            SextantObservation,
+        )
+
+        monitor = self.center.sextant
+        now = time.time_ns()
+        calibration = SextantCalibration(
+            calibration_id="fixture-calibration",
+            version="1",
+            workload_id="fixture-workload",
+            metric_id="latency-ms",
+            baseline_workload_version="workload-1",
+            baseline_model_version="model-1",
+            baseline_sample_count=100,
+            baseline_mean=100.0,
+            baseline_stddev=8.0,
+            investigate_z_threshold=2.0,
+            checkpoint_ref="fixture-checkpoint",
+            evidence_ref="a" * 64,
+        )
+        events = tuple(
+            SextantEvent(
+                sequence=index,
+                timestamp_ns=now - (3 - index) * 1_000_000_000,
+                workload_id="fixture-workload",
+                workload_version="workload-2",
+                model_version="model-2",
+                metric_id="latency-ms",
+                metric_value=value,
+                checkpoint_ref="fixture-checkpoint",
+                evidence_ref=hex(index)[2:].rjust(64, "0"),
+                reviewed_correct=reviewed,
+            )
+            for index, value, reviewed in ((1, 120.0, True), (2, 122.0, False))
+        )
+        monitor.observation = SextantObservation(
+            source_id="b" * 32,
+            observed_at_ns=now,
+            first_sequence=1,
+            event_count=len(events),
+            calibration=calibration,
+            events=events,
+        )
+        monitor.path = Path(self.temporary.name) / "recorded-observation.json"
+        monitor.last_display_refresh_ns = now
+        self.root.geometry("640x600")
+        self.center.show("Sextant")
+        monitor.render()
+        self.root.update()
+
+        self.assertIn("Recorded", monitor.metric_labels["accuracy"].cget("text"))
+        self.assertIn("Investigate", monitor.metric_labels["drift"].cget("text"))
+        self.assertIn("95% CI", monitor.metric_details["accuracy"].cget("text"))
+        self.assertIn("z =", monitor.metric_details["drift"].cget("text"))
+        self.assertIn("sampling uncertainty", monitor.metric_notes["accuracy"].cget("text"))
+        self.assertIn("not a p-value", monitor.metric_notes["drift"].cget("text"))
+        self.assertEqual([0, 2], [int(metric.grid_info()["row"]) for metric in monitor.metric_columns])
+        for metric, note in zip(monitor.metric_columns, monitor.metric_notes.values()):
+            self.assertLessEqual(note.winfo_width(), metric.winfo_width())
+            self.assertLessEqual(int(note.cget("wraplength")), metric.winfo_width())
 
     def test_session_activity_is_bounded_and_not_persisted(self):
         for index in range(600):
@@ -1397,6 +1689,123 @@ class ControlCenterTests(unittest.TestCase):
         finally:
             if not destroyed:
                 root.destroy()
+
+
+    def test_sextant_synthetic_scenario_file_sets_target_display_and_ordinary_file_clears_it(self):
+        import json
+        from dataclasses import asdict
+
+        from pulpo.sextant_observation import (
+            SCHEMA,
+            SYNTHETIC_SCENARIO_SCHEMA,
+            SextantCalibration,
+            SextantEvent,
+            SextantObservation,
+        )
+
+        monitor = self.center.sextant
+        now = time.time_ns()
+        calibration = SextantCalibration(
+            calibration_id="fixture-calibration",
+            version="1",
+            workload_id="fixture-workload",
+            metric_id="latency-ms",
+            baseline_workload_version="workload-1",
+            baseline_model_version="model-1",
+            baseline_sample_count=100,
+            baseline_mean=100.0,
+            baseline_stddev=8.0,
+            investigate_z_threshold=2.0,
+            checkpoint_ref="fixture-checkpoint",
+            evidence_ref="a" * 64,
+        )
+        # 6 correct / 8 reviewed = 75% accuracy, 20 pp below the 95% target.
+        events = tuple(
+            SextantEvent(
+                sequence=index,
+                timestamp_ns=now - (10 - index) * 1_000_000_000,
+                workload_id="fixture-workload",
+                workload_version="workload-2",
+                model_version="model-2",
+                metric_id="latency-ms",
+                metric_value=value,
+                checkpoint_ref="fixture-checkpoint",
+                evidence_ref=hex(index)[2:].rjust(64, "0"),
+                reviewed_correct=reviewed,
+            )
+            for index, value, reviewed in (
+                (1, 120.0, True), (2, 121.0, True), (3, 122.0, True),
+                (4, 120.0, True), (5, 121.0, True), (6, 122.0, True),
+                (7, 120.0, False), (8, 121.0, False),
+                (9, 122.0, None), (10, 120.0, None),
+            )
+        )
+        observation = SextantObservation(
+            source_id="b" * 32,
+            observed_at_ns=now,
+            first_sequence=1,
+            event_count=len(events),
+            calibration=calibration,
+            events=events,
+        )
+        scenario_document = {
+            "schema": SYNTHETIC_SCENARIO_SCHEMA,
+            "scenario_name": "Fixture scenario",
+            "accuracy_target_percent": 95.0,
+            "observation": {
+                "schema": SCHEMA,
+                "source_id": observation.source_id,
+                "observed_at_ns": observation.observed_at_ns,
+                "first_sequence": observation.first_sequence,
+                "event_count": observation.event_count,
+                "calibration": asdict(calibration),
+                "events": [asdict(event) for event in events],
+            },
+        }
+        scenario_path = Path(self.temporary.name) / "scenario.json"
+        scenario_path.write_text(json.dumps(scenario_document))
+        scenario_path.chmod(0o600)
+        observation_path = Path(self.temporary.name) / "observation.json"
+        observation_path.write_text(json.dumps(scenario_document["observation"]))
+        observation_path.chmod(0o600)
+
+        self.root.geometry("640x600")
+        self.center.show("Sextant")
+        monitor.path = scenario_path
+        monitor.refresh_source()
+        self.root.update()
+
+        self.assertEqual("Fixture scenario", monitor.synthetic_scenario_name)
+        self.assertEqual(95.0, monitor.synthetic_target_percent)
+        self.assertTrue(monitor.synthetic_scenario_file)
+        self.assertIsNotNone(monitor.demo_observation)
+        self.assertEqual("75%", monitor.metric_values["accuracy"].cget("text"))
+        self.assertEqual(
+            "Accuracy deviation from target", monitor.graph_titles["accuracy"].cget("text")
+        )
+        accuracy_texts = [
+            monitor.graph_canvases["accuracy"].itemcget(item, "text")
+            for item in monitor.graph_canvases["accuracy"].find_all()
+            if monitor.graph_canvases["accuracy"].type(item) == "text"
+        ]
+        self.assertIn("95% TARGET", accuracy_texts)
+        self.assertTrue(any("-20 pp" in text for text in accuracy_texts))
+        self.assertIn("SIMULATION ONLY", monitor.source_summary.cget("text"))
+        self.assertIn("Fixture scenario", monitor.source_summary.cget("text"))
+
+        monitor.path = observation_path
+        monitor.refresh_source()
+        self.root.update()
+
+        self.assertFalse(monitor.synthetic_scenario_file)
+        self.assertIsNone(monitor.synthetic_scenario_name)
+        self.assertIsNone(monitor.synthetic_target_percent)
+        self.assertIsNone(monitor.demo_observation)
+        self.assertIsNotNone(monitor.observation)
+        self.assertEqual("Reviewed accuracy", monitor.graph_titles["accuracy"].cget("text"))
+        self.assertIn("Reviewed accuracy", monitor.metric_labels["accuracy"].cget("text"))
+        self.assertIn("Recorded", monitor.source_summary.cget("text"))
+        self.assertNotIn("SIMULATION ONLY", monitor.source_summary.cget("text"))
 
 
 if __name__ == "__main__":

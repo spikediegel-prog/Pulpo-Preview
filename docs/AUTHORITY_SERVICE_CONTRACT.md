@@ -28,7 +28,18 @@ The worker may retrieve one of:
 - `pending`;
 - `denied` with a non-sensitive reason class;
 - `expired`;
-- `approved` with the exact signed `pulpo.approval.v2` envelope.
+- `approved` with the exact signed `pulpo.approval.v2` envelope and, for
+  policies that opt the action into the kernel's separate ceremony gate,
+  `ceremony_evidence`: an independently signed
+  `pulpo.ceremony-evidence.v1` value. The kernel binds it to the exact approval,
+  intent, policy, principal, session, nonce, pinned ceremony trust, method, and
+  bounded time interval before permit issuance.
+
+`AuthorityClient` preserves this optional field; it does not interpret,
+authenticate, or upgrade it. The kernel remains the only verifier and permit
+issuer. If the policy requires ceremony evidence and it is absent or invalid,
+the action is denied. Existing policies that do not opt in continue to use the
+approval envelope alone.
 
 The service never returns WebAuthn private material, recovery material, raw
 signing capability, credential-management tokens, or reusable human sessions.
@@ -50,11 +61,19 @@ The human-facing origin must:
 6. sign the already displayed Pulpo envelope with the non-exportable service
    key;
 7. retain the full assertion and signature bundle outside Pulpo's worker;
-8. expose only the completed envelope through the poll operation.
+8. create ceremony evidence under a separately pinned ceremony key, never the
+   approval-envelope key;
+9. expose only the completed envelope and, when policy requires it, the bound
+   ceremony evidence through the poll operation.
 
 Authentication success alone does not authorize a different or later intent.
 The human ceremony and service signature must remain bound to the exact payload
 that Pulpo verifies.
+
+This repository does not implement that issuer or prove a real ceremony. The
+separate ceremony verifier and evidence format are a kernel contract only;
+production support remains **Proposed** until an independently operated
+service and its deployment satisfy the authority proof gate.
 
 ## Prohibited worker-visible operations
 

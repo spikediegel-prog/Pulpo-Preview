@@ -1,3 +1,4 @@
+import gc
 import tempfile
 import json
 import sqlite3
@@ -21,7 +22,12 @@ from pulpo.custody import SQLiteGovernanceCustody
 from pulpo.custody_reconcile import IndependentDomainObservation
 from pulpo.kernel import GovernanceKernel, Policy
 from pulpo.state import SQLiteKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import (
+    HmacTestVerifier,
+    signed_envelope,
+    signed_policy_envelope,
+    trust_for,
+)
 
 from pulpo_custody_service.api import create_app
 from pulpo_custody_service.core import AttemptHandle, DomainCustodyService, ServiceRejected
@@ -118,7 +124,7 @@ class CustodyServiceApiTests(unittest.TestCase):
         self.assertIsNotNone(result.order)
         return result.order
 
-    def build(self, *, require_approval=False):
+    def build(self, *, require_approval=False, reuse_evidence_connection=False, sql_qos_settings=None):
         custody = SQLiteGovernanceCustody(
             self.path,
             signing_secret=b"service-custody-secret",
@@ -144,6 +150,7 @@ class CustodyServiceApiTests(unittest.TestCase):
                     policy,
                     secret=b"service-kernel-secret",
                     approval_verifier=verifier,
+                    policy_envelope=signed_policy_envelope(policy, verifier) if verifier is not None else None,
                     clock=lambda: NOW,
                     state=state,
                 )
@@ -159,6 +166,8 @@ class CustodyServiceApiTests(unittest.TestCase):
             budget=budget,
             registrar=registrar,
             observer=observer,
+            reuse_evidence_connection=reuse_evidence_connection,
+            sql_qos_settings=sql_qos_settings,
             observer_id="observer:service-v0",
             executor_id="executor:service-v0",
         )
@@ -166,9 +175,13 @@ class CustodyServiceApiTests(unittest.TestCase):
             policy,
             secret=b"service-kernel-secret",
             approval_verifier=verifier,
+            policy_envelope=signed_policy_envelope(policy, verifier) if verifier is not None else None,
             clock=lambda: NOW,
         )
-        return TestClient(create_app(service)), service, registrar, observer, signing_kernel, verifier
+        client = TestClient(create_app(service))
+        self.addCleanup(gc.collect)
+        self.addCleanup(client.close)
+        return client, service, registrar, observer, signing_kernel, verifier
 
     def commit(self, service, order):
         return service.proposals.create(

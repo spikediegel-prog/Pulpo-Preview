@@ -18,7 +18,7 @@ from pulpo.redsys import (
     refund_intent,
 )
 from pulpo.state import SQLiteKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
 NOW = 10_000_000
@@ -91,7 +91,7 @@ class RedsysSandboxGovernanceTests(unittest.TestCase):
         )
         signing_kernel = GovernanceKernel(
             policy,
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
         )
         payment = self.payment()
@@ -110,7 +110,7 @@ class RedsysSandboxGovernanceTests(unittest.TestCase):
             payment,
             envelope,
             trust=trust,
-            verifier=verifier,
+            verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
         )
 
@@ -138,7 +138,7 @@ class RedsysSandboxGovernanceTests(unittest.TestCase):
         intent = payment_intent(payment)
         signing_kernel = GovernanceKernel(
             policy,
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
         )
         envelope = signed_envelope(
@@ -155,7 +155,7 @@ class RedsysSandboxGovernanceTests(unittest.TestCase):
             payment,
             envelope,
             trust=trust,
-            verifier=verifier,
+            verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
             state=state,
         )
@@ -168,7 +168,7 @@ class RedsysSandboxGovernanceTests(unittest.TestCase):
                 payment,
                 envelope,
                 trust=trust,
-                verifier=verifier,
+                verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
                 clock=lambda: NOW,
                 state=restarted_state,
             )
@@ -186,7 +186,7 @@ class RedsysSandboxGovernanceTests(unittest.TestCase):
         substituted = self.payment(amount_cents=124)
         signing_kernel = GovernanceKernel(
             policy,
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
         )
         envelope = signed_envelope(
@@ -203,7 +203,7 @@ class RedsysSandboxGovernanceTests(unittest.TestCase):
                 substituted,
                 envelope,
                 trust=trust,
-                verifier=verifier,
+                verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),
                 clock=lambda: NOW,
             )
 
@@ -387,7 +387,18 @@ class RedsysSandboxGovernanceTests(unittest.TestCase):
                 authority_trust=trust_for(verifier),
             ),
             secret=b"redsys-directive-kernel-secret",
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(Policy(
+                frozenset(
+                    {
+                        "redsys_payment",
+                        "activate_directive",
+                        "revoke_directive",
+                    }
+                ),
+                3_000,
+                frozenset({"activate_directive", "revoke_directive"}),
+                authority_trust=trust_for(verifier),
+            ), verifier),
             clock=lambda: NOW,
         )
         payment = self.payment()

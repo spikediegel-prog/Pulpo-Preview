@@ -10,6 +10,7 @@ from pulpo.custody_reconcile import (
 )
 from pulpo.kernel import GovernanceKernel
 from pulpo.state import SQLiteKernelState
+from tests.authority_support import signed_policy_envelope
 
 
 class Issue153OutcomeMemoryHostileV0(unittest.TestCase):
@@ -124,7 +125,7 @@ class Issue153OutcomeMemoryHostileV0(unittest.TestCase):
                 worker_kernel = GovernanceKernel(
                     self._commerce_policy(verifier),
                     secret=baseline.KERNEL_SECRET,
-                    approval_verifier=verifier,
+                    approval_verifier=verifier, policy_envelope=signed_policy_envelope(self._commerce_policy(verifier), verifier),
                     clock=lambda: baseline.NOW,
                     state=worker_state,
                 )
@@ -161,7 +162,7 @@ class Issue153OutcomeMemoryHostileV0(unittest.TestCase):
         check_kernel = GovernanceKernel(
             self._commerce_policy(verifier),
             secret=baseline.KERNEL_SECRET,
-            approval_verifier=verifier,
+            approval_verifier=verifier, policy_envelope=signed_policy_envelope(self._commerce_policy(verifier), verifier),
             clock=lambda: baseline.NOW,
             state=check_state,
         )

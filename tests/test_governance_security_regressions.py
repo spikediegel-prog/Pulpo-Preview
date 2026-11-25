@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
 from pulpo import GovernanceKernel,Intent,Policy
 from pulpo.state import InMemoryKernelState,SQLiteKernelState
-from tests.authority_support import HmacTestVerifier,signed_envelope,trust_for
+from tests.authority_support import HmacTestVerifier,signed_envelope,trust_for, signed_policy_envelope
 from tests import test_custody_executor as executor_fixture
 
 NOW=1_000_000
@@ -28,7 +28,7 @@ class GovernanceSecurityRegressions(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             for label,state in [('memory',InMemoryKernelState()),('sqlite',SQLiteKernelState(pathlib.Path(folder)/'expiry.sqlite'))]:
                 now=[NOW];verifier=HmacTestVerifier()
-                k=GovernanceKernel(Policy(frozenset({'write'}),10,frozenset({'write'}),authority_trust=trust_for(verifier)),approval_verifier=verifier,clock=lambda:now[0],state=state)
+                k=GovernanceKernel(Policy(frozenset({'write'}),10,frozenset({'write'}),authority_trust=trust_for(verifier)),approval_verifier=verifier, policy_envelope=signed_policy_envelope(Policy(frozenset({'write'}),10,frozenset({'write'}),authority_trust=trust_for(verifier)), verifier),clock=lambda:now[0],state=state)
                 intent=Intent('agent:test','write','repo:test',1,'session:test')
                 envelope=signed_envelope(k,intent,verifier,now_ns=NOW)
                 decision=k.evaluate_with_approval(intent,envelope)
@@ -146,13 +146,13 @@ class GovernanceSecurityRegressions(unittest.TestCase):
             path=pathlib.Path(folder)/'restart.sqlite'
             state=SQLiteKernelState(path);verifier=HmacTestVerifier()
             policy=Policy(frozenset({'write'}),10,frozenset({'write'}),authority_trust=trust_for(verifier))
-            kernel=GovernanceKernel(policy,state=state,approval_verifier=verifier,clock=lambda:NOW)
+            kernel=GovernanceKernel(policy,state=state,approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),clock=lambda:NOW)
             intent=Intent('agent:test','write','repo:test',1)
             envelope=signed_envelope(kernel,intent,verifier,now_ns=NOW)
             permit=kernel.evaluate_with_approval(intent,envelope).permit
             state.close();state=SQLiteKernelState(path)
             try:
-                kernel=GovernanceKernel(policy,state=state,approval_verifier=verifier,clock=lambda:envelope.expires_at_ns)
+                kernel=GovernanceKernel(policy,state=state,approval_verifier=verifier, policy_envelope=signed_policy_envelope(policy, verifier),clock=lambda:envelope.expires_at_ns)
                 self.assertFalse(kernel.consume(permit,intent))
                 self.assertTrue(kernel.verify_audit())
             finally:state.close()

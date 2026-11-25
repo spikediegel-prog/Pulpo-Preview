@@ -7,6 +7,7 @@ not another router, policy engine, or evidence ledger.
 
 from __future__ import annotations
 
+from contextlib import closing
 from dataclasses import dataclass
 from hashlib import sha256
 import hmac
@@ -15,7 +16,7 @@ from os import PathLike
 from pathlib import Path
 import sqlite3
 from threading import RLock
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Iterator, Protocol
 
 from .audit_parallel import audit_row_has_valid_types
 from .database_activity import ObservedConnection
@@ -65,6 +66,7 @@ class ApprovalUse:
     approval_id: str
     nonce: str
     audit_payload: dict[str, Any]
+    ceremony_evidence_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -93,9 +95,11 @@ class KernelState(Protocol):
     @property
     def audit(self) -> list[dict[str, Any]]: ...
     def approval_replay_reason(self, approval_id: str, nonce: str) -> str | None: ...
-    def issue_permit(self, permit: str, intent_hash: str, decision_reason: str, timestamp_ns: int, approval: ApprovalUse | None = None, *, policy_hash: str | None = None, issuer_hash: str | None = None, expires_at_ns: int | None = None) -> str | None: ...
+    def ceremony_replay_reason(self, evidence_id: str) -> str | None: ...
+    def issue_permit(self, permit: str, intent_hash: str, decision_reason: str, timestamp_ns: int, approval: ApprovalUse | None = None, *, policy_hash: str | None = None, issuer_hash: str | None = None, expires_at_ns: int | None = None, clock: Callable[[], int] | None = None) -> str | None: ...
     def bind_permit_to_directive(self, permit: str, intent_hash: str, binding: DirectivePermitBinding, timestamp_ns: int) -> None: ...
-    def consume_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> bool: ...
+    def consume_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None, clock: Callable[[], int] | None = None) -> bool: ...
+    def revalidate_consumed_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> str: ...
     def directive_hash_status(self, directive_hash: str) -> str: ...
     def append(self, event: str, payload: dict[str, Any], timestamp_ns: int) -> None: ...
     def append_unique(self, event: str, identity_field: str, identity_value: Any, payload: dict[str, Any], timestamp_ns: int) -> dict[str, Any] | None: ...
@@ -123,11 +127,33 @@ class InMemoryKernelState:
             if nonce in self._approval_nonces: return "approval_nonce_replayed"
             return None
 
-    def issue_permit(self, permit: str, intent_hash: str, decision_reason: str, timestamp_ns: int, approval: ApprovalUse | None = None, *, policy_hash: str | None = None, issuer_hash: str | None = None, expires_at_ns: int | None = None) -> str | None:
+    def ceremony_replay_reason(self, evidence_id: str) -> str | None:
         with self._audit_lock:
+            for record in self._audit:
+                if record.get("event") != "approval_verified":
+                    continue
+                payload = record.get("payload")
+                if not isinstance(payload, dict):
+                    raise ValueError("approval audit payload invalid")
+                if payload.get("ceremony_evidence_id") == evidence_id:
+                    return "ceremony_evidence_replayed"
+            return None
+
+    def issue_permit(self, permit: str, intent_hash: str, decision_reason: str, timestamp_ns: int, approval: ApprovalUse | None = None, *, policy_hash: str | None = None, issuer_hash: str | None = None, expires_at_ns: int | None = None, clock: Callable[[], int] | None = None) -> str | None:
+        with self._audit_lock:
+            previous_ns = timestamp_ns
+            timestamp_ns = _sample_post_lock_timestamp(timestamp_ns, clock)
+            if clock is not None and type(expires_at_ns) is int and type(previous_ns) is int:
+                # Preserve the permit lifetime the kernel computed, anchored at
+                # the post-lock sample instead of the pre-lock one. A None
+                # expiry ("no expiry") is preserved unchanged.
+                expires_at_ns = timestamp_ns + (expires_at_ns - previous_ns)
             if approval is not None:
                 replay = self.approval_replay_reason(approval.approval_id, approval.nonce)
                 if replay: return replay
+                if approval.ceremony_evidence_id is not None:
+                    replay = self.ceremony_replay_reason(approval.ceremony_evidence_id)
+                    if replay: return replay
                 self._approval_ids.add(approval.approval_id); self._approval_nonces.add(approval.nonce)
                 self.append("approval_verified", approval.audit_payload, timestamp_ns)
             self._issued[permit] = intent_hash
@@ -147,8 +173,9 @@ class InMemoryKernelState:
             self._permit_directives[permit] = binding
             self.append("permit_bound_to_directive", {"intent_hash": intent_hash, **binding.audit_payload()}, timestamp_ns)
 
-    def consume_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> bool:
+    def consume_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None, clock: Callable[[], int] | None = None) -> bool:
         with self._audit_lock:
+            timestamp_ns = _sample_post_lock_timestamp(timestamp_ns, clock)
             valid = self._issued.get(permit) == intent_hash and permit not in self._spent
             context = self._permit_context.get(permit)
             if policy_hash is not None:
@@ -168,6 +195,41 @@ class InMemoryKernelState:
             if valid: self._spent.add(permit)
             self.append("permit_consumed" if valid else "permit_rejected", payload, timestamp_ns)
             return valid
+
+    def revalidate_consumed_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> str:
+        # Read-only re-check of the exact state consume_permit validated, under
+        # the same lock, for the window between consumption and execution. It
+        # appends nothing: callers record the refusal or unknown outcome.
+        # A NULL expires_at_ns means no expiry (load-bearing fork semantics);
+        # this re-check must not re-impose a stricter expiry invariant.
+        with self._audit_lock:
+            if permit not in self._issued:
+                return "permit_not_found"
+            if self._issued.get(permit) != intent_hash:
+                return "permit_intent_mismatch"
+            if permit not in self._spent:
+                return "permit_not_consumed"
+            context = self._permit_context.get(permit)
+            if policy_hash is not None:
+                if context is None or context[0] != policy_hash:
+                    return "permit_policy_mismatch"
+                if context[3] != issuer_hash:
+                    return "permit_issuer_mismatch"
+            if context is not None:
+                if type(timestamp_ns) is not int or timestamp_ns < context[1]:
+                    return "permit_not_yet_valid"
+                if context[2] is not None and timestamp_ns >= context[2]:
+                    return "permit_expired"
+            binding = self._permit_directives.get(permit)
+            if binding is not None:
+                status = self.directive_status(binding.directive_id, binding.version, binding.directive_hash)
+                if status == "active" and binding.parent_directive_hash is not None:
+                    status = self.directive_hash_status(binding.parent_directive_hash)
+                if status == "active" and not (binding.issued_at_ns <= timestamp_ns < binding.expires_at_ns):
+                    status = "directive_inactive"
+                if status != "active":
+                    return status
+            return "valid"
 
     def activate_directive(self, directive, authority_evidence: dict[str, object], timestamp_ns: int) -> None:
         with self._audit_lock:
@@ -235,6 +297,55 @@ class InMemoryKernelState:
 
 class StateRecoveryError(ValueError):
     """Recovery cannot establish equality with the independently trusted state."""
+
+
+class StateClockError(ValueError):
+    """A post-lock clock sample failed, or the clock regressed between the
+    pre-lock sample and the post-lock sample.
+
+    Fail-closed: the write is refused rather than stamping canonical evidence
+    with an untrusted time. For SQLite the enclosing transaction rolls back,
+    so a refused consume leaves the permit unspent.
+    """
+
+
+def _sample_post_lock_timestamp(timestamp_ns: int, clock: Callable[[], int] | None) -> int:
+    """Re-sample the clock after the lock; fall back to the caller's timestamp.
+
+    Call only after BEGIN IMMEDIATE (SQLite) or after acquiring _audit_lock
+    (in-memory), so the returned timestamp cannot predate the lock. This is
+    the custody pattern (``_custody_now`` in custody.py) ported to the kernel
+    paths: expiry/validity checks inside the transaction then run on a
+    post-lock timestamp instead of the kernel's pre-lock sample.
+
+    The regression check compares the post-lock sample against the same
+    clock's pre-lock sample, not against the audit tip. Custody can compare
+    against its head time because one custody store has one clock and the head
+    time was written by that same clock. Kernel state has no clock of its own:
+    its audit tip conflates timestamps from every kernel sharing the state
+    (each with its own injected clock) and from direct state callers, and
+    legacy adoption deliberately preserves non-monotonic histories (see
+    test_audit_integrity_migration's seed: 100, 10, 10, -1). A tip comparison
+    would reject legitimate skewed-clock writes -- e.g. two kernels sharing
+    state with clocks 1 ns apart (test_governance_security_regressions).
+    Adjacent samples from one clock are the faithful analogue, and the
+    strongest per-clock check available without new state: a regression
+    between the two samples means the clock went backwards across exactly
+    the lock boundary the TOCTOU fix closes. With no clock supplied the
+    caller owns the timestamp and no regression check applies; the
+    permit-window checks still bound it.
+    """
+    if clock is None:
+        return timestamp_ns
+    try:
+        fresh = clock()
+    except Exception as exc:
+        raise StateClockError("state_clock_unavailable") from exc
+    if type(fresh) is not int or fresh <= 0:
+        raise StateClockError("state_clock_invalid")
+    if type(timestamp_ns) is int and fresh < timestamp_ns:
+        raise StateClockError("state_clock_rollback")
+    return fresh
 
 
 _RECOVERY_PREFIX = "pulpo.sqlite.recovery.v1:"
@@ -459,6 +570,32 @@ class SQLiteKernelState:
             if type(sequence) is not int or not audit_row_has_valid_types(body):
                 raise ValueError("audit row types invalid")
 
+    def iter_audit(
+        self,
+        *,
+        event: str | None = None,
+        reverse: bool = False,
+    ) -> Iterator[dict[str, Any]]:
+        """Stream audit records without materializing the whole chain.
+
+        Preview adaptation of upstream #250: Preview's audit table has no
+        delta columns (delta-audit projection not adopted), so only the
+        canonical columns are selected. The chain is NOT verified here.
+        """
+        order = "DESC" if reverse else "ASC"
+        columns = "event, payload_json, previous_hash, timestamp_ns, hash"
+        if event is None:
+            cursor = self._connection.execute(
+                f"SELECT {columns} FROM audit ORDER BY sequence {order}"
+            )
+        else:
+            cursor = self._connection.execute(
+                f"SELECT {columns} FROM audit WHERE event = ? ORDER BY sequence {order}",
+                (event,),
+            )
+        for e, p, ph, ts, h in cursor:
+            yield {"event": e, "payload": json.loads(p), "previous_hash": ph, "timestamp_ns": ts, "hash": h}
+
     @property
     def audit(self) -> list[dict[str, Any]]:
         rows = self._checked_audit_rows()
@@ -545,6 +682,18 @@ class SQLiteKernelState:
             return True
 
     def approval_replay_reason(self, approval_id: str, nonce: str) -> str | None: return self._approval_replay_reason(approval_id, nonce)
+    def ceremony_replay_reason(self, evidence_id: str) -> str | None:
+        rows = self._connection.execute(
+            "SELECT payload_json FROM audit WHERE event = 'approval_verified' ORDER BY sequence"
+        )
+        for (encoded,) in rows:
+            payload = json.loads(str(encoded))
+            if not isinstance(payload, dict):
+                raise ValueError("approval audit payload invalid")
+            if payload.get("ceremony_evidence_id") == evidence_id:
+                return "ceremony_evidence_replayed"
+        return None
+
     def _approval_replay_reason(self, approval_id: str, nonce: str) -> str | None:
         row = self._connection.execute(
             """
@@ -558,12 +707,22 @@ class SQLiteKernelState:
         ).fetchone()
         return row[0] if row is not None else None
 
-    def issue_permit(self, permit: str, intent_hash: str, decision_reason: str, timestamp_ns: int, approval: ApprovalUse | None = None, *, policy_hash: str | None = None, issuer_hash: str | None = None, expires_at_ns: int | None = None) -> str | None:
+    def issue_permit(self, permit: str, intent_hash: str, decision_reason: str, timestamp_ns: int, approval: ApprovalUse | None = None, *, policy_hash: str | None = None, issuer_hash: str | None = None, expires_at_ns: int | None = None, clock: Callable[[], int] | None = None) -> str | None:
         with self._connection:
             self._connection.execute("BEGIN IMMEDIATE")
+            previous_ns = timestamp_ns
+            timestamp_ns = _sample_post_lock_timestamp(timestamp_ns, clock)
+            if clock is not None and type(expires_at_ns) is int and type(previous_ns) is int:
+                # Preserve the permit lifetime the kernel computed, anchored at
+                # the post-lock sample instead of the pre-lock one. A None
+                # expiry ("no expiry") is preserved unchanged.
+                expires_at_ns = timestamp_ns + (expires_at_ns - previous_ns)
             if approval is not None:
                 replay = self._approval_replay_reason(approval.approval_id, approval.nonce)
                 if replay: return replay
+                if approval.ceremony_evidence_id is not None:
+                    replay = self.ceremony_replay_reason(approval.ceremony_evidence_id)
+                    if replay: return replay
                 self._connection.execute("INSERT INTO approvals (approval_id, nonce) VALUES (?, ?)", (approval.approval_id, approval.nonce))
             self._connection.execute("INSERT INTO permits (permit, intent_hash, policy_hash, issued_at_ns, expires_at_ns, issuer_hash) VALUES (?, ?, ?, ?, ?, ?)", (permit, intent_hash, policy_hash, timestamp_ns, expires_at_ns, issuer_hash))
             events = []
@@ -587,9 +746,10 @@ class SQLiteKernelState:
             self._connection.execute("INSERT INTO permit_directives (permit, directive_id, directive_version, directive_hash, directive_issued_at_ns, directive_expires_at_ns, parent_directive_hash) VALUES (?, ?, ?, ?, ?, ?, ?)", (permit, binding.directive_id, binding.version, binding.directive_hash, binding.issued_at_ns, binding.expires_at_ns, binding.parent_directive_hash))
             self._append("permit_bound_to_directive", {"intent_hash": intent_hash, **binding.audit_payload()}, timestamp_ns)
 
-    def consume_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> bool:
+    def consume_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None, clock: Callable[[], int] | None = None) -> bool:
         with self._connection:
             self._connection.execute("BEGIN IMMEDIATE")
+            timestamp_ns = _sample_post_lock_timestamp(timestamp_ns, clock)
             permit_row = self._connection.execute("SELECT intent_hash, spent, policy_hash, issued_at_ns, expires_at_ns, issuer_hash FROM permits WHERE permit = ?", (permit,)).fetchone()
             valid = permit_row is not None and permit_row[0] == intent_hash and permit_row[1] == 0
             if policy_hash is not None:
@@ -615,6 +775,46 @@ class SQLiteKernelState:
                 valid = cursor.rowcount == 1
             self._append("permit_consumed" if valid else "permit_rejected", payload, timestamp_ns)
         return valid
+
+    def revalidate_consumed_permit(self, permit: str, intent_hash: str, timestamp_ns: int, *, policy_hash: str | None = None, issuer_hash: str | None = None) -> str:
+        # Read-only re-check of the exact state consume_permit validated, under
+        # the same BEGIN IMMEDIATE discipline, for the window between
+        # consumption and execution. It appends nothing: callers record the
+        # refusal or unknown outcome. A NULL expires_at_ns means no expiry
+        # (load-bearing fork semantics); this re-check must not re-impose a
+        # stricter expiry invariant.
+        with self._connection:
+            self._connection.execute("BEGIN IMMEDIATE")
+            permit_row = self._connection.execute("SELECT intent_hash, spent, policy_hash, issued_at_ns, expires_at_ns, issuer_hash FROM permits WHERE permit = ?", (permit,)).fetchone()
+            if permit_row is None:
+                return "permit_not_found"
+            if permit_row[0] != intent_hash:
+                return "permit_intent_mismatch"
+            if permit_row[1] != 1:
+                return "permit_not_consumed"
+            if policy_hash is not None:
+                if permit_row[2] != policy_hash:
+                    return "permit_policy_mismatch"
+                if permit_row[5] != issuer_hash:
+                    return "permit_issuer_mismatch"
+            if permit_row[3] is not None:
+                if type(timestamp_ns) is not int or timestamp_ns < permit_row[3]:
+                    return "permit_not_yet_valid"
+                if permit_row[4] is not None and timestamp_ns >= permit_row[4]:
+                    return "permit_expired"
+            row = self._connection.execute("SELECT directive_id, directive_version, directive_hash, directive_issued_at_ns, directive_expires_at_ns, parent_directive_hash FROM permit_directives WHERE permit = ?", (permit,)).fetchone()
+            if row is not None:
+                binding = DirectivePermitBinding(row[0], row[1], row[2], row[3], row[4], row[5])
+                directive = self._connection.execute("SELECT directive_hash, revoked FROM directives WHERE directive_id = ? AND version = ?", (binding.directive_id, binding.version)).fetchone()
+                if directive is None: status = "directive_not_authorized"
+                elif directive[0] != binding.directive_hash: status = "directive_version_mismatch"
+                elif directive[1] != 0: status = "directive_revoked"
+                elif binding.parent_directive_hash is not None: status = self.directive_hash_status(binding.parent_directive_hash)
+                else: status = "active"
+                if status == "active" and not (binding.issued_at_ns <= timestamp_ns < binding.expires_at_ns): status = "directive_inactive"
+                if status != "active":
+                    return status
+            return "valid"
 
     def activate_directive(self, directive, authority_evidence: dict[str, object], timestamp_ns: int) -> None:
         with self._connection:
@@ -663,17 +863,18 @@ class SQLiteKernelState:
             raise ValueError("unique audit identity invalid")
         with self._connection:
             self._connection.execute("BEGIN IMMEDIATE")
-            rows = self._connection.execute(
+            with closing(self._connection.execute(
                 "SELECT payload_json FROM audit WHERE event = ? ORDER BY sequence",
                 (event,),
-            )
-            # Stream raw rows within the same locked transaction. Still scan
-            # every row: later duplicates or malformed JSON must not be hidden.
-            matches: list[dict[str, Any]] = []
-            for (encoded,) in rows:
-                candidate = json.loads(str(encoded))
-                if isinstance(candidate, dict) and candidate.get(identity_field) == identity_value:
-                    matches.append(candidate)
+            )) as rows:
+                # Stream raw rows within the same locked transaction. Still scan
+                # every row: later duplicates or malformed JSON must not be hidden.
+                # Close even on failure: a retained traceback must not hold a read lock.
+                matches: list[dict[str, Any]] = []
+                for (encoded,) in rows:
+                    candidate = json.loads(str(encoded))
+                    if isinstance(candidate, dict) and candidate.get(identity_field) == identity_value:
+                        matches.append(candidate)
             if len(matches) > 1:
                 raise ValueError("unique audit identity ambiguous")
             if matches:
@@ -712,3 +913,33 @@ class SQLiteKernelState:
     def __exit__(self, exc_type, exc, tb) -> None:
         # Closing rolls back pending work; cleanup must never authorize a commit.
         self.close()
+
+
+def capture_recovery_pin(path: str | PathLike[str]) -> str:
+    """Run the required operator pin-capture step; see docs/RECOVERY_PIN_OPERATOR_STEP.md.
+
+    Opens the state (ordinary construction verifies the audit head and schema),
+    verifies the full hash linkage of the audit chain, then captures the pin.
+    The pin is returned, never written anywhere: retaining it is the trusted
+    operator's job, and it must live independently of the state file and its
+    backups. Deliberately no store is created here — a pin persisted alongside
+    state would roll back with the file it is meant to detect, which is
+    exactly the co-rollback the recovery docstring warns about.
+
+    Call only with writers quiesced. Every subsequent canonical write
+    invalidates the pin, so capture it fresh at each backup. Refuses a broken
+    audit chain instead of pinning it.
+    """
+    state = SQLiteKernelState(path)
+    try:
+        previous = "0" * 64
+        for record in state.audit:
+            body = {key: value for key, value in record.items() if key != "hash"}
+            if (record["previous_hash"] != previous
+                    or record["hash"] != _audit_record(body["previous_hash"], body["event"],
+                                                       body["payload"], body["timestamp_ns"])["hash"]):
+                raise StateRecoveryError("recovery pin capture refused: audit chain invalid")
+            previous = record["hash"]
+        return state.recovery_checkpoint()
+    finally:
+        state.close()
