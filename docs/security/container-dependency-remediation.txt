@@ -3,7 +3,11 @@ Container dependency remediation candidate
 Invariant: patch image dependencies without changing Pulpo's authority,
 canonical state, provider routes, signing custody or service runtime shape.
 All four images now pin the verified official multi-architecture
-python:3.11.17-slim-trixie manifest digest:
+python:3.11.18-slim-trixie manifest digest:
+sha256:61e01f72680f86a5279ad510818ab7b2ee9f049822589d4e34e33e044360356c.
+The pin advanced 3.11.17 to 3.11.18 on 2026-11-25 to fix the Critical
+python CVE-2026-115557 found by the Grype scan at PR #48 head a89e0e5;
+the previous digest was
 sha256:cce12316475d7d56d605f76e1d811d0dc4e7227f2d4afd29951521264f504ff8.
 Three previously pinned images contained Python 3.11.16 and older OS packages;
 custody previously followed an unpinned floating image. The candidate preserves

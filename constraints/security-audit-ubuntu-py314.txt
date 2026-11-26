@@ -1,4 +1,5 @@
 # Reviewed Ubuntu 26.04 / CPython 3.14 audit resolution, 2026-10-17.
+# 2026-11-25: dnspython 2.9.2, opentelemetry-api 1.45.2, pyasn1 0.6.5 — fix CVE-2026-128089, CVE-2026-126360, CVE-2026-119194/119195/119196/119197 found by the reviewed audit at PR #48 head a89e0e5.
 # Optional constraints for reproducing the audit; not a cross-platform lock.
 # Excludes pip-audit and dependencies used only by the scanner.
 # Cryptography security patch advanced to 50.0.2 after paired Ubuntu WSL tests.
@@ -18,7 +19,7 @@ charset-normalizer==3.5.2
 click==8.5.0
 cloud-sql-python-connector==1.22.0
 cryptography==50.0.2
-dnspython==2.9.0
+dnspython==2.9.2
 fastapi==0.141.1
 frozenlist==1.8.0
 google-api-core==2.42.0
@@ -43,12 +44,12 @@ mcp==2.3.0
 mcp-types==2.3.0
 mdurl==0.1.2
 multidict==7.1.0
-opentelemetry-api==1.45.1
+opentelemetry-api==1.45.2
 pg8000==1.31.5
 propcache==0.5.4
 proto-plus==1.29.0
 protobuf==7.36.2
-pyasn1==0.6.4
+pyasn1==0.6.5
 pyasn1-modules==0.4.2
 pycparser==3.11
 pydantic==2.14.1
