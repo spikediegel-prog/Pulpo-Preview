@@ -94,3 +94,51 @@ load, counted as one error in both runs.
   other machines or in CI, or that they are safe to ignore. They are
   pre-existing, not proven unrelated to anything else — the claim is
   only that this patch did not cause them. Fixing them is separate work.
+
+## Resolved — 2026-11-26 (PR: fix/live-environment-test-failures, main 30f74a9)
+
+All 31 failures were environmental, not logic bugs — the same suite
+passes on CI's non-root runner with no ambient CA variables and a
+disk-backed temp dir. Fixed in six groups; production code untouched
+(`pulpo/transport.py`'s fail-closed guard is unchanged and still
+covered by `test_transport_security` and `test_linux_network_readiness`):
+
+- **Ambient CA bundle (13):** `test_authority_client` (8),
+  `test_ceremony_evidence` (1), `test_external_response_bounds` (4).
+  The tests strip ambient CA/proxy controls with the repo's own
+  `sanitized_transport_environment()` around client/transport
+  construction. The transports are mocks; no real connection is made.
+- **Root refusal (3):** `test_installation_observation`. The app
+  refuses root by design. The suite must run as a non-root user, as
+  CI does.
+- **Missing `ubuntu` user (11):** `test_disk_installer`
+  (PulpoConfigScriptTests + InstallCcDebTests). The tests now set
+  `PULPO_IMPORT_USER` / `PULPO_VERIFY_USER` to the current user — the
+  contract the Calamares scripts already document. Needs a non-root
+  user that exists in the live session.
+- **Script mode (1):** `TrustLauncherTests.test_script_is_world_readable`.
+  No repo change: git records 755. A checkout under umask 0007 lands
+  the file at 770; a normal (022) checkout is 755 and the test passes.
+- **Initramfs tools (1):** `VerifyInitramfsTests.test_main_fails_with_no_initrd`
+  now skips when neither `lsinitramfs` nor `unmkinitramfs` is
+  installed, like its siblings.
+- **Tmpfs fixture (1):** `test_disk_service_recovery`.
+  `disk_mount_observation()` now reads the topmost `findmnt` entry:
+  container runtimes can stack mounts at the same target, and the
+  serving mount is the one that decides disk vs volatile. The
+  volatile-fstype rejection is unchanged.
+- **Loader artifact (1):** `test_accountability_context` fails to load
+  only under `discover -s tests -t .` (top-level dir = repo root); the
+  CI-style runner (`scripts/run_unit_tests.py`, top-level dir =
+  `tests`) imports it. Not a test failure; use the CI-style runner.
+
+## How to run the suite green
+
+- As a **non-root** user that owns the checkout (as CI's `runner` does).
+- With a **normal umask (022)** at checkout, or `chmod 755` on the
+  Calamares scripts if a restrictive umask stripped the other-read bit.
+- Command: `python3 -W error scripts/run_unit_tests.py`
+- Full-suite result on the fix branch, non-root testuser-owned clone:
+  **1776 tests, 0 failures, 0 errors, 95 skipped, 1 expected failure**
+  (the 95 skips are the environment-gated tests: initramfs tools
+  absent, real Control Center not installed, and similar).

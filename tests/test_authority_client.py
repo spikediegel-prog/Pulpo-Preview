@@ -1,6 +1,8 @@
 from dataclasses import asdict
 import inspect
+import os
 import unittest
+from unittest.mock import patch
 
 from pulpo import (
     ApprovalEnvelope,
@@ -8,6 +10,7 @@ from pulpo import (
     AuthorityClient,
     CeremonyEvidence,
 )
+from pulpo.transport import sanitized_transport_environment
 
 
 class AuthorityClientTests(unittest.TestCase):
@@ -34,6 +37,19 @@ class AuthorityClientTests(unittest.TestCase):
                 }
             return {"status": "pending"}
 
+        # The client builds its HTTPS opener at construction; strip
+        # this shell's ambient CA/proxy controls for the whole test
+        # (the transport refuses ambient CA config without an
+        # explicit Pulpo bundle) so these tests measure the client's
+        # request/poll logic, not the ambient environment. Several
+        # tests build a second client inside the test method, so the
+        # patch stays up until tearDown. The mock transport means
+        # the opener is never used for a real connection.
+        self._transport_env = patch.dict(
+            os.environ, sanitized_transport_environment(os.environ), clear=True
+        )
+        self._transport_env.start()
+        self.addCleanup(self._transport_env.stop)
         self.client = AuthorityClient("https://authority.example.com", transport=transport)
 
     def test_client_exposes_only_request_and_poll(self):

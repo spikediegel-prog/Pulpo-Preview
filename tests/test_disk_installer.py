@@ -992,6 +992,12 @@ class PulpoConfigScriptTests(unittest.TestCase):
         env["PULPO_IFACE"] = "eth0"
         env["STUB_CALLS"] = str(self.calls)
         env["STUB_MODE"] = mode
+        # The script's documented contract: tests set the import
+        # user to the current user. The default `ubuntu` exists
+        # only in the live session, so without this the import
+        # fails resolving a user that is not there.
+        import getpass
+        env["PULPO_IMPORT_USER"] = getpass.getuser()
         return env
 
     def _run(self, mode="ok"):
@@ -1567,10 +1573,17 @@ class InstallCcDebTests(unittest.TestCase):
         (self.bundle / "python3-tk_3.12.3-1_amd64.deb").write_bytes(b"")
 
     def _source(self, snippet):
+        # The script's documented contract: tests set the verify
+        # user to the current user. The default `ubuntu` exists
+        # only in the live session, so without this the verify
+        # fails resolving a user that is not there.
+        import getpass
+        env = dict(os.environ)
+        env["PULPO_VERIFY_USER"] = getpass.getuser()
         return subprocess.run(
             ["bash", "-c", snippet, "install-cc-deb-check",
              str(self.SCRIPT), str(self.target)],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, timeout=60, env=env,
         )
 
     def test_script_is_executable(self):
@@ -2030,6 +2043,13 @@ class VerifyInitramfsTests(unittest.TestCase):
         self.assertIn("gate passed", result.stdout)
 
     def test_main_fails_with_no_initrd(self):
+        # Like its siblings: without either listing tool the script
+        # cannot inspect an initrd at all, so there is no "no
+        # initrd" verdict to assert — skip instead of failing on
+        # the tools-missing error.
+        import shutil
+        if not shutil.which("lsinitramfs") and not shutil.which("unmkinitramfs"):
+            self.skipTest("lsinitramfs/unmkinitramfs not installed")
         result = subprocess.run(
             [str(self.SCRIPT), str(self.target)],
             capture_output=True, text=True, timeout=60,

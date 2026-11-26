@@ -133,9 +133,16 @@ def exercise_restart_fixture(state, secret):
 def disk_mount_observation(path):
     observed = json.loads(subprocess.check_output(["findmnt", "--json", "--target", str(path),
         "--output", "TARGET,SOURCE,FSTYPE"], text=True, timeout=10))["filesystems"]
-    require(len(observed) == 1 and observed[0]["fstype"] not in
+    # Container runtimes may stack mounts at the same target (an
+    # overlay view over the real disk mount), so findmnt can return
+    # more than one entry; the last entry is the topmost mount, the
+    # one actually serving the path. On a plain system there is
+    # exactly one entry and this is unchanged.
+    require(len(observed) >= 1, "no mount found for fixture path")
+    topmost = observed[-1]
+    require(topmost["fstype"] not in
             {"tmpfs", "ramfs", "devtmpfs"}, "disk fixture must not use volatile memory storage")
-    return observed[0]
+    return topmost
 
 
 def remove_disk_fixture(parent, name):
