@@ -38,7 +38,8 @@ jobs:
           if [ "$RESOLUTION" = reviewed ]; then
             args+=(--constraints constraints/security-audit-ubuntu-py314.txt)
           fi
-          python scripts/security/audit_dependencies.py --output "$RUNNER_TEMP/dependency-audit" "${args[@]}"
+          python scripts/security/audit_dependencies.py --output "$RUNNER_TEMP/dependency-audit" \
+            --exceptions docs/security/dependency-exceptions.json "${args[@]}"
       - name: Preserve exact inventory and advisory evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -89,12 +90,24 @@ jobs:
         with:
           image: pulpo-dependency-audit:${{ matrix.image }}
           grype-version: v0.121.0
-          fail-build: true
+          # The scan itself never decides the build: it runs in full and
+          # reports everything. The next step applies the bounded exception
+          # record to the findings it wrote. fail-build stays false so a
+          # finding the record does not admit still fails the job there,
+          # with the reason named, instead of inside the scanner.
+          fail-build: false
           severity-cutoff: high
           only-fixed: false
           config: scripts/security/grype.yaml
           output-format: json
           output-file: container-advisories.json
+      - name: Apply the bounded exception record
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/security/check_dependency_exceptions.py \
+            --exceptions docs/security/dependency-exceptions.json \
+            --grype container-advisories.json
       - name: Preserve container advisory evidence
         if: always()
         uses: actions/upload-artifact@v4
