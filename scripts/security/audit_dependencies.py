@@ -71,6 +71,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--constraints", type=Path)
+    parser.add_argument("--exceptions", type=Path,
+                        help="bounded exception record; advisories it admits "
+                             "are still reported, but do not fail the audit")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     output = args.output.resolve()
@@ -122,9 +125,34 @@ def main() -> int:
                           "--progress-spinner", "off", "-f", "json", "-o", str(report)], "audit", check=False)
         findings = validate_report(json.loads(report.read_text()), expected)
         summary["advisory_records"] = findings
-        summary["status"] = "passed" if not audit_code and not findings else "failed"
+        if not audit_code and not findings:
+            summary["status"] = "passed"
+        elif findings and args.exceptions:
+            # The scan still ran in full and advisories.json still lists
+            # everything. The exception record admits only the findings it
+            # names exactly, unexpired and version-matched; anything else
+            # still fails the audit.
+            from datetime import date
+            try:
+                from check_dependency_exceptions import (
+                    evaluate, load_exceptions, pip_audit_blocking)
+            except ImportError:  # imported as scripts.security.* in tests
+                from scripts.security.check_dependency_exceptions import (
+                    evaluate, load_exceptions, pip_audit_blocking)
+            record = load_exceptions(args.exceptions.resolve())
+            result = evaluate(pip_audit_blocking(json.loads(report.read_text())),
+                              record, date.today())
+            summary["admitted_with_exceptions"] = len(result["admitted"])
+            summary["unadmitted_findings"] = len(result["unadmitted"])
+            summary["expired_exceptions"] = len(result["expired"])
+            if not result["unadmitted"] and not result["expired"]:
+                summary["status"] = "passed-with-exceptions"
+            else:
+                summary["status"] = "failed"
+        else:
+            summary["status"] = "failed"
         save()
-        return int(summary["status"] != "passed")
+        return int(summary["status"] not in ("passed", "passed-with-exceptions"))
 
 
 if __name__ == "__main__":
