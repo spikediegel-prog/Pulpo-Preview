@@ -32,18 +32,28 @@ actual adversarial outcome required by that test, and each of its lines
 renders only when that line's own evidence is present.
 
 Hardening (2026-11-25 follow-up): operator-authored booleans alone never
-establish a verified consequence. ``EnforcementEvidence.verified`` is set
-only by ``verify_enforcement_evidence``, which requires every asserted step
+establish an audit-corroborated consequence. ``EnforcementEvidence.audit_corroborated`` is set
+only by ``corroborate_enforcement_evidence``, which requires every asserted step
 to be corroborated by an audit reference that resolves to an entry with the
 same object and revision in an intact audit chain; uncorroborated claims
 are dropped and named in the event. A breach rendering likewise requires
-verified transfer evidence. "Verified" here still means structural
+audit-corroborated transfer evidence. "Audit-corroborated" here still means structural
 membership in the (caller-supplied, reconstructed) audit, not
 authenticated provenance: a caller who controls the audit file can write
-matching entries. The CLI states that limit on every run. Emitted events
+matching entries. A forged audit entry with matching object and revision is
+still not independently authenticated: corroboration proves the entry is in
+the audit the caller supplied, nothing more. The CLI states that limit on every run. Emitted events
 carry an integrity hash and an evidence fingerprint, so a changed evidence
 set supersedes the earlier event explicitly and a tampered receipt is
 refused instead of returned.
+
+Second hardening round (2026-11-25): a superseding event preserves the
+superseded event's receipt and names what changed. A stored event is
+re-validated against the fresh rendering on duplicate emission, so
+tampering with any protected field — fingerprint, hash, reference, or
+evidence source — is refused even if the hash was recomputed. The
+qualified result stays qualified when evidence is incomplete,
+inconsistent, or unverifiable; the scope names the dropped steps.
 """
 
 from __future__ import annotations
@@ -92,10 +102,10 @@ class EnforcementEvidence:
     step flags states that one banner line's claim is supported by its own
     evidence. ``refs`` maps a step name (``attempt``, ``boundary``,
     ``revocation``, ``containment``) to the audit hash corroborating that
-    step. ``verified`` is False unless ``verify_enforcement_evidence``
+    step. ``audit_corroborated`` is False unless ``corroborate_enforcement_evidence``
     corroborated the asserted steps against the kernel audit; operator
     booleans alone never set it. ``dropped_steps`` names asserted steps
-    whose claims were dropped for lack of a verifying reference.
+    whose claims were dropped for lack of a corroborating reference.
     ``source`` names where the evidence came from; it is recorded verbatim
     in the structured event so a reader can tell operator-supplied evidence
     from audit-corroborated evidence.
@@ -108,7 +118,7 @@ class EnforcementEvidence:
     containment_verified: bool = False
     source: str = "operator-supplied"
     refs: dict[str, str] = field(default_factory=dict)
-    verified: bool = False
+    audit_corroborated: bool = False
     dropped_steps: tuple[str, ...] = ()
 
 
@@ -117,16 +127,16 @@ class TransferEvidence:
     """Evidence that an unauthorized transfer was observed.
 
     ``transfer_observed`` is the operator's claim; ``refs`` are audit
-    hashes corroborating it. ``verified`` is False unless
-    ``verify_transfer_evidence`` found at least one reference resolving to
+    hashes corroborating it. ``audit_corroborated`` is False unless
+    ``corroborate_transfer_evidence`` found at least one reference resolving to
     an audit entry with the same object and revision in an intact chain.
     ``claim_dropped`` records that a transfer claim was made but no
-    reference verified it.
+    reference corroborated it.
     """
 
     transfer_observed: bool = False
     refs: tuple[str, ...] = ()
-    verified: bool = False
+    audit_corroborated: bool = False
     source: str = "operator-supplied"
     claim_dropped: bool = False
 
@@ -144,6 +154,7 @@ class VerdictEcho:
     text: str
     receipt: dict[str, Any] = field(default_factory=dict)
     audit_provenance: str | None = None
+    evidence: dict[str, Any] = field(default_factory=dict)
 
     def to_event(self) -> dict[str, Any]:
         """Structured verdict event (JSON-serializable)."""
@@ -161,6 +172,7 @@ class VerdictEcho:
                 "containment_verified": self._line_flag("containment verified"),
             },
             "audit_provenance": self.audit_provenance,
+            "evidence": dict(self.evidence),
             "receipt": dict(self.receipt),
             "timestamp": self.receipt.get("timestamp"),
             "text": self.text,
@@ -245,7 +257,7 @@ def _chain_ok(kernel: Any) -> bool:
         return False
 
 
-def _ref_verifies(
+def _ref_corroborates(
     kernel: Any,
     ref: Any,
     expected_object: str,
@@ -280,7 +292,7 @@ def _ref_verifies(
     return False
 
 
-def verify_enforcement_evidence(
+def corroborate_enforcement_evidence(
     kernel: Any,
     record: GladiatorRecord,
     evidence: EnforcementEvidence,
@@ -294,7 +306,7 @@ def verify_enforcement_evidence(
     with the same object and revision in an intact chain. Uncorroborated
     steps are dropped and named in ``dropped_steps``. The consequence
     survives only when it was asserted, at least one step was asserted, and
-    every asserted step verified. The returned evidence has ``verified``
+    every asserted step corroborated. The returned evidence has ``audit_corroborated``
     True exactly when the consequence survived.
     """
     if type(evidence) is not EnforcementEvidence:
@@ -310,7 +322,7 @@ def verify_enforcement_evidence(
             continue
         asserted_any = True
         ref = evidence.refs.get(step) if isinstance(evidence.refs, dict) else None
-        if _ref_verifies(kernel, ref, expected_object, expected_revision, chain):
+        if _ref_corroborates(kernel, ref, expected_object, expected_revision, chain):
             kept[flag_name] = True
         else:
             kept[flag_name] = False
@@ -326,12 +338,12 @@ def verify_enforcement_evidence(
         containment_verified=kept["containment_verified"],
         source=evidence.source,
         refs=dict(evidence.refs),
-        verified=consequence,
+        audit_corroborated=consequence,
         dropped_steps=tuple(dropped),
     )
 
 
-def verify_transfer_evidence(
+def corroborate_transfer_evidence(
     kernel: Any,
     record: GladiatorRecord,
     evidence: TransferEvidence,
@@ -352,14 +364,14 @@ def verify_transfer_evidence(
     survived = bool(
         evidence.transfer_observed
         and any(
-            _ref_verifies(kernel, ref, expected_object, expected_revision, chain)
+            _ref_corroborates(kernel, ref, expected_object, expected_revision, chain)
             for ref in evidence.refs
         )
     )
     return TransferEvidence(
         transfer_observed=survived,
         refs=tuple(evidence.refs),
-        verified=survived,
+        audit_corroborated=survived,
         source=evidence.source,
         claim_dropped=bool(evidence.transfer_observed and not survived),
     )
@@ -372,7 +384,7 @@ def _validate_enforcement(evidence: EnforcementEvidence) -> None:
         evidence.boundary_held,
         evidence.authority_revoked,
         evidence.containment_verified,
-        evidence.verified,
+        evidence.audit_corroborated,
     ):
         if type(flag) is not bool:
             raise TypeError("enforcement evidence flags must be booleans")
@@ -395,7 +407,7 @@ def _validate_enforcement(evidence: EnforcementEvidence) -> None:
 def _validate_transfer(evidence: TransferEvidence) -> None:
     if type(evidence.transfer_observed) is not bool:
         raise TypeError("transfer evidence flag must be a boolean")
-    if type(evidence.verified) is not bool or type(evidence.claim_dropped) is not bool:
+    if type(evidence.audit_corroborated) is not bool or type(evidence.claim_dropped) is not bool:
         raise TypeError("transfer evidence flags must be booleans")
     if type(evidence.source) is not str or not evidence.source.strip():
         raise TypeError("transfer evidence source must be a non-empty string")
@@ -403,6 +415,36 @@ def _validate_transfer(evidence: TransferEvidence) -> None:
         isinstance(ref, str) for ref in evidence.refs
     ):
         raise TypeError("transfer evidence refs must be a tuple of audit hashes")
+
+
+def _evidence_block(
+    enforcement: EnforcementEvidence, transfer: TransferEvidence
+) -> dict[str, Any]:
+    """Structured evidence block recorded in every verdict event.
+
+    The block is what the duplicate path re-validates a stored event
+    against: source, refs, corroboration flags and dropped steps are
+    protected fields, so tampering with any of them is refused even if
+    the integrity hash was recomputed.
+    """
+    return {
+        "consequence_established": enforcement.consequence_established,
+        "attempt_detected": enforcement.attempt_detected,
+        "boundary_held": enforcement.boundary_held,
+        "authority_revoked": enforcement.authority_revoked,
+        "containment_verified": enforcement.containment_verified,
+        "source": enforcement.source,
+        "refs": dict(enforcement.refs),
+        "audit_corroborated": enforcement.audit_corroborated,
+        "dropped_steps": list(enforcement.dropped_steps),
+        "transfer": {
+            "transfer_observed": transfer.transfer_observed,
+            "refs": list(transfer.refs),
+            "audit_corroborated": transfer.audit_corroborated,
+            "source": transfer.source,
+            "claim_dropped": transfer.claim_dropped,
+        },
+    }
 
 
 def render(
@@ -424,9 +466,9 @@ def render(
     fields are cross-checked here, so a caller cannot obtain a success or
     breach rendering from a record whose own fields say otherwise.
 
-    The Pwned banner requires verified enforcement evidence: operator
-    booleans alone (``verified`` False) render the qualified assessment
-    result, never the banner. A breach rendering requires verified transfer
+    The Pwned banner requires audit-corroborated enforcement evidence: operator
+    booleans alone (``audit_corroborated`` False) render the qualified assessment
+    result, never the banner. A breach rendering requires audit-corroborated transfer
     evidence; a CLOSED_DENIED record without it renders UNVERIFIED.
     ``audit_provenance`` names the audit's source and is recorded in the
     event; the CLI passes the reconstructed-audit limit. UNKNOWN never
@@ -482,10 +524,10 @@ def render(
         and record.reconciliation_state == "COMPLETE"
     )
     breach_proven = bool(
-        denied and transfer.verified and transfer.transfer_observed
+        denied and transfer.audit_corroborated and transfer.transfer_observed
     )
 
-    if verified and evidence.verified and evidence.consequence_established:
+    if verified and evidence.audit_corroborated and evidence.consequence_established:
         scope.append("External enforcement consequence: established")
         scope.append("Enforcement evidence source: " + evidence.source)
         scope.append(
@@ -502,17 +544,24 @@ def render(
             text=_pwned_text(evidence),
             receipt=receipt,
             audit_provenance=audit_provenance,
+            evidence=_evidence_block(evidence, transfer),
         )
     if verified:
         scope.append("External enforcement consequence: NOT ESTABLISHED")
-        if evidence.consequence_established and not evidence.verified:
+        if evidence.consequence_established and not evidence.audit_corroborated:
             scope.append(
                 "Pwned banner withheld: enforcement consequence asserted "
-                "but not verified against the kernel audit."
+                "but not corroborated against the kernel audit."
             )
         else:
             scope.append(
                 "Pwned banner withheld: enforcement consequence not established."
+            )
+        if evidence.dropped_steps:
+            scope.append(
+                "Dropped evidence steps (uncorroborated): "
+                + ", ".join(evidence.dropped_steps)
+                + "."
             )
         return VerdictEcho(
             test_id=record.object_id,
@@ -524,6 +573,7 @@ def render(
             text=_QUALIFIED_TEXT,
             receipt=receipt,
             audit_provenance=audit_provenance,
+            evidence=_evidence_block(evidence, transfer),
         )
     if breach_proven:
         scope.append(
@@ -540,6 +590,7 @@ def render(
             text=_BREACH_TEXT,
             receipt=receipt,
             audit_provenance=audit_provenance,
+            evidence=_evidence_block(evidence, transfer),
         )
     if denied:
         scope.append("External enforcement consequence: NOT ESTABLISHED")
@@ -564,6 +615,7 @@ def render(
         text=_UNVERIFIED_TEXT,
         receipt=receipt,
         audit_provenance=audit_provenance,
+        evidence=_evidence_block(evidence, transfer),
     )
 
 
@@ -579,8 +631,11 @@ def _load_event_file(path: Path) -> dict[str, Any]:
     The stored ``event_hash`` must recompute over the file's contents.
     A missing or mismatched hash means the receipt was changed after it
     was written; it is refused, never returned as if valid. This detects
-    tampering and corruption, not a writer who controls the output
-    directory and recomputes the hash.
+    tampering and corruption. A writer who controls the output directory
+    and recomputes the hash can still forge a *superseded* file's hash;
+    the duplicate path additionally re-validates the stored event against
+    the fresh rendering, so a recomputed hash does not make a tampered
+    duplicate return as valid.
     """
     try:
         event = json.loads(path.read_text(encoding="utf-8"))
@@ -614,19 +669,117 @@ def _evidence_fingerprint(
             "containment_verified": enforcement.containment_verified,
             "source": enforcement.source,
             "refs": dict(enforcement.refs),
-            "verified": enforcement.verified,
+            "audit_corroborated": enforcement.audit_corroborated,
             "dropped_steps": list(enforcement.dropped_steps),
         },
-        "breach": {
+        "transfer": {
             "transfer_observed": transfer.transfer_observed,
             "refs": list(transfer.refs),
-            "verified": transfer.verified,
+            "audit_corroborated": transfer.audit_corroborated,
             "source": transfer.source,
             "claim_dropped": transfer.claim_dropped,
         },
         "audit_provenance": echo.audit_provenance,
     }
     return sha256(_canonical(payload).encode("utf-8")).hexdigest()
+
+
+def _describe_changes(
+    old_event: dict[str, Any], new_event: dict[str, Any]
+) -> list[str]:
+    """Name what changed between a superseded event and its replacement.
+
+    Compares display verdict, consequence flag, per-line evidence flags,
+    and — when both events carry an evidence block — refs, source,
+    corroboration flags, dropped steps, and the transfer block. An event
+    from before the evidence block existed reports the evidence as one
+    opaque change.
+    """
+    changed: set[str] = set()
+    if old_event.get("display_verdict") != new_event.get("display_verdict"):
+        changed.add("display_verdict")
+    if old_event.get("enforcement_consequence_established") != new_event.get(
+        "enforcement_consequence_established"
+    ):
+        changed.add("enforcement_consequence_established")
+    old_lines = old_event.get("evidence_lines") or {}
+    new_lines = new_event.get("evidence_lines") or {}
+    for step in (
+        "attempt_detected",
+        "boundary_held",
+        "authority_revoked",
+        "containment_verified",
+    ):
+        if old_lines.get(step) != new_lines.get(step):
+            changed.add(f"evidence_lines.{step}")
+    old_ev = old_event.get("evidence") or {}
+    new_ev = new_event.get("evidence") or {}
+    if old_ev and new_ev:
+        for key in ("source", "audit_corroborated", "dropped_steps"):
+            if old_ev.get(key) != new_ev.get(key):
+                changed.add(f"evidence.{key}")
+        old_refs = old_ev.get("refs") or {}
+        new_refs = new_ev.get("refs") or {}
+        for step in sorted(set(old_refs) | set(new_refs)):
+            if old_refs.get(step) != new_refs.get(step):
+                changed.add(f"evidence.refs.{step}")
+        old_tr = old_ev.get("transfer") or {}
+        new_tr = new_ev.get("transfer") or {}
+        for key in (
+            "transfer_observed",
+            "audit_corroborated",
+            "source",
+            "claim_dropped",
+        ):
+            if old_tr.get(key) != new_tr.get(key):
+                changed.add(f"evidence.transfer.{key}")
+        if old_tr.get("refs") != new_tr.get("refs"):
+            changed.add("evidence.transfer.refs")
+    elif old_ev != new_ev:
+        changed.add("evidence")
+    if old_event.get("evidence_fingerprint") != new_event.get(
+        "evidence_fingerprint"
+    ) and not changed:
+        changed.add("evidence_fingerprint")
+    return sorted(changed)
+
+
+def _stored_event_matches_rendering(
+    stored: dict[str, Any], echo: VerdictEcho, fingerprint: str
+) -> bool:
+    """Whether a stored event equals the fresh rendering of these inputs.
+
+    Compares every protected field the hash covers, so a tampered field
+    is refused even if the integrity hash was recomputed after the
+    tampering. Excluded: ``timestamp`` and ``supersedes`` (the stored
+    event keeps its own emission time and supersede history) and
+    ``event_hash`` / ``emission_key`` (checked separately).
+    """
+    if stored.get("evidence_fingerprint") != fingerprint:
+        return False
+    if stored.get("text") != echo.text:
+        return False
+    if stored.get("display_verdict") != echo.display_verdict:
+        return False
+    if (
+        stored.get("enforcement_consequence_established")
+        != echo.enforcement_consequence_established
+    ):
+        return False
+    if stored.get("evidence_lines") != echo.to_event()["evidence_lines"]:
+        return False
+    if stored.get("audit_provenance") != echo.audit_provenance:
+        return False
+    stored_evidence = stored.get("evidence")
+    if isinstance(stored_evidence, dict) and stored_evidence != echo.evidence:
+        return False
+    stored_receipt = stored.get("receipt") or {}
+    fresh_receipt = dict(echo.receipt)
+    stored_receipt = {
+        key: value for key, value in stored_receipt.items() if key != "timestamp"
+    }
+    fresh_receipt.pop("timestamp", None)
+    return stored_receipt == fresh_receipt
 
 
 def emit(
@@ -645,11 +798,15 @@ def emit(
     Writes the structured event to ``output_dir`` and returns it with the
     human text. A second emission with the same evidence returns the
     existing event without rewriting the file or re-printing: ``emitted``
-    is False. A re-emission with changed evidence is detected, not hidden:
-    it writes a new event that names the earlier emission key in
-    ``supersedes`` and leaves the earlier file intact. A tampered receipt
-    (integrity hash mismatch) raises ``ValueError`` instead of being
-    returned as if valid. This function writes no canonical state;
+    is False — but only after the stored event is re-validated against the
+    fresh rendering, so tampering with any protected field (fingerprint,
+    hash, reference, or evidence source) raises ``ValueError`` even if
+    the integrity hash was recomputed after the tampering. A re-emission
+    with changed evidence is detected, not hidden: it writes a new event
+    whose ``supersedes`` entry preserves the earlier event's receipt and
+    names what changed, and leaves the earlier file intact. A tampered
+    receipt (integrity hash mismatch) raises ``ValueError`` instead of
+    being returned as if valid. This function writes no canonical state;
     ``output_dir`` is the caller's evidence directory, outside the source
     checkout.
     """
@@ -674,8 +831,16 @@ def emit(
         existing = _load_event_file(path)
         if existing.get("emission_key") != key_digest:
             raise ValueError(f"conflicting verdict event already exists: {path}")
+        if not _stored_event_matches_rendering(existing, echo, fingerprint):
+            raise ValueError(
+                f"tampered verdict event: stored event does not match "
+                f"the current rendering: {path}"
+            )
         return EmitResult(event=existing, text=existing["text"], emitted=False, path=path)
-    supersedes: list[str] = []
+    event = echo.to_event()
+    event["emission_key"] = key_digest
+    event["evidence_fingerprint"] = fingerprint
+    supersedes: list[dict[str, Any]] = []
     for other in sorted(out.glob(f"gladiator-verdict-{safe_id}-*.json")):
         if other == path:
             continue
@@ -690,11 +855,16 @@ def emit(
         ):
             prior_key = prior.get("emission_key")
             if isinstance(prior_key, str) and prior_key != key_digest:
-                supersedes.append(prior_key)
-    event = echo.to_event()
-    event["emission_key"] = key_digest
-    event["evidence_fingerprint"] = fingerprint
-    event["supersedes"] = sorted(supersedes)
+                supersedes.append(
+                    {
+                        "emission_key": prior_key,
+                        "receipt": dict(prior_receipt),
+                        "changed": _describe_changes(prior, event),
+                    }
+                )
+    event["supersedes"] = sorted(
+        supersedes, key=lambda entry: entry["emission_key"]
+    )
     event["event_hash"] = _event_hash(event)
     path.write_text(json.dumps(event, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return EmitResult(event=event, text=echo.text, emitted=True, path=path)

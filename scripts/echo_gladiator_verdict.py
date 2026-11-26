@@ -13,7 +13,7 @@ audit. Enforcement-consequence and transfer evidence are supplied by the
 operator as separate JSON files, but the booleans in them are claims, not
 proof: each asserted step must be corroborated by an audit reference that
 resolves to an entry with the same object and revision in the
-reconstructed audit, or the claim is dropped. ``verified`` is computed
+reconstructed audit, or the claim is dropped. ``audit_corroborated`` is computed
 here, never asserted in the file. The audit itself is a caller-supplied
 reconstruction: it establishes structural membership, not authenticated
 provenance, and this CLI states that on every run.
@@ -43,8 +43,8 @@ from pulpo.gladiator_verdict_echo import (  # noqa: E402
     EnforcementEvidence,
     TransferEvidence,
     emit,
-    verify_enforcement_evidence,
-    verify_transfer_evidence,
+    corroborate_enforcement_evidence,
+    corroborate_transfer_evidence,
 )
 
 AUDIT_PROVENANCE = (
@@ -119,10 +119,10 @@ def _load_evidence(path: Path | None) -> EnforcementEvidence:
     data = _load_json(path, "evidence file")
     if not isinstance(data, dict):
         raise SystemExit(f"evidence file must contain one JSON object: {path}")
-    if "verified" in data or "dropped_steps" in data:
+    if "verified" in data or "audit_corroborated" in data or "dropped_steps" in data:
         raise SystemExit(
-            "evidence file must not assert verification: "
-            "verification is computed from the audit"
+            "evidence file must not assert corroboration: "
+            "corroboration is computed from the audit"
         )
     known = {f.name for f in dataclass_fields(EnforcementEvidence)}
     unknown = sorted(set(data) - known)
@@ -152,10 +152,10 @@ def _load_transfer_evidence(path: Path | None) -> TransferEvidence:
     data = _load_json(path, "transfer evidence file")
     if not isinstance(data, dict):
         raise SystemExit(f"transfer evidence file must contain one JSON object: {path}")
-    if "verified" in data or "claim_dropped" in data:
+    if "verified" in data or "audit_corroborated" in data or "claim_dropped" in data:
         raise SystemExit(
-            "transfer evidence file must not assert verification: "
-            "verification is computed from the audit"
+            "transfer evidence file must not assert corroboration: "
+            "corroboration is computed from the audit"
         )
     known = {f.name for f in dataclass_fields(TransferEvidence)}
     unknown = sorted(set(data) - known)
@@ -222,12 +222,12 @@ def main(argv: list[str] | None = None) -> int:
         print(exc, file=sys.stderr)
         return 4
     print(f"Audit provenance: {AUDIT_PROVENANCE}", file=sys.stderr)
-    evidence = verify_enforcement_evidence(
+    evidence = corroborate_enforcement_evidence(
         kernel, record, raw_evidence,
         expected_object=record.object_id,
         expected_revision=args.expected_revision,
     )
-    transfer = verify_transfer_evidence(
+    transfer = corroborate_transfer_evidence(
         kernel, record, raw_transfer,
         expected_object=record.object_id,
         expected_revision=args.expected_revision,

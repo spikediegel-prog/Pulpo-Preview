@@ -3,8 +3,8 @@
 Covers proposal section 8.5: PASS (qualified vs Pwned), breach, UNKNOWN,
 duplicate emission, forged success attempts, line-level evidence, and the
 CLI runner-failure guards. Also covers the 2026-11-25 hardening: operator
-booleans alone never establish a verified consequence, breach needs
-verified transfer evidence, changed evidence supersedes explicitly, and
+booleans alone never establish an audit-corroborated consequence, breach needs
+audit-corroborated transfer evidence, changed evidence supersedes explicitly, and
 tampered receipts are refused. The echo is presentation only; these tests
 prove what it renders, not that any network enforcement exists.
 """
@@ -25,10 +25,11 @@ from pulpo.gladiator_audit_projection import audit_references_present
 from pulpo.gladiator_verdict_echo import (
     EnforcementEvidence,
     TransferEvidence,
+    _event_hash,
     emit,
     render,
-    verify_enforcement_evidence,
-    verify_transfer_evidence,
+    corroborate_enforcement_evidence,
+    corroborate_transfer_evidence,
 )
 
 ROLES = (
@@ -75,10 +76,10 @@ def build_record(hashes, *, object_id="assessment:fixture",
 
 
 def full_evidence(hashes):
-    """Pre-verified full evidence, corroborated by the fixture audit.
+    """Pre-corroborated full evidence, corroborated by the fixture audit.
 
-    Unit tests supply pre-verified evidence directly; the CLI path verifies
-    refs instead (see the verify tests and the CLI tests). The refs are
+    Unit tests supply pre-corroborated evidence directly; the CLI path corroborates
+    refs instead (see the corroborate tests and the CLI tests). The refs are
     structural corroboration against the fixture audit, not proof that a
     boundary did anything.
     """
@@ -91,7 +92,7 @@ def full_evidence(hashes):
         source="boundary",
         refs={"attempt": hashes[2], "boundary": hashes[1],
               "revocation": hashes[4], "containment": hashes[5]},
-        verified=True,
+        audit_corroborated=True,
     )
 
 
@@ -132,14 +133,14 @@ class VerdictEchoTests(unittest.TestCase):
             enforcement=enforcement, breach=breach,
             audit_provenance=audit_provenance, timestamp=self.timestamp)
 
-    def verify(self, evidence, kernel=None, record=None):
-        return verify_enforcement_evidence(
+    def corroborate(self, evidence, kernel=None, record=None):
+        return corroborate_enforcement_evidence(
             self.kernel if kernel is None else kernel,
             self.record if record is None else record,
             evidence, expected_object=self.object_id,
             expected_revision=self.revision)
 
-    def test_verified_without_enforcement_renders_qualified_not_pwned(self):
+    def test_corroborated_without_enforcement_renders_qualified_not_pwned(self):
         echo = self.render_assessed()
         self.assertEqual(echo.display_verdict, "PASS")
         self.assertEqual(echo.record_verdict, "PASS")
@@ -154,7 +155,7 @@ class VerdictEchoTests(unittest.TestCase):
             "External enforcement consequence: NOT ESTABLISHED",
             echo.evidence_scope_and_limitations)
 
-    def test_verified_with_enforcement_renders_pwned(self):
+    def test_corroborated_with_enforcement_renders_pwned(self):
         echo = self.render_assessed(enforcement=full_evidence(self.hashes))
         self.assertIn("YOU'VE BEEN PWNED BY GLADIATOR", echo.text)
         self.assertIn("Attack attempt detected.", echo.text)
@@ -167,9 +168,9 @@ class VerdictEchoTests(unittest.TestCase):
         widths = {len(line) for line in echo.text.splitlines()}
         self.assertEqual(len(widths), 1)
 
-    def test_operator_booleans_without_verification_never_pwn(self):
-        # Issue 1: operator-authored JSON booleans, with no verification
-        # against the audit, must not establish a verified consequence or
+    def test_operator_booleans_without_corroboration_never_pwn(self):
+        # Issue 1: operator-authored JSON booleans, with no corroboration
+        # against the audit, must not establish a audit-corroborated consequence or
         # trigger the Pwned banner.
         echo = self.render_assessed(enforcement=OPERATOR_EVIDENCE)
         self.assertEqual(echo.display_verdict, "PASS")
@@ -177,19 +178,19 @@ class VerdictEchoTests(unittest.TestCase):
         self.assertFalse(echo.enforcement_consequence_established)
         self.assertIn(
             "Pwned banner withheld: enforcement consequence asserted "
-            "but not verified against the kernel audit.",
+            "but not corroborated against the kernel audit.",
             echo.evidence_scope_and_limitations)
 
-    def test_verify_enforcement_evidence_requires_resolving_refs(self):
+    def test_corroborate_enforcement_evidence_requires_resolving_refs(self):
         # Refs that resolve to audit entries with the same object and
         # revision corroborate the consequence.
-        verified = self.verify(full_evidence(self.hashes))
-        self.assertTrue(verified.verified)
-        self.assertTrue(verified.consequence_established)
-        self.assertEqual(verified.dropped_steps, ())
+        corroborated = self.corroborate(full_evidence(self.hashes))
+        self.assertTrue(corroborated.audit_corroborated)
+        self.assertTrue(corroborated.consequence_established)
+        self.assertEqual(corroborated.dropped_steps, ())
         # Booleans with no refs: every claim is dropped.
-        dropped = self.verify(OPERATOR_EVIDENCE)
-        self.assertFalse(dropped.verified)
+        dropped = self.corroborate(OPERATOR_EVIDENCE)
+        self.assertFalse(dropped.audit_corroborated)
         self.assertFalse(dropped.consequence_established)
         self.assertEqual(
             dropped.dropped_steps,
@@ -199,8 +200,8 @@ class VerdictEchoTests(unittest.TestCase):
             full_evidence(self.hashes),
             refs={"attempt": "0" * 64, "boundary": "0" * 64,
                   "revocation": "0" * 64, "containment": "0" * 64},
-            verified=False)
-        self.assertFalse(self.verify(missing).verified)
+            audit_corroborated=False)
+        self.assertFalse(self.corroborate(missing).audit_corroborated)
         # Refs from another object's audit: dropped (cross-object).
         other_kernel, other_hashes = build_kernel(
             "assessment:other", self.revision)
@@ -208,19 +209,19 @@ class VerdictEchoTests(unittest.TestCase):
             full_evidence(self.hashes),
             refs={"attempt": other_hashes[2], "boundary": other_hashes[1],
                   "revocation": other_hashes[4], "containment": other_hashes[5]},
-            verified=False)
-        self.assertFalse(self.verify(cross).verified)
+            audit_corroborated=False)
+        self.assertFalse(self.corroborate(cross).audit_corroborated)
         self.assertEqual(
-            self.verify(cross).dropped_steps,
+            self.corroborate(cross).dropped_steps,
             ("attempt", "boundary", "revocation", "containment"))
-        # A tampered audit chain verifies nothing.
+        # A tampered audit chain corroborates nothing.
         self.kernel.audit[0]["payload"]["object_id"] = "tampered"
-        self.assertFalse(self.verify(full_evidence(self.hashes)).verified)
+        self.assertFalse(self.corroborate(full_evidence(self.hashes)).audit_corroborated)
 
     def test_pwned_lines_gated_on_their_own_evidence(self):
         partial = EnforcementEvidence(
             consequence_established=True, attempt_detected=True,
-            boundary_held=True, source="boundary", verified=True)
+            boundary_held=True, source="boundary", audit_corroborated=True)
         echo = self.render_assessed(enforcement=partial)
         self.assertIn("YOU'VE BEEN PWNED BY GLADIATOR", echo.text)
         self.assertIn("Attack attempt detected.", echo.text)
@@ -249,14 +250,14 @@ class VerdictEchoTests(unittest.TestCase):
             "object_id": self.object_id,
             "source_revision": self.revision,
             "authority_effect": "none"}, 1)
-        transfer = verify_transfer_evidence(
+        transfer = corroborate_transfer_evidence(
             kernel, record,
             TransferEvidence(transfer_observed=True,
                              refs=(kernel.audit[-1]["hash"],),
                              source="boundary"),
             expected_object=self.object_id,
             expected_revision=self.revision)
-        self.assertTrue(transfer.verified)
+        self.assertTrue(transfer.audit_corroborated)
         echo = render(record, eligible=eligible, projection_passed=projection,
                       breach=transfer, timestamp=self.timestamp)
         self.assertEqual(echo.display_verdict, "FAIL")
@@ -280,11 +281,11 @@ class VerdictEchoTests(unittest.TestCase):
 
     def test_denied_with_operator_transfer_claim_only_renders_unverified(self):
         kernel, record, eligible, projection = self._deny_record()
-        transfer = verify_transfer_evidence(
+        transfer = corroborate_transfer_evidence(
             kernel, record, TransferEvidence(transfer_observed=True),
             expected_object=self.object_id,
             expected_revision=self.revision)
-        self.assertFalse(transfer.verified)
+        self.assertFalse(transfer.audit_corroborated)
         self.assertTrue(transfer.claim_dropped)
         echo = render(record, eligible=eligible, projection_passed=projection,
                       breach=transfer, timestamp=self.timestamp)
@@ -299,13 +300,13 @@ class VerdictEchoTests(unittest.TestCase):
         kernel, record, eligible, projection = self._deny_record()
         other_kernel, other_hashes = build_kernel(
             "assessment:other", self.revision)
-        transfer = verify_transfer_evidence(
+        transfer = corroborate_transfer_evidence(
             kernel, record,
             TransferEvidence(transfer_observed=True,
                              refs=(other_hashes[2],), source="boundary"),
             expected_object=self.object_id,
             expected_revision=self.revision)
-        self.assertFalse(transfer.verified)
+        self.assertFalse(transfer.audit_corroborated)
         self.assertTrue(transfer.claim_dropped)
         echo = render(record, eligible=eligible, projection_passed=projection,
                       breach=transfer, timestamp=self.timestamp)
@@ -440,9 +441,19 @@ class VerdictEchoTests(unittest.TestCase):
                           output_dir=tmp, timestamp=self.timestamp)
             self.assertTrue(second.emitted)
             self.assertNotEqual(second.path, first.path)
+            self.assertEqual(len(second.event["supersedes"]), 1)
+            superseded = second.event["supersedes"][0]
             self.assertEqual(
-                second.event["supersedes"],
-                [first.event["emission_key"]])
+                superseded["emission_key"], first.event["emission_key"])
+            # The superseding event preserves the original receipt verbatim.
+            self.assertEqual(superseded["receipt"], first.event["receipt"])
+            # ... and names what changed: the consequence and every
+            # evidence line flipped from unestablished to established.
+            self.assertIn("enforcement_consequence_established",
+                          superseded["changed"])
+            self.assertIn("evidence_lines.attempt_detected",
+                          superseded["changed"])
+            self.assertIn("evidence.refs.attempt", superseded["changed"])
             self.assertIn("PWNED", second.text)
             self.assertTrue(first.path.exists())
             self.assertEqual(
@@ -492,6 +503,158 @@ class VerdictEchoTests(unittest.TestCase):
                      projection_passed=projection,
                      enforcement=full_evidence(self.hashes),
                      output_dir=tmp, timestamp=self.timestamp)
+
+    def test_qualified_when_evidence_incomplete(self):
+        # Incomplete evidence stays qualified: refs for two steps only,
+        # the rest dropped and named, never Pwned.
+        refs = {"attempt": self.hashes[2], "boundary": self.hashes[1]}
+        evidence = replace(full_evidence(self.hashes), refs=refs,
+                           audit_corroborated=False)
+        corroborated = self.corroborate(evidence)
+        self.assertEqual(corroborated.dropped_steps,
+                         ("revocation", "containment"))
+        echo = self.render_assessed(enforcement=corroborated)
+        self.assertNotIn("PWNED", echo.text)
+        self.assertIn("GLADIATOR ASSESSMENT: PASS", echo.text)
+        self.assertIn("Dropped evidence steps (uncorroborated): "
+                      "revocation, containment.",
+                      echo.evidence_scope_and_limitations)
+
+    def test_qualified_when_evidence_inconsistent(self):
+        # Inconsistent evidence stays qualified: a consequence asserted
+        # with no steps, and valid refs mixed with cross-object refs.
+        asserted_no_steps = replace(
+            OPERATOR_EVIDENCE, consequence_established=True)
+        self.assertFalse(
+            self.corroborate(asserted_no_steps).audit_corroborated)
+        echo = self.render_assessed(
+            enforcement=self.corroborate(asserted_no_steps))
+        self.assertNotIn("PWNED", echo.text)
+        self.assertIn("GLADIATOR ASSESSMENT: PASS", echo.text)
+        other_kernel, other_hashes = build_kernel(
+            "assessment:other", self.revision)
+        mixed = replace(
+            full_evidence(self.hashes),
+            refs={"attempt": self.hashes[2], "boundary": self.hashes[1],
+                  "revocation": other_hashes[4],
+                  "containment": other_hashes[5]},
+            audit_corroborated=False)
+        corroborated = self.corroborate(mixed)
+        self.assertEqual(corroborated.dropped_steps,
+                         ("revocation", "containment"))
+        echo = self.render_assessed(enforcement=corroborated)
+        self.assertNotIn("PWNED", echo.text)
+        self.assertIn("GLADIATOR ASSESSMENT: PASS", echo.text)
+
+    def test_qualified_when_evidence_unverifiable(self):
+        # Unverifiable evidence stays qualified: refs that resolve to
+        # nothing in the audit corroborate nothing, and the banner is
+        # withheld with the dropped steps named.
+        missing = replace(
+            full_evidence(self.hashes),
+            refs={"attempt": "0" * 64, "boundary": "0" * 64,
+                  "revocation": "0" * 64, "containment": "0" * 64},
+            audit_corroborated=False)
+        corroborated = self.corroborate(missing)
+        self.assertFalse(corroborated.audit_corroborated)
+        self.assertEqual(corroborated.dropped_steps,
+                         ("attempt", "boundary", "revocation", "containment"))
+        echo = self.render_assessed(enforcement=corroborated)
+        self.assertNotIn("PWNED", echo.text)
+        self.assertIn("GLADIATOR ASSESSMENT: PASS", echo.text)
+        self.assertIn("Dropped evidence steps (uncorroborated): attempt, "
+                      "boundary, revocation, containment.",
+                      echo.evidence_scope_and_limitations)
+        # A tampered audit chain is worse: the projection itself can no
+        # longer be established, so the result is UNVERIFIED, not even
+        # qualified — and never Pwned.
+        self.kernel.audit[0]["payload"]["object_id"] = "tampered"
+        echo = self.render_assessed(
+            enforcement=self.corroborate(full_evidence(self.hashes)))
+        self.assertNotIn("PWNED", echo.text)
+        self.assertIn("GLADIATOR: CONTAINMENT UNVERIFIED", echo.text)
+        self.assertIn("VERDICT: UNKNOWN", echo.text)
+
+    def test_tamper_with_recomputed_hash_refused(self):
+        # A tampered protected field is refused even when the attacker
+        # recomputes the integrity hash: the duplicate path re-validates
+        # the stored event against the fresh rendering.
+        eligible, projection = self.assess()
+        with tempfile.TemporaryDirectory() as tmp:
+            first = emit(self.record, eligible=eligible,
+                         projection_passed=projection,
+                         enforcement=full_evidence(self.hashes),
+                         output_dir=tmp, timestamp=self.timestamp)
+            event = json.loads(first.path.read_text(encoding="utf-8"))
+            kwargs = dict(eligible=eligible, projection_passed=projection,
+                          enforcement=full_evidence(self.hashes),
+                          output_dir=tmp, timestamp=self.timestamp)
+            # Tamper the fingerprint, then recompute the hash.
+            tampered = dict(event)
+            tampered["evidence_fingerprint"] = "0" * 64
+            tampered["event_hash"] = _event_hash(tampered)
+            first.path.write_text(
+                json.dumps(tampered, indent=2, sort_keys=True),
+                encoding="utf-8")
+            with self.assertRaises(ValueError):
+                emit(self.record, **kwargs)
+            # Tamper the evidence source, then recompute the hash.
+            tampered = dict(event)
+            tampered["evidence"] = dict(event["evidence"])
+            tampered["evidence"]["source"] = "forged"
+            tampered["event_hash"] = _event_hash(tampered)
+            first.path.write_text(
+                json.dumps(tampered, indent=2, sort_keys=True),
+                encoding="utf-8")
+            with self.assertRaises(ValueError):
+                emit(self.record, **kwargs)
+            # Tamper the emission key, then recompute the hash.
+            tampered = dict(event)
+            tampered["emission_key"] = "deadbeefcafe"
+            tampered["event_hash"] = _event_hash(tampered)
+            first.path.write_text(
+                json.dumps(tampered, indent=2, sort_keys=True),
+                encoding="utf-8")
+            with self.assertRaises(ValueError):
+                emit(self.record, **kwargs)
+
+    def test_tampered_superseded_file_refuses_supersede(self):
+        # A tampered earlier file stops the supersede scan: the new
+        # emission is refused rather than written over a broken receipt.
+        eligible, projection = self.assess()
+        with tempfile.TemporaryDirectory() as tmp:
+            first = emit(self.record, eligible=eligible,
+                         projection_passed=projection,
+                         output_dir=tmp, timestamp=self.timestamp)
+            event = json.loads(first.path.read_text(encoding="utf-8"))
+            event["text"] = event["text"].replace(
+                "GLADIATOR ASSESSMENT: PASS", "GLADIATOR ASSESSMENT: PWNED")
+            first.path.write_text(
+                json.dumps(event, indent=2, sort_keys=True),
+                encoding="utf-8")
+            with self.assertRaises(ValueError):
+                emit(self.record, eligible=eligible,
+                     projection_passed=projection,
+                     enforcement=full_evidence(self.hashes),
+                     output_dir=tmp, timestamp=self.timestamp)
+
+    def test_event_carries_evidence_block(self):
+        # The evidence block is a protected field: source, refs, and
+        # corroboration flag travel with the event.
+        eligible, projection = self.assess()
+        with tempfile.TemporaryDirectory() as tmp:
+            first = emit(self.record, eligible=eligible,
+                         projection_passed=projection,
+                         enforcement=full_evidence(self.hashes),
+                         output_dir=tmp, timestamp=self.timestamp)
+            block = first.event["evidence"]
+            self.assertEqual(block["source"], "boundary")
+            self.assertEqual(block["refs"], {
+                "attempt": self.hashes[2], "boundary": self.hashes[1],
+                "revocation": self.hashes[4],
+                "containment": self.hashes[5]})
+            self.assertTrue(block["audit_corroborated"])
+            self.assertEqual(block["dropped_steps"], [])
 
     def test_event_hash_is_self_consistent(self):
         eligible, projection = self.assess()
@@ -738,10 +901,24 @@ class VerdictEchoCliTests(unittest.TestCase):
                                    inputs / "audit.json", evidence_path, revision)
             self.assertEqual(result.returncode, 4)
             self.assertFalse(out.exists())
+            # The new name is rejected too: "audit_corroborated" is
+            # computed, never asserted.
+            _, evidence_path, _, _ = self._write_fixture(inputs, revision, evidence={
+                "consequence_established": True,
+                "attempt_detected": True,
+                "boundary_held": True,
+                "authority_revoked": True,
+                "containment_verified": True,
+                "audit_corroborated": True,
+            })
+            result = self._run_cli(repo, out, inputs / "record.json",
+                                   inputs / "audit.json", evidence_path, revision)
+            self.assertEqual(result.returncode, 4)
+            self.assertFalse(out.exists())
 
-    def test_cli_breach_needs_verified_transfer_evidence(self):
+    def test_cli_breach_needs_corroborated_transfer_evidence(self):
         # Issue 2 via the CLI: CLOSED_DENIED without transfer evidence
-        # renders UNVERIFIED; with a verifying ref it renders the breach.
+        # renders UNVERIFIED; with a corroborating ref it renders the breach.
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             repo, revision = self._make_repo(tmp_path)
