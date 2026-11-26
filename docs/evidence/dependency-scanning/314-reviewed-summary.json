@@ -1,0 +1,23 @@
+{
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "profiles": [
+    ".[authority,mcp]",
+    "./authority-service[gcp-auth,gcp-cloud-sql,gcp-kms,gcp-storage,postgres-test,test]",
+    "./custody-service[test]"
+  ],
+  "constraints": "constraints/security-audit-ubuntu-py314.txt",
+  "scanner": "pip-audit==2.10.1",
+  "status": "passed",
+  "bootstrap": 0,
+  "install": 0,
+  "pip-check": 0,
+  "public_packages": 79,
+  "local_projects": [
+    "pulpo",
+    "pulpo-hostile-worker-custody",
+    "pulpo-independent-authority"
+  ],
+  "scanner-install": 0,
+  "audit": 0,
+  "advisory_records": 0
+}

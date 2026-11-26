@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11.18-slim-trixie@sha256:61e01f72680f86a5279ad510818ab7b2ee9f049822589d4e34e33e044360356c
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -9,13 +9,19 @@ RUN groupadd --system pulpo && useradd --system --gid pulpo --home-dir /nonexist
 
 WORKDIR /opt/pulpo
 
+COPY pyproject.toml ./pyproject.toml
 COPY pulpo ./pulpo
 COPY custody-service ./custody-service
 
-RUN python -m pip install --no-cache-dir 'cryptography==50.0.2' './custody-service' \
+RUN python -m pip install --no-cache-dir --upgrade 'pip==26.2.2' 'setuptools==84.2.1' 'wheel==0.48.0' \
+    && python -m pip install --no-cache-dir '.[authority]' './custody-service' \
     && mkdir -p /var/lib/pulpo \
+    && python -m pip check \
     && chown -R pulpo:pulpo /var/lib/pulpo /opt/pulpo
 
+# Service images do not need terminal inspection tools or SUID/SGID helpers.
+RUN find / -xdev -type f -perm /6000 -exec chmod a-s -- {} + \
+    && rm -f -- /usr/bin/infocmp
 USER pulpo
 
 EXPOSE 8080

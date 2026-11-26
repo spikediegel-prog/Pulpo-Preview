@@ -1,0 +1,32 @@
+{
+  "source": "2140a528d82b600b801982eb2c8c188d43649631",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "phases": {
+    "baseline": {
+      "runtime": {
+        "cryptography": "50.0.1",
+        "cryptography_openssl": "OpenSSL 4.0.2 25 Aug 2026",
+        "stdlib_openssl": "OpenSSL 3.5.5 27 Jan 2026"
+      },
+      "pip_check": 0,
+      "core": 0,
+      "custody": 0,
+      "authority": 0,
+      "boundaries": 0
+    },
+    "candidate": {
+      "runtime": {
+        "cryptography": "50.0.2",
+        "cryptography_openssl": "OpenSSL 4.0.3 29 Sep 2026",
+        "stdlib_openssl": "OpenSSL 3.5.5 27 Jan 2026"
+      },
+      "pip_check": 0,
+      "core": 0,
+      "custody": 0,
+      "authority": 0,
+      "boundaries": 0
+    }
+  },
+  "source_clean": true
+}

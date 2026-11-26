@@ -1,0 +1,90 @@
+Preview dependency scanning and branch admission
+
+Scope: Ubuntu / Ubuntu WSL; preserve the cryptography 50.0.2 and pip 26.2.2
+updates. No required core runtime dependency or external cloud service is added.
+
+Python scan: dynamically include every declared optional extra from the root,
+authority and custody manifests, including all GCP adapters, PostgreSQL drivers,
+and test dependencies. Explicitly inventory pip/setuptools/wheel build tooling.
+Resolve both fresh and reviewed constraints on Python 3.11 and 3.14 in separate
+application/scanner virtual environments. Preserve exact inventories, versions,
+logs, advisory JSON and exit status. Only the three local source projects are
+excluded from public-package advisory matching; their code remains subject to
+the existing tests/review. The scanner itself is tooling, not a runtime extra.
+
+Fail closed: missing/duplicate/version-mismatched/skipped scanner packages,
+collection errors, unavailable advisory data and reported Python advisories
+cannot pass. The aggregate check preview-dependency-admission requires every
+Python and container matrix job to succeed, including when a dependency was
+skipped or cancelled. No continue-on-error or vulnerability allowlist is used.
+
+Container scan: build all four Dockerfiles and scan OS plus packaged libraries
+with Grype v0.121.0 through scan-action pinned to immutable commit
+e1165082ffb1fe366ebaf02d8526e7c4989ea9d2. Preserve JSON for all severities;
+high/critical findings block even without an available fix. A build, scanner,
+database or missing-artifact error also fails admission. No project suppressions.
+
+Critical finding fixed: the reviewed constraint still selected certifi
+2026.7.22. The real scan rejected it with PYSEC-2026-4320 /
+GHSA-6q48-6c7w-9gw2. Advance only that certificate-bundle pin to 2026.10.19;
+historical evidence remains unchanged. This removes trust in affected emSign
+roots according to the upstream critical advisory:
+https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2
+
+Verified local evidence:
+- Four full Python scans passed after the fix: Python 3.11.16 / 3.14.4, fresh
+  and reviewed. Fresh inventories contained 80 public packages; reviewed 79.
+  Each returned zero advisory records and pip check passed.
+- 24 targeted negative/admission/trusted-workflow tests passed. They cover
+  omitted packages, duplicate inventory, version substitution, skipped scanner
+  evidence, reported findings despite nominal scanner success, new extras,
+  failed/cancelled/skipped matrices, missing jobs, and trusted hold enforcement.
+- A first inventory collector saw checkout build metadata twice and rejected it.
+  Collecting from the installed interpreter in isolated mode corrected the
+  harness; duplicate rejection remains enabled. The initial real critical
+  certifi failure and corrected results are preserved in task evidence.
+
+Main branch protection policy authorized by the user:
+require pull requests; zero independent approvals (owner may merge their own PR);
+require branches up to date; enforce requirements for administrators; disallow
+force push/deletion. Required checks from GitHub Actions (application 15368):
+test, authority, authority-service, admission-hold,
+ubuntu-boundary-regressions, preview-dependency-admission.
+The first five already exist; materialize the new gate on the draft candidate
+before saving the final rule. Record/read back live enforcement separately.
+This source file does not itself activate GitHub protection or merge anything.
+Checks alone do not replace human review of changes to the checks themselves.
+
+Authority/evidence assessment:
+Invariant: missing proof must not be treated as successful admission. No Pulpo
+authority, writer, permit or production credential is introduced. GitHub branch
+admission is narrowed under the user's explicit authorization, not a new Pulpo
+authority plane. No legacy code/control path was imported.
+Flip: hostile/skipped evidence cannot masquerade as a successful package scan.
+Reverse: exact-inventory validation and matrix gate stop unsupported admission.
+Invert: absence of an executed effect or provider call is not scan evidence.
+Inside-Out: scanner code has read-only workflow token permissions, checkout
+credentials are not persisted, and no privileged pull_request_target execution
+or production secret is introduced.
+Darken: vulnerable/poisoned package inputs or CI edits could target the build;
+the threat case is not a claim that a compromise occurred in this repository.
+Lighten: passing advisory queries establish only recorded database results.
+Amplify: test all extras, two interpreter lines, both resolutions, four images,
+and repeated/missing/failed evidence. No performance optimization is introduced.
+Negate: isolated scan tooling preserves zero runtime dependencies for the core.
+Continue: publish a reviewable draft candidate and enforce the authorized rule;
+do not merge or deploy. Human reviewer count remains the user's chosen zero.
+
+Claim classes: local scan outcomes and targeted tests Verified; exact versions
+and initial failures Recorded; container/hosted-check results Unknown until
+their actual hosted runs complete; the policy above Proposed until read back.
+Temporal boundary: validate against exact prior local commit
+80a842fccbee3aeed5595ca8a2a1683e0c141c90 plus this candidate. It adds no historical
+credentials, policy or approval and asserts no general historical authority lesson.
+
+Limits: database scans do not prove absence of unknown vulnerabilities, scanner
+blind spots, embedded-library flaws or unsafe live service configuration. Ubuntu
+OS/WSL host servicing and native Windows tooling are outside this matrix.
+Local Docker access is unavailable; hosted image builds/scans supply that proof.
+No automatic update, merge or deployment is configured. CI artifacts preserve
+fresh evidence; committed local summaries remain dated evidence only.
