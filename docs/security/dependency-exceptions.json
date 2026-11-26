@@ -1,0 +1,685 @@
+{
+  "schema": "pulpo.dependency-exceptions.v1",
+  "decision": "Bounded, explicit, auditable exception. Risk accepted through 2026-12-25 by Mike Diegel. This acceptance does not constitute remediation, severity reduction, or scan clearance. The scans still run in full and still report everything; the gate passes only when every blocking finding is listed here, unexpired, and version-matched. Any new ID, expired entry, or package version change fails the gate. No VEX statement, no severity reduction, no suppression file, no continue-on-error.",
+  "expires": "2026-12-25",
+  "verified_against": {
+    "grype": "0.121.0",
+    "grype_db": "v6.1.10 (built 2026-11-25T06:22:21Z)",
+    "workflow_run": 45770184039,
+    "head": "d99be8e",
+    "images": [
+      "authority",
+      "custody",
+      "cloudsql-probe",
+      "kms-probe"
+    ],
+    "blocking_pairs_at_verification": 82,
+    "critical_at_verification": 0
+  },
+  "exceptions": [
+    {
+      "id": "CVE-2025-69720",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libncursesw6",
+          "version": "6.5+20250216-2"
+        },
+        {
+          "name": "libtinfo6",
+          "version": "6.5+20250216-2"
+        },
+        {
+          "name": "ncurses-base",
+          "version": "6.5+20250216-2"
+        },
+        {
+          "name": "ncurses-bin",
+          "version": "6.5+20250216-2"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "ncurses infocmp CLI removed at build; SUID/SGID stripped; component probe verifies infocmp absence. Affected code is terminal-info tooling, not a library path the services call.",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-102010",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "gcc-14-base",
+          "version": "14.2.0-19"
+        },
+        {
+          "name": "libgcc-s1",
+          "version": "14.2.0-19"
+        },
+        {
+          "name": "libstdc++6",
+          "version": "14.2.0-19"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "libstdc++ policy-based data structures (PBDS); affected code presence Unknown. No C++ service code in the images uses PBDS.",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-107493",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libssl3t64",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl-provider-legacy",
+          "version": "3.5.9-1~deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "OpenSSL PEM_X509_INFO_read_bio_ex() use-after-free; only applications passing a non-NULL stack are affected. No service code calls any PEM_X509_INFO_* function; OpenSSL's own callers (including TLS CA loading) always pass NULL.",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-107494",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libssl3t64",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl-provider-legacy",
+          "version": "3.5.9-1~deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "OpenSSL QUIC RETIRE_CONNECTION_ID queueing; no QUIC client or server in the services.",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-107496",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libssl3t64",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl-provider-legacy",
+          "version": "3.5.9-1~deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "OpenSSL CMS_encrypt() infinite loop on EC cert with group order 1; no CMS encryption in the services. TLS/QUIC do not use this path.",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-119373",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libsqlite3-0",
+          "version": "3.46.1-7+deb13u2"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "SQLite FTS5 heap overflow (detail=none prefix doclists); no FTS5 tables anywhere. The only SQLite code is test-only; production state is Postgres, so libsqlite3 is never loaded at runtime.",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-119374",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libsqlite3-0",
+          "version": "3.46.1-7+deb13u2"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "SQLite FTS5 heap overflow in fts5DoSecureDelete(); no FTS5, no secure-delete pragma. Library never loaded at runtime (see 119373).",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-119379",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libsqlite3-0",
+          "version": "3.46.1-7+deb13u2"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "SQLite session-extension heap overflow in sqlite3changeset_apply(); session extension never used, no changeset calls. Library never loaded at runtime (see 119373).",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-121482",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libssl3t64",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl-provider-legacy",
+          "version": "3.5.9-1~deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "OpenSSL CMS/PKCS#7 SignedData verification with CRL checking, quadratic CPU; no CMS/PKCS#7 verification in the services.",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-124709",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libssl3t64",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl-provider-legacy",
+          "version": "3.5.9-1~deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "OpenSSL QUIC server stream-state leak; no QUIC server. Services serve plain HTTP/TCP via uvicorn.",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-54369",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libacl1",
+          "version": "2.3.2-2+b1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "libacl tools (getfacl/setfacl/chacl) absent, verified by component probe; libacl1 library remains, reachability not proved absent.",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-54370",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libacl1",
+          "version": "2.3.2-2+b1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "libacl tools (getfacl/setfacl/chacl) absent, verified by component probe; libacl1 library remains, reachability not proved absent.",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-76642",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "bsdutils",
+          "version": "1:2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libblkid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "liblastlog2-2",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libmount1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libsmartcols1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libuuid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "login",
+          "version": "1:4.16.0-2+really2.41.5-0+deb13u1"
+        },
+        {
+          "name": "mount",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "util-linux",
+          "version": "2.41.5-0+deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "util-linux mount helper; hardening is mitigation, not a fix. mount/umount present without SUID, no capabilities, no-new-privileges; privileged launch outside the proof.",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-78408",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "bsdutils",
+          "version": "1:2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libblkid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "liblastlog2-2",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libmount1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libsmartcols1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libuuid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "login",
+          "version": "1:4.16.0-2+really2.41.5-0+deb13u1"
+        },
+        {
+          "name": "mount",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "util-linux",
+          "version": "2.41.5-0+deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "util-linux nsenter present without SUID, no capabilities; root/privileged launch outside the proof.",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-78409",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "bsdutils",
+          "version": "1:2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libblkid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "liblastlog2-2",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libmount1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libsmartcols1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libuuid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "login",
+          "version": "1:4.16.0-2+really2.41.5-0+deb13u1"
+        },
+        {
+          "name": "mount",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "util-linux",
+          "version": "2.41.5-0+deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "util-linux mount helper; hardening is mitigation, not a fix. mount/umount present without SUID, no capabilities, no-new-privileges; privileged launch outside the proof.",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-78410",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "bsdutils",
+          "version": "1:2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libblkid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "liblastlog2-2",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libmount1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libsmartcols1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "libuuid1",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "login",
+          "version": "1:4.16.0-2+really2.41.5-0+deb13u1"
+        },
+        {
+          "name": "mount",
+          "version": "2.41.5-0+deb13u1"
+        },
+        {
+          "name": "util-linux",
+          "version": "2.41.5-0+deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "util-linux mount helper; hardening is mitigation, not a fix. mount/umount present without SUID, no capabilities, no-new-privileges; privileged launch outside the proof.",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-82560",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "perl-base",
+          "version": "5.40.1-6+deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "Perl Pod::Text module fails to load in all four images (verified).",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-84243",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libc-bin",
+          "version": "2.41-12+deb13u5"
+        },
+        {
+          "name": "libc6",
+          "version": "2.41-12+deb13u5"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "glibc gettext LANGUAGE traversal; no gettext use in service code, no non-C locale installed, process env operator-set only (no SSH, no AcceptEnv surface).",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-84786",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libssl3t64",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl-provider-legacy",
+          "version": "3.5.9-1~deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "OpenSSL DANE TLS client NULL deref; DANE never enabled, Python ssl has no DANE support, no TLSA records.",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-88823",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libssl3t64",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl-provider-legacy",
+          "version": "3.5.9-1~deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "OpenSSL AES-GCM-SIV zero-length AAD reset; AES-GCM-SIV is not a TLS cipher, no direct EVP use (no ctypes/cffi).",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-9538",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "perl-base",
+          "version": "5.40.1-6+deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "Perl Archive::Tar module fails to load in all four images (verified).",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-95619",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "gcc-14-base",
+          "version": "14.2.0-19"
+        },
+        {
+          "name": "libgcc-s1",
+          "version": "14.2.0-19"
+        },
+        {
+          "name": "libstdc++6",
+          "version": "14.2.0-19"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "libstdc++ aligned allocation; path not cleared, Unknown. No C++ service code allocates through the affected path.",
+      "evidence": "docs/security/container-applicability-review.txt",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-95691",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libssl3t64",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl-provider-legacy",
+          "version": "3.5.9-1~deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "OpenSSL QUIC client use-after-free on retransmitted CRYPTO frames; no QUIC client.",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    },
+    {
+      "id": "CVE-2026-95692",
+      "scanner": "grype",
+      "severity": "High",
+      "packages": [
+        {
+          "name": "libssl3t64",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl",
+          "version": "3.5.9-1~deb13u1"
+        },
+        {
+          "name": "openssl-provider-legacy",
+          "version": "3.5.9-1~deb13u1"
+        }
+      ],
+      "fix_available": false,
+      "exposure": "OpenSSL AES-GCM-SIV short-IV heap out-of-bounds read; AES-GCM-SIV is not a TLS cipher, no direct EVP use (no ctypes/cffi).",
+      "evidence": "files/pr48-exposure-assessment-13-new-ids-2026-11-26.md (goal files; see exception PR body)",
+      "expires": "2026-12-25",
+      "accepted_by": "Mike Diegel (spikediegel-prog)",
+      "accepted_on": "2026-11-26",
+      "review": "Remove when an upstream fix lands. Re-assess if the services start using the vulnerable function (QUIC, CMS, FTS5, session changesets, DANE, AES-GCM-SIV, gettext with non-C locales). Never auto-renews."
+    }
+  ]
+}
