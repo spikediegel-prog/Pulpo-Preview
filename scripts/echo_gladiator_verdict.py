@@ -9,9 +9,14 @@ writes the structured verdict event once to the output directory.
 
 It never accepts eligibility, projection, or verdict outcomes from the
 record file or the workload: those are recomputed here from the kernel
-audit. Enforcement-consequence evidence is supplied by the operator as a
-separate ``--evidence`` file and is recorded verbatim in the structured
-event as operator-supplied, including its source label.
+audit. Enforcement-consequence and transfer evidence are supplied by the
+operator as separate JSON files, but the booleans in them are claims, not
+proof: each asserted step must be corroborated by an audit reference that
+resolves to an entry with the same object and revision in the
+reconstructed audit, or the claim is dropped. ``verified`` is computed
+here, never asserted in the file. The audit itself is a caller-supplied
+reconstruction: it establishes structural membership, not authenticated
+provenance, and this CLI states that on every run.
 
 Exit codes mirror ``run_gladiator_tournament.py``: 0 emitted (or already
 emitted), 2 expected-revision mismatch, 3 source tree not clean, 4 bad
@@ -34,7 +39,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from pulpo import GovernanceKernel, Policy  # noqa: E402
 from pulpo.gladiator_audit_projection import audit_references_present  # noqa: E402
 from pulpo.gladiator_gate import GladiatorRecord, completion_eligible  # noqa: E402
-from pulpo.gladiator_verdict_echo import EnforcementEvidence, emit  # noqa: E402
+from pulpo.gladiator_verdict_echo import (  # noqa: E402
+    EnforcementEvidence,
+    TransferEvidence,
+    emit,
+    verify_enforcement_evidence,
+    verify_transfer_evidence,
+)
+
+AUDIT_PROVENANCE = (
+    "caller-supplied reconstruction — structural membership only, "
+    "not authenticated provenance"
+)
 
 
 def _git(*args: str, cwd: Path) -> str:
@@ -94,24 +110,72 @@ def _load_audit(path: Path, kernel: GovernanceKernel) -> None:
         kernel._state.append(event, payload, timestamp_ns)
 
 
+_ENFORCEMENT_REF_STEPS = ("attempt", "boundary", "revocation", "containment")
+
+
 def _load_evidence(path: Path | None) -> EnforcementEvidence:
     if path is None:
         return EnforcementEvidence()
     data = _load_json(path, "evidence file")
     if not isinstance(data, dict):
         raise SystemExit(f"evidence file must contain one JSON object: {path}")
+    if "verified" in data or "dropped_steps" in data:
+        raise SystemExit(
+            "evidence file must not assert verification: "
+            "verification is computed from the audit"
+        )
     known = {f.name for f in dataclass_fields(EnforcementEvidence)}
     unknown = sorted(set(data) - known)
     if unknown:
         raise SystemExit(f"evidence file has unknown fields: {unknown}")
     for key, value in data.items():
-        if key != "source" and type(value) is not bool:
+        if key == "source":
+            if type(value) is not str or not value.strip():
+                raise SystemExit("evidence file source must be a non-empty string")
+        elif key == "refs":
+            if not isinstance(value, dict) or not all(
+                isinstance(ref_key, str) and isinstance(ref_value, str)
+                for ref_key, ref_value in value.items()
+            ):
+                raise SystemExit("evidence file refs must map step names to audit hashes")
+            unknown_steps = sorted(set(value) - set(_ENFORCEMENT_REF_STEPS))
+            if unknown_steps:
+                raise SystemExit(f"evidence file has unknown ref steps: {unknown_steps}")
+        elif type(value) is not bool:
             raise SystemExit(f"evidence file field {key!r} must be a boolean")
-    if "source" in data and (
-        type(data["source"]) is not str or not data["source"].strip()
-    ):
-        raise SystemExit("evidence file source must be a non-empty string")
     return EnforcementEvidence(**data)
+
+
+def _load_transfer_evidence(path: Path | None) -> TransferEvidence:
+    if path is None:
+        return TransferEvidence()
+    data = _load_json(path, "transfer evidence file")
+    if not isinstance(data, dict):
+        raise SystemExit(f"transfer evidence file must contain one JSON object: {path}")
+    if "verified" in data or "claim_dropped" in data:
+        raise SystemExit(
+            "transfer evidence file must not assert verification: "
+            "verification is computed from the audit"
+        )
+    known = {f.name for f in dataclass_fields(TransferEvidence)}
+    unknown = sorted(set(data) - known)
+    if unknown:
+        raise SystemExit(f"transfer evidence file has unknown fields: {unknown}")
+    for key, value in data.items():
+        if key == "source":
+            if type(value) is not str or not value.strip():
+                raise SystemExit(
+                    "transfer evidence file source must be a non-empty string"
+                )
+        elif key == "refs":
+            if not isinstance(value, list) or not all(
+                isinstance(ref, str) for ref in value
+            ):
+                raise SystemExit("transfer evidence file refs must be a list of audit hashes")
+            data["refs"] = tuple(value)
+        elif type(value) is not bool:
+            raise SystemExit(f"transfer evidence file field {key!r} must be a boolean")
+    return TransferEvidence(**data)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -120,6 +184,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--record", type=Path, required=True)
     parser.add_argument("--audit", type=Path, required=True)
     parser.add_argument("--evidence", type=Path)
+    parser.add_argument("--transfer-evidence", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--expected-revision", required=True)
     parser.add_argument("--timestamp")
@@ -147,10 +212,26 @@ def main(argv: list[str] | None = None) -> int:
         print("Requires clean canonical source", file=sys.stderr)
         return 3
 
-    record = _load_record(args.record)
-    kernel = GovernanceKernel(Policy(frozenset({"read"}), 0))
-    _load_audit(args.audit, kernel)
-    evidence = _load_evidence(args.evidence)
+    try:
+        record = _load_record(args.record)
+        kernel = GovernanceKernel(Policy(frozenset({"read"}), 0))
+        _load_audit(args.audit, kernel)
+        raw_evidence = _load_evidence(args.evidence)
+        raw_transfer = _load_transfer_evidence(args.transfer_evidence)
+    except SystemExit as exc:
+        print(exc, file=sys.stderr)
+        return 4
+    print(f"Audit provenance: {AUDIT_PROVENANCE}", file=sys.stderr)
+    evidence = verify_enforcement_evidence(
+        kernel, record, raw_evidence,
+        expected_object=record.object_id,
+        expected_revision=args.expected_revision,
+    )
+    transfer = verify_transfer_evidence(
+        kernel, record, raw_transfer,
+        expected_object=record.object_id,
+        expected_revision=args.expected_revision,
+    )
 
     eligible = completion_eligible(
         record,
@@ -168,6 +249,8 @@ def main(argv: list[str] | None = None) -> int:
         eligible=eligible,
         projection_passed=projection,
         enforcement=evidence,
+        breach=transfer,
+        audit_provenance=AUDIT_PROVENANCE,
         output_dir=out,
         timestamp=args.timestamp,
     )
