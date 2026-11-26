@@ -1,6 +1,7 @@
 """Negative transport controls retained when extracting #242's parser bounds."""
 import json
 from io import BytesIO
+import os
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
@@ -10,6 +11,7 @@ from pulpo.namecom_core import (
     NameComCoreClient, NameComCoreConfig, NameComResponse, NameComViolation,
     UrllibNameComTransport,
 )
+from pulpo.transport import sanitized_transport_environment
 
 
 class Response(BytesIO):
@@ -30,7 +32,15 @@ class ExternalResponseBoundsTests(unittest.TestCase):
                      json.dumps({'status': 'pending', 'extra': list(range(4097))}).encode(),
                      b'{"status":"pending","extra":' + b'[' * 2000 + b'0' + b']' * 2000 + b'}'):
             with self.subTest(length=len(body)):
-                client = AuthorityClient('https://authority.example.com')
+                # The client builds its HTTPS opener at construction;
+                # strip this shell's ambient CA/proxy controls first
+                # (the transport refuses ambient CA config without an
+                # explicit Pulpo bundle) so the parser-bounds test
+                # measures parsing, not the ambient environment.
+                with patch.dict(os.environ,
+                                sanitized_transport_environment(os.environ),
+                                clear=True):
+                    client = AuthorityClient('https://authority.example.com')
                 with patch.object(client._opener, 'open', return_value=Response(body)):
                     with self.assertRaisesRegex(RuntimeError, 'resource limits'):
                         client.poll_approval('request:1')
@@ -46,7 +56,12 @@ class ExternalResponseBoundsTests(unittest.TestCase):
                 self.assertEqual(1, transport.request.call_count)
 
     def test_namecom_bounds_success_and_http_error_reads_and_closes_both(self):
-        transport = UrllibNameComTransport()
+        # Same ambient-CA strip as above: the transport builds its
+        # HTTPS opener at construction.
+        with patch.dict(os.environ,
+                        sanitized_transport_environment(os.environ),
+                        clear=True):
+            transport = UrllibNameComTransport()
         response = Response(b'{}' + b' ' * 1_048_600)
         with patch.object(transport._opener, 'open', return_value=response):
             result = transport.request('GET', 'https://api.dev.name.com/core/v1/domains', {}, None)

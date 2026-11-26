@@ -6,10 +6,12 @@ import hashlib
 import hmac
 import importlib.util
 import json
+import os
 import sqlite3
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from pulpo import (
@@ -25,6 +27,7 @@ from pulpo import (
     SQLiteKernelState,
 )
 from pulpo.orchestrator import PulpoOrchestrator
+from pulpo.transport import sanitized_transport_environment
 from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for, signed_policy_envelope
 
 
@@ -169,7 +172,15 @@ class CeremonyEvidenceTests(unittest.TestCase):
                 "ceremony_evidence": asdict(evidence),
             }
 
-        client = AuthorityClient("https://authority.example.com", transport=transport)
+        # The client builds its HTTPS opener at construction; strip
+        # this shell's ambient CA/proxy controls first (the transport
+        # refuses ambient CA config without an explicit Pulpo bundle).
+        # The mock transport means the opener is never used for a
+        # real connection.
+        with patch.dict(os.environ,
+                        sanitized_transport_environment(os.environ),
+                        clear=True):
+            client = AuthorityClient("https://authority.example.com", transport=transport)
         orchestrator = PulpoOrchestrator(self.kernel, authority_client=client)
         target = orchestrator.lock_target("target:ceremony", self.intent)
         handle = orchestrator.request_target_approval(target, requested_ttl_ns=300)
