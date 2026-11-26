@@ -37,7 +37,7 @@ class DependencyScanningTests(unittest.TestCase):
     def test_new_extras_automatically_enter_install_profiles(self):
         root = Path(__file__).resolve().parents[1]
         selected = profiles(root)
-        self.assertIn('.[authority,mcp]', selected)
+        self.assertIn('.[authority,gpu,mcp,test]', selected)
         self.assertTrue(any('gcp-cloud-sql' in p and 'postgres-test' in p for p in selected))
         with tempfile.TemporaryDirectory() as directory:
             copy = Path(directory)
@@ -47,7 +47,7 @@ class DependencyScanningTests(unittest.TestCase):
                 if path == '.':
                     text = text.replace('[project.optional-dependencies]', '[project.optional-dependencies]\nfuture = ["future-package"]')
                 (copy / path / 'pyproject.toml').write_text(text)
-            self.assertIn('.[authority,future,mcp]', profiles(copy))
+            self.assertIn('.[authority,future,gpu,mcp,test]', profiles(copy))
 
     def test_skipped_failed_cancelled_or_missing_matrix_denies_admission(self):
         for result in ['failure', 'skipped', 'cancelled', None]:
