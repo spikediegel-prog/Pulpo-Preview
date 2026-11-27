@@ -169,7 +169,7 @@ from pulpo import (
 )
 from pulpo.incident_channel import freeze_incident_report
 from pulpo.state import InMemoryKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, signed_policy_envelope, trust_for
 
 
 NOW = 1_000_000
@@ -429,6 +429,7 @@ class FusionistAceIncidentScenarioTests(unittest.TestCase):
             self.policy,
             secret=b"unit-test-secret",
             approval_verifier=self.verifier,
+            policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=lambda: NOW,
         )
 
@@ -1313,14 +1314,14 @@ class FusionistAceIncidentScenarioTests(unittest.TestCase):
         # event classes the channel derives -- no more, no
         # fewer. The require_approval decision and the
         # reconciliation refusal above are both real,
-        # recorded refusals that contribute zero near-miss
-        # records at this commit, each for its stated
+        # recorded refusals that each contribute one near-miss
+        # record per occurrence (issue #375), each for its stated
         # reason.
         self.assertEqual(
-            len(permit_rejected) + len(approval_rejected) + len(denied_decisions),
+            len(permit_rejected) + len(approval_rejected) + len(denied_decisions) + len(require_approval_decisions),
             report.near_misses,
         )
-        self.assertEqual(6, report.near_misses)
+        self.assertEqual(7, report.near_misses)
         self.assertEqual(report.near_misses, len(report.records))
         for record in report.records:
             self.assertEqual("near_miss", record.kind)
@@ -1332,7 +1333,7 @@ class FusionistAceIncidentScenarioTests(unittest.TestCase):
             {
                 "permit_rejected": len(permit_rejected),
                 "approval_rejected": len(approval_rejected),
-                "decision": len(denied_decisions),
+                "decision": len(denied_decisions) + len(require_approval_decisions),
             },
             detail_counts,
         )
