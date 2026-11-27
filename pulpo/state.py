@@ -522,6 +522,25 @@ class InMemoryKernelState:
         self._audit: list[dict[str, Any]] = []
         self._audit_lock = RLock()
 
+    def _require_audit_signing_available(self) -> None:
+        # Finding 7 (Codex P1 on PR #420): every mutating transition
+        # below appends its signed audit record AFTER recording its
+        # mutations, so a signer that cannot sign — a verification-only
+        # CompositeAuditSigner raises on every sign() — failed the
+        # transition with the mutations already landed: canonical state
+        # changed with no signed evidence, irreversibly for a spent
+        # permit. Signing availability is a property of the signer's
+        # configuration, not of the record (every signer behind the
+        # AuditSigningKey seam either signs any record hash or none),
+        # so each transition probes the signer BEFORE its first
+        # mutation, inside the same locked sequence: a signer that
+        # cannot sign refuses the transition here, against an unchanged
+        # state, and a signer that passes the probe signs the
+        # transition's appends. The probe signature is discarded; it
+        # is recorded nowhere.
+        if self.audit_signer is not None:
+            self.audit_signer.sign("0" * 64)
+
     @property
     def audit(self) -> list[dict[str, Any]]:
         return self._audit
@@ -556,11 +575,13 @@ class InMemoryKernelState:
             if approval is not None:
                 replay = self.approval_replay_reason(approval.approval_id, approval.nonce)
                 if replay: return replay
+                self._require_audit_signing_available()
                 if approval.ceremony_evidence_id is not None:
                     replay = self.ceremony_replay_reason(approval.ceremony_evidence_id)
                     if replay: return replay
                 self._approval_ids.add(approval.approval_id); self._approval_nonces.add(approval.nonce)
                 self.append("approval_verified", approval.audit_payload, timestamp_ns)
+            self._require_audit_signing_available()
             self._issued[permit] = intent_hash
             self._permit_context[permit] = (policy_hash, timestamp_ns, expires_at_ns, issuer_hash)
             self.append("decision", {"outcome": "allow", "reason": decision_reason, "intent_hash": intent_hash, "policy_hash": policy_hash, "issuer_hash": issuer_hash, "issued_at_ns": timestamp_ns, "expires_at_ns": expires_at_ns}, timestamp_ns)
@@ -575,6 +596,7 @@ class InMemoryKernelState:
             if permit in self._permit_directives: raise ValueError("permit directive binding is immutable")
             if self.directive_status(binding.directive_id, binding.version, binding.directive_hash) != "active": raise ValueError("directive is not active for permit binding")
             if binding.parent_directive_hash is not None and self.directive_hash_status(binding.parent_directive_hash) != "active": raise ValueError("parent directive is not active for permit binding")
+            self._require_audit_signing_available()
             self._permit_directives[permit] = binding
             self.append("permit_bound_to_directive", {"intent_hash": intent_hash, **binding.audit_payload()}, timestamp_ns)
 
@@ -597,6 +619,13 @@ class InMemoryKernelState:
                 if status == "active" and not (binding.issued_at_ns <= timestamp_ns < binding.expires_at_ns): status = "directive_inactive"
                 valid = valid and status == "active"
                 payload.update(binding.audit_payload()); payload["directive_status"] = status
+            # Finding 7: signing availability is established before
+            # the first mutation on either path below — the spend on
+            # the valid path, the rejection record on the invalid one.
+            # The spend stays on its own one-line form: the race test
+            # in test_governance_security_regressions anchors its
+            # trace on that line's text.
+            self._require_audit_signing_available()
             if valid: self._spent.add(permit)
             self.append("permit_consumed" if valid else "permit_rejected", payload, timestamp_ns)
             return valid
@@ -643,6 +672,7 @@ class InMemoryKernelState:
             parent_hash = getattr(directive, "parent_directive_hash", None)
             if parent_hash is not None and self.directive_hash_status(parent_hash) != "active":
                 raise ValueError("parent directive is not active for activation")
+            self._require_audit_signing_available()
             self._directives[key] = (directive.directive_hash, False)
             self.append("directive_activated", {"directive_id": directive.directive_id, "version": directive.version, "directive_hash": directive.directive_hash, "authority_evidence": authority_evidence}, timestamp_ns)
 
@@ -650,6 +680,7 @@ class InMemoryKernelState:
         with self._audit_lock:
             key = (directive_id, version)
             if key not in self._directives: raise ValueError("directive version not found")
+            self._require_audit_signing_available()
             digest, _ = self._directives[key]; self._directives[key] = (digest, True)
             self.append("directive_revoked", {"directive_id": directive_id, "version": version, "directive_hash": digest, "authority_evidence": authority_evidence}, timestamp_ns)
 
