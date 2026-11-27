@@ -88,7 +88,7 @@ events, and denied decisions into near-miss records. A
 bare ``evaluate`` that returns ``require_approval`` --
 the kernel declining to mint without approval --
 appends a decision record to the canonical audit but is
-NOT derived as a near-miss by the channel. The scenario
+derived as a near-miss by the channel since the issue #375 fix. The scenario
 asserts both halves of that statement exactly as they
 hold; it does not smooth the second half over.
 
@@ -146,7 +146,7 @@ from pulpo import (
     PulpoOrchestrator,
 )
 from pulpo.incident_channel import freeze_incident_report
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, signed_policy_envelope, trust_for
 
 
 NOW = 1_000_000
@@ -366,6 +366,7 @@ class XenOrchestraIncidentScenarioTests(unittest.TestCase):
         self,
         *,
         verifier: HmacTestVerifier | None = None,
+        envelope_sign=None,
     ) -> GovernanceKernel:
         verifier = self.verifier if verifier is None else verifier
         policy = Policy(
@@ -378,6 +379,7 @@ class XenOrchestraIncidentScenarioTests(unittest.TestCase):
             policy,
             secret=b"unit-test-secret",
             approval_verifier=verifier,
+            policy_envelope=signed_policy_envelope(policy, verifier, sign=envelope_sign),
             clock=lambda: NOW,
         )
 
@@ -732,10 +734,10 @@ class XenOrchestraIncidentScenarioTests(unittest.TestCase):
         self.assertEqual(4, len(denied_decisions))
         self.assertEqual(1, len(require_approval_decisions))
         self.assertEqual(
-            len(permit_rejected) + len(approval_rejected) + len(denied_decisions),
+            len(permit_rejected) + len(approval_rejected) + len(denied_decisions) + len(require_approval_decisions),
             report.near_misses,
         )
-        self.assertEqual(10, report.near_misses)
+        self.assertEqual(11, report.near_misses)
         self.assertEqual(report.near_misses, len(report.records))
         for record in report.records:
             self.assertEqual("near_miss", record.kind)
@@ -747,7 +749,7 @@ class XenOrchestraIncidentScenarioTests(unittest.TestCase):
             {
                 "permit_rejected": len(permit_rejected),
                 "approval_rejected": len(approval_rejected),
-                "decision": len(denied_decisions),
+                "decision": len(denied_decisions) + len(require_approval_decisions),
             },
             detail_counts,
         )
@@ -868,7 +870,10 @@ class XenOrchestraIncidentScenarioTests(unittest.TestCase):
         double = _UnfilteredLookupVerifier()
         double.stored_tokens = (genuine_permit,)
         self.assertEqual(genuine_permit, double.lookup(EMPTY_OBJECT_TOKEN))
-        blind_kernel = self._kernel(verifier=double)
+        # The blind kernel's policy envelope must be "signed" with the
+        # same token the double's verify() accepts: the double verifies
+        # by possession, so an HMAC-signed envelope would fail its check.
+        blind_kernel = self._kernel(verifier=double, envelope_sign=lambda b: EMPTY_OBJECT_TOKEN)
         attack = signed_envelope(
             blind_kernel,
             TARGET_INTENT,
