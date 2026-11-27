@@ -906,6 +906,16 @@ cp "$REPO_ROOT/installer/calamares/install-pulpo.desktop" \
    "$ROOTFS/usr/share/applications/install-pulpo.desktop"
 cp "$REPO_ROOT/installer/calamares/install-pulpo.desktop" \
    "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop"
+# Desktop icon for "Install Pulpo Preview": the launcher says
+# Icon=pulpo, but no pulpo icon is installed in the image, so
+# GNOME falls back to a generic icon. Install the Pulpo icon
+# into the hicolor theme (512x512, the largest standard fixed
+# size; the loader scales it down for desktop use). The asset
+# is the octopus cropped from the square boot logo — the full
+# lockup (wordmark + tagline) would be illegible at icon size.
+mkdir -p "$ROOTFS/usr/share/icons/hicolor/512x512/apps"
+cp "$REPO_ROOT/installer/assets/pulpo-icon-512x512.png" \
+   "$ROOTFS/usr/share/icons/hicolor/512x512/apps/pulpo.png"
 # The trust half of "Allow Launching": GNOME shows the desktop
 # launcher untrusted until it is executable AND has metadata::trusted
 # set. PR #129 did the executable bit; the trust metadata is set at
@@ -960,6 +970,7 @@ for f in etc/calamares/settings.conf \
          usr/share/pulpo-installer/control-center/ubuntu_release.py \
          usr/share/pulpo-installer/control-center/check_ubuntu_deb.py \
          usr/share/applications/install-pulpo.desktop \
+         usr/share/icons/hicolor/512x512/apps/pulpo.png \
          usr/share/pulpo-installer/pulpo-trust-launcher.sh \
          etc/skel/.config/autostart/pulpo-trust-launcher.desktop; do
   [ -f "$ROOTFS/$f" ] || { echo "calamares file missing: $f" >&2; exit 1; }

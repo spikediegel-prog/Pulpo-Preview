@@ -16,6 +16,7 @@ import json
 import os
 import re
 import stat
+import struct
 import subprocess
 import tempfile
 import unittest
@@ -720,6 +721,16 @@ class BrandingTests(unittest.TestCase):
     def test_slideshow_uses_the_clean_splash(self):
         text = _read(CALAMARES / "branding" / "pulpo" / "show.qml")
         self.assertIn('source: "welcome.png"', text)
+
+    def test_desktop_icon_asset_is_512x512_png(self):
+        # The "Install Pulpo Preview" launcher says Icon=pulpo.
+        # The icon asset is the octopus cropped from the square
+        # boot logo (the full lockup with wordmark + tagline
+        # would be illegible at icon size), exactly 512x512.
+        data = (INSTALLER / "assets" / "pulpo-icon-512x512.png").read_bytes()
+        self.assertTrue(data.startswith(b"\x89PNG\r\n\x1a\n"))
+        width, height = struct.unpack(">II", data[16:24])
+        self.assertEqual((width, height), (512, 512))
 
 
 class ModuleConfigTests(unittest.TestCase):
@@ -2213,6 +2224,18 @@ class BuildIntegrationTests(unittest.TestCase):
         text = _read(INSTALLER / "build-iso.sh")
         self.assertIn('chmod +x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop"', text)
         self.assertIn('[ -x "$ROOTFS/etc/skel/Desktop/install-pulpo.desktop" ]', text)
+
+    def test_build_installs_pulpo_desktop_icon(self):
+        # The "Install Pulpo Preview" launcher says Icon=pulpo,
+        # but no pulpo icon was installed in the image, so GNOME
+        # showed a generic icon. The build must install the
+        # Pulpo icon into the hicolor theme and gate on it, so
+        # a regression fails the build loudly.
+        text = _read(INSTALLER / "build-iso.sh")
+        self.assertIn('mkdir -p "$ROOTFS/usr/share/icons/hicolor/512x512/apps"', text)
+        self.assertIn('"$REPO_ROOT/installer/assets/pulpo-icon-512x512.png"', text)
+        self.assertIn('"$ROOTFS/usr/share/icons/hicolor/512x512/apps/pulpo.png"', text)
+        self.assertIn("usr/share/icons/hicolor/512x512/apps/pulpo.png", text)
 
     def test_build_installs_trust_launcher(self):
         # PR #129 follow-up: chmod +x alone leaves the red-X
