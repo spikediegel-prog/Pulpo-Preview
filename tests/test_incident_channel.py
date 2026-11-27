@@ -228,14 +228,30 @@ class IncidentChannelAuditFeedTests(unittest.TestCase):
     def test_allowed_decision_and_other_events_emit_no_record(self):
         self.backend.append("decision", {"outcome": "allow", "reason": "ok",
                                          "intent_hash": "a" * 64}, 100)
-        self.backend.append("decision", {"outcome": "require_approval", "reason": "needs_human",
-                                         "intent_hash": "b" * 64}, 200)
         self.backend.append("permit_consumed", {"intent_hash": "c" * 64}, 300)
         self.backend.append("directive_activated", {"directive_id": "d-1"}, 400)
         report = freeze_incident_report(self.owner)
         self.assertEqual((), report.records)
         self.assertEqual(0, report.incidents)
         self.assertEqual(0, report.near_misses)
+
+    def test_require_approval_decision_is_a_near_miss(self):
+        # Issue #375: a bare evaluate returning require_approval mints
+        # no permit, but the attempt must surface as a near-miss.
+        self.backend.append("decision", {"outcome": "require_approval", "reason": "needs_human",
+                                         "intent_hash": "b" * 64}, 200)
+        report = freeze_incident_report(self.owner)
+        self.assertEqual(0, report.incidents)
+        self.assertEqual(1, report.near_misses)
+        (record,) = report.records
+        self.assertEqual("near_miss", record.kind)
+        self.assertEqual("canonical_audit", record.source)
+        self.assertEqual("decision", record.source_detail)
+        self.assertEqual("not_applicable", record.resolution)
+        self.assertEqual("needs_human", record.reason)
+        self.assertEqual(200, record.first_seen_ns)
+        self.assertTrue(record.record_id.startswith("near-miss:"))
+        self.assertEqual(self.kernel.audit[-1]["hash"], record.anchor_hash)
 
     def test_records_sort_by_first_seen_not_audit_order(self):
         self.backend.append("purchase_consequence_unknown",
