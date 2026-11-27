@@ -178,10 +178,15 @@ MUTATIONS: tuple[Mutation, ...] = (
         ("tests.test_directives.DirectiveProofTests.test_revoked_directive_invalidates_previously_issued_permit",),
     ),
     Mutation(
+        # The #420 audit-signing port moved the record hash check out of
+        # verify_audit's unkeyed loop and into verify_audit_report
+        # (verify_audit now delegates to the report). The anchor follows
+        # the check there; disabling it must still let the tamper test
+        # fail, or the mutation survives.
         "audit_record_hash_check_removed",
         "pulpo/kernel.py",
-        'if not hmac.compare_digest(record["hash"], expected):\n                return False',
-        'if False and not hmac.compare_digest(record["hash"], expected):\n                return False',
+        'if not hmac.compare_digest(str(record["hash"]), expected):\n                    report.update({"ok": False, "reason": "audit_hash_mismatch", "failed_record": index})\n                    return report',
+        'if False and not hmac.compare_digest(str(record["hash"]), expected):\n                    report.update({"ok": False, "reason": "audit_hash_mismatch", "failed_record": index})\n                    return report',
         ("tests.test_kernel.GovernanceKernelTests.test_audit_chain_detects_tampering",),
     ),
     Mutation(

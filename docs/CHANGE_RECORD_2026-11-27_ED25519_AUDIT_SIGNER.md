@@ -147,3 +147,18 @@ the HMAC enablement (PRs #355/#357) is the nearest analogue and its
 behavior is preserved by the unmodified pre-existing suite rather
 than by a temporal replay. Recorded explicitly per the repo rule;
 no temporal proof is manufactured.
+
+## 9. Addendum — constitutional mutation anchor (2026-11-27)
+
+`verify_audit` now delegates to `verify_audit_report`, so the
+record hash check the `audit_record_hash_check_removed` mutation
+anchored on (`if not hmac.compare_digest(record["hash"],
+expected): return False`) no longer exists in `pulpo/kernel.py` —
+the mutation script reported it "invalid" (0 anchors) and the
+constitutional-survival job failed. No mutation survived; the
+anchor was stale, not the check. The anchor now points at the
+same check inside `verify_audit_report` (`str(record["hash"])`
+form, `audit_hash_mismatch` report). Verified: the mutation
+script passes locally, 27/27 killed, 0 survived, survival
+score 1.0. No governance check is weakened — this restores the
+proof's ability to test the check.
