@@ -166,7 +166,7 @@ from pulpo import (
     PulpoOrchestrator,
 )
 from pulpo.incident_channel import freeze_incident_report
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, signed_policy_envelope, trust_for
 
 
 NOW = 1_000_000
@@ -329,6 +329,7 @@ class Php2ShellIncidentScenarioTests(unittest.TestCase):
             policy,
             secret=b"php2shell-scenario-secret",
             approval_verifier=self.verifier,
+            policy_envelope=signed_policy_envelope(policy, self.verifier),
             clock=lambda: NOW,
         )
 
