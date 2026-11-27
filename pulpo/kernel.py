@@ -533,8 +533,24 @@ class GovernanceKernel:
             and len(self._policy_signer_verifiers) == 2
             and (self.policy.version > 1 or self._recorded_policy_head() is not None)
         ):
+            # The dual-control refusal is checked first: it is the
+            # narrower, era-specific refusal, and a dual-control policy
+            # without an envelope must name the v2 envelope, not the v1
+            # one -- otherwise the v1 clause below (whose recorded-head
+            # disjunct has no trust condition) would answer for it.
             raise PolicyEnvelopeError(
                 "signed policy envelope v2 is required for a versioned dual-control policy or a recorded policy head"
+            )
+        elif (self.policy.authority_trust is not None and self.policy.version > 1) or (
+            self._recorded_policy_head() is not None
+        ):
+            # The requirement does not depend on an approval verifier
+            # being configured: omitting both the envelope and the
+            # verifier must not silently disable envelope enforcement
+            # where a chain is claimed (version > 1) or already exists
+            # (a recorded policy head) (Codex P1 on PR #418).
+            raise PolicyEnvelopeError(
+                "signed policy envelope is required for a versioned policy or a recorded policy head"
             )
 
     @property
@@ -694,6 +710,7 @@ class GovernanceKernel:
         return resolution, self.evaluate(resolution.target.intent, presenter=presenter)
 
     def evaluate(self, intent: Intent, *, presenter: str | None = None) -> Decision:
+        self._require_current_policy_head()
         digest = self.intent_hash(intent)
         failure = self._policy_failure(intent)
         if failure:
@@ -713,6 +730,7 @@ class GovernanceKernel:
     ) -> Decision:
         """Verify approval and, for opted-in actions, exact human-ceremony evidence."""
 
+        self._require_current_policy_head()
         digest = self.intent_hash(intent)
         failure = self._policy_failure(intent)
         if failure:
@@ -1076,21 +1094,37 @@ class GovernanceKernel:
 
     def _append_policy_head(self, envelope: PolicyEnvelope) -> None:
         timestamp = self._trusted_now()
-        self._state.append(
+        payload = {
+            "policy_version": envelope.version,
+            "policy_hash": envelope.policy_hash,
+            "previous_policy_hash": envelope.previous_policy_hash,
+            "envelope_hash": envelope.envelope_hash,
+            "authority_id": envelope.authority_id,
+            "verifier_id": envelope.verifier_id,
+            "key_id": envelope.key_id,
+            "deployment_id": envelope.deployment_id,
+            "trust_hash": envelope.trust_hash,
+        }
+        # Admission must be atomic: the check in _accept_policy_head()
+        # reads the recorded head, so the append goes through the state
+        # layer's compare-and-append primitive keyed on the policy
+        # version. Two concurrent constructors advancing from the same
+        # predecessor cannot both land a head for the same version --
+        # the loser is handed the head that won and refuses here if it
+        # is not its own envelope (Codex P1 on PR #418).
+        existing = self._state.append_unique(
             "policy_head_accepted",
-            {
-                "policy_version": envelope.version,
-                "policy_hash": envelope.policy_hash,
-                "previous_policy_hash": envelope.previous_policy_hash,
-                "envelope_hash": envelope.envelope_hash,
-                "authority_id": envelope.authority_id,
-                "verifier_id": envelope.verifier_id,
-                "key_id": envelope.key_id,
-                "deployment_id": envelope.deployment_id,
-                "trust_hash": envelope.trust_hash,
-            },
+            "policy_version",
+            envelope.version,
+            payload,
             timestamp if timestamp is not None else 0,
         )
+        if existing is not None and not hmac.compare_digest(
+            str(existing.get("policy_hash", "")), envelope.policy_hash
+        ):
+            raise PolicyEnvelopeError(
+                "policy envelope conflicts with the recorded policy head"
+            )
 
     def _verify_policy_envelope_v2(self, envelope: PolicyEnvelopeV2) -> PolicyEnvelopeV2:
         """Verify a dual-signed envelope against the dual-control trust.
@@ -1478,6 +1512,7 @@ class GovernanceKernel:
         timestamp_ns: int | None = None,
         presenter: str | None = None,
     ) -> Decision:
+        self._require_current_policy_head()
         # Presenter binding (Phase 3, Item 4B) is enforced in this
         # funnel so every issuance path inherits it: a policy that
         # requires binding mints no unbound permit, and a permit is
@@ -1569,6 +1604,63 @@ class GovernanceKernel:
             rejection_time,
         )
         return decision
+
+    def _require_current_policy_head(self) -> None:
+        """Fail closed if the recorded policy head has moved past this kernel.
+
+        Construction-time acceptance compares the kernel against the
+        recorded head once; it cannot see another kernel sharing the
+        same state advancing the recorded policy head afterwards. Every
+        consequential transition therefore re-reads the recorded head at
+        execution time: a kernel whose signed envelope is no longer the
+        recorded head refuses instead of issuing or consuming under the
+        superseded policy, and a kernel holding no envelope at all
+        refuses once a head has been recorded by someone else
+        (Codex P1 on PR #418).
+
+        Preview note: canonical hooks this into _require_pinned_policy
+        (the #355 policy-drift check, not ported here); Preview wires it
+        directly into evaluate / evaluate_with_approval / _issue_permit /
+        consume. The v2 branch is Preview-only: canonical's P1 fix landed
+        while #421 was still unmerged, so it never saw a v2 kernel at a
+        transition -- a v2 kernel holds no v1 envelope, so the v1-only
+        check would refuse every v2 transition against its own recorded
+        v2 head.
+        """
+
+        head = self._recorded_policy_head()
+        envelope_v2 = self._policy_envelope_v2
+        if envelope_v2 is not None:
+            if head is None:
+                raise PolicyEnvelopeError(
+                    "this kernel's signed policy head is missing from the recorded policy chain"
+                )
+            if (
+                head.get("schema") != "pulpo.policy-envelope.v2"
+                or head["policy_version"] != envelope_v2.version
+                or not hmac.compare_digest(head["policy_hash"], envelope_v2.policy_hash)
+            ):
+                raise PolicyEnvelopeError(
+                    "stale policy: this kernel's policy head has been superseded by the recorded policy head"
+                )
+            return
+        envelope = self._policy_envelope
+        if envelope is None:
+            if head is not None:
+                raise PolicyEnvelopeError(
+                    "a policy head is recorded in state but this kernel holds no signed policy envelope"
+                )
+            return
+        if head is None:
+            raise PolicyEnvelopeError(
+                "this kernel's signed policy head is missing from the recorded policy chain"
+            )
+        if head["policy_version"] != envelope.version or not hmac.compare_digest(
+            head["policy_hash"], envelope.policy_hash
+        ):
+            raise PolicyEnvelopeError(
+                "stale policy: this kernel's policy head has been superseded by the recorded policy head"
+            )
 
     def _permit_token_claims(self, permit: object) -> tuple[str, int, int, str] | None:
         """Authenticate a v3 permit token and return its signed claims.
@@ -1698,6 +1790,7 @@ class GovernanceKernel:
         presenter: str | None = None,
         presenter_proof: str | None = None,
     ) -> bool:
+        self._require_current_policy_head()
         digest = self.intent_hash(intent)
         # Ported from upstream #325: refuse consumption on an invalid clock
         # instead of stamping the permit with an untrusted timestamp.
