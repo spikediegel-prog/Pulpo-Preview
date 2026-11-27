@@ -100,7 +100,7 @@ events, and denied decisions into near-miss records. A
 bare ``evaluate`` that returns ``require_approval`` --
 the kernel declining to mint without approval --
 appends a decision record to the canonical audit but is
-NOT derived as a near-miss by the channel. The scenario
+derived as a near-miss by the channel since the issue #375 fix. The scenario
 asserts both halves of that statement exactly as they
 hold; it does not smooth the second half over.
 
@@ -158,7 +158,7 @@ from pulpo import (
     PulpoOrchestrator,
 )
 from pulpo.incident_channel import freeze_incident_report
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, signed_policy_envelope, trust_for
 
 
 NOW = 1_000_000
@@ -365,6 +365,7 @@ class NordLayerAiScoutIncidentScenarioTests(unittest.TestCase):
             policy,
             secret=b"unit-test-secret",
             approval_verifier=self.verifier,
+            policy_envelope=signed_policy_envelope(policy, self.verifier),
             clock=lambda: NOW,
         )
 
@@ -790,10 +791,10 @@ class NordLayerAiScoutIncidentScenarioTests(unittest.TestCase):
         # audit-recorded attempt that contributes zero
         # near-miss records at this commit.
         self.assertEqual(
-            len(permit_rejected) + len(approval_rejected) + len(denied_decisions),
+            len(permit_rejected) + len(approval_rejected) + len(denied_decisions) + len(require_approval_decisions),
             report.near_misses,
         )
-        self.assertEqual(7, report.near_misses)
+        self.assertEqual(8, report.near_misses)
         self.assertEqual(report.near_misses, len(report.records))
         for record in report.records:
             self.assertEqual("near_miss", record.kind)
@@ -805,7 +806,7 @@ class NordLayerAiScoutIncidentScenarioTests(unittest.TestCase):
             {
                 "permit_rejected": len(permit_rejected),
                 "approval_rejected": len(approval_rejected),
-                "decision": len(denied_decisions),
+                "decision": len(denied_decisions) + len(require_approval_decisions),
             },
             detail_counts,
         )
