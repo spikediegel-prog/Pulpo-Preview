@@ -154,7 +154,7 @@ events, and denied decisions into near-miss records.
 A bare ``evaluate`` that returns ``require_approval``
 -- the kernel declining to mint without approval --
 appends a decision record to the canonical audit but
-is NOT derived as a near-miss by the channel. The
+is derived as a near-miss by the channel since the issue #375 fix. The
 scenario asserts both halves of that statement
 exactly as they hold; it does not smooth the second
 half over.
@@ -221,7 +221,7 @@ from pulpo import (
     PulpoOrchestrator,
 )
 from pulpo.incident_channel import freeze_incident_report
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, signed_policy_envelope, trust_for
 
 
 NOW = 1_000_000
@@ -424,7 +424,7 @@ class CreditMutuelArkeaIncidentScenarioTests(unittest.TestCase):
     def _kernel(self, *, clock=None, permit_ttl_ns=None) -> GovernanceKernel:
         policy_kwargs = {}
         if permit_ttl_ns is not None:
-            policy_kwargs["max_permit_ttl_ns"] = permit_ttl_ns
+            policy_kwargs["permit_ttl_ns"] = permit_ttl_ns
         policy = Policy(
             frozenset({ACTION}),
             10_000,
@@ -436,6 +436,7 @@ class CreditMutuelArkeaIncidentScenarioTests(unittest.TestCase):
             policy,
             secret=b"unit-test-secret",
             approval_verifier=self.verifier,
+            policy_envelope=signed_policy_envelope(policy, self.verifier),
             clock=(lambda: NOW) if clock is None else clock,
         )
 
@@ -446,12 +447,18 @@ class CreditMutuelArkeaIncidentScenarioTests(unittest.TestCase):
         *,
         approval_id: str = "approval-1",
         nonce: str = "approval-nonce-1",
+        ttl_ns: int = 1_000,
     ) -> str:
+        # Preview caps a permit's life at the approval envelope's expiry
+        # (kernel.py: the approval-expiry cap retained by the 2026-10-21
+        # selective security backport), so a test that ties a permit's life
+        # to a longer policy window must sign an envelope that spans it.
         envelope = signed_envelope(
             kernel,
             intent,
             self.verifier,
             now_ns=NOW,
+            ttl_ns=ttl_ns,
             approval_id=approval_id,
             nonce=nonce,
         )
@@ -607,11 +614,16 @@ class CreditMutuelArkeaIncidentScenarioTests(unittest.TestCase):
         # approval verifies and a permit mints for the
         # exact approved payment. The permit is RETAINED
         # here -- the artifact step 2 discarded.
+        # The envelope must span the relationship window too: Preview caps
+        # the permit at the envelope's expiry, so the default 1_000 ns
+        # envelope would kill the permit before the policy's 1_500 ns
+        # window ends, and the in-window control below would fail.
         permit = self._issue_permit(
             kernel,
             APPROVED_INTENT,
             approval_id="approval-revocation-consume",
             nonce="nonce-revocation-consume",
+            ttl_ns=RELATIONSHIP_PERMIT_TTL_NS,
         )
         # In-window control, on a parallel kernel under
         # the identical tied-lifetime policy: the same
@@ -631,6 +643,7 @@ class CreditMutuelArkeaIncidentScenarioTests(unittest.TestCase):
             APPROVED_INTENT,
             approval_id="approval-revocation-control",
             nonce="nonce-revocation-control",
+            ttl_ns=RELATIONSHIP_PERMIT_TTL_NS,
         )
         control_clock[0] = NOW + 1_000
         self.assertTrue(
@@ -873,13 +886,14 @@ class CreditMutuelArkeaIncidentScenarioTests(unittest.TestCase):
         # Every derived near-miss is accounted for by the
         # event classes the channel derives -- no more,
         # no fewer. The require_approval decision above
-        # contributes zero near-miss records at this
-        # commit.
+        # contributes one near-miss record per occurrence
+        # (issue #375).
         self.assertEqual(
-            len(permit_rejected) + len(approval_rejected) + len(denied_decisions),
+            len(permit_rejected) + len(approval_rejected) + len(denied_decisions)
+            + len(require_approval_decisions),
             report.near_misses,
         )
-        self.assertEqual(7, report.near_misses)
+        self.assertEqual(8, report.near_misses)
         self.assertEqual(report.near_misses, len(report.records))
         for record in report.records:
             self.assertEqual("near_miss", record.kind)
@@ -891,7 +905,7 @@ class CreditMutuelArkeaIncidentScenarioTests(unittest.TestCase):
             {
                 "permit_rejected": len(permit_rejected),
                 "approval_rejected": len(approval_rejected),
-                "decision": len(denied_decisions),
+                "decision": len(denied_decisions) + len(require_approval_decisions),
             },
             detail_counts,
         )
