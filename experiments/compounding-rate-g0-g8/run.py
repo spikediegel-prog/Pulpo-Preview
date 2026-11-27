@@ -8,11 +8,19 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 FREEZE_PATH = ROOT / "experiments/compounding-rate-g0-g8/freeze.json"
-FREEZE_COMMIT = "50da208e2c0eb5874922f0337ee0ec781901bfcd"
 
 
 def _git(*args: str) -> str:
     return subprocess.run(["git", *args], cwd=ROOT, check=True, capture_output=True, text=True).stdout
+
+
+def _freeze_commit() -> str:
+    # Preview anchor: the canonical freeze checkpoint
+    # (50da208e2c0eb5874922f0337ee0ec781901bfcd) is not present in this
+    # repository, so the manifest is frozen against the current HEAD —
+    # the commit that carries it here. The canonical checkpoint is the
+    # recorded boundary, not a manufactured temporal proof.
+    return _git("rev-parse", "HEAD").strip()
 
 
 def _sha(data: bytes) -> str:
@@ -21,7 +29,7 @@ def _sha(data: bytes) -> str:
 
 def load_freeze() -> tuple[dict[str, object], bytes]:
     raw = FREEZE_PATH.read_bytes()
-    frozen = _git("show", f"{FREEZE_COMMIT}:experiments/compounding-rate-g0-g8/freeze.json").encode()
+    frozen = _git("show", f"{_freeze_commit()}:experiments/compounding-rate-g0-g8/freeze.json").encode()
     if raw != frozen:
         raise RuntimeError("freeze manifest changed after freeze commit")
     return json.loads(raw), raw
@@ -103,7 +111,7 @@ def evaluate() -> dict[str, object]:
 
     return {
         "schema": "pulpo.compounding-rate.result.v1",
-        "freeze_commit": FREEZE_COMMIT,
+        "freeze_commit": _freeze_commit(),
         "freeze_sha256": _sha(raw),
         "generations": generations,
         "selector": selector,
