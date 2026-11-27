@@ -1231,6 +1231,23 @@ class GovernanceKernel:
                 )
                 return False
         else:
+            # Token v2 (canonical Phase 2, Item 4; ported for the #406
+            # replay): the signed expiry is enforced HERE, at consume
+            # time, before the store is consulted -- an expired permit
+            # fails closed exactly as a revoked one does. The expiry
+            # was authenticated with the token, so no store row and no
+            # holder edit can extend it. The store re-checks the expiry
+            # recorded at issuance as the second layer. The refusal is
+            # recorded with its reason, so the attempt stays in evidence
+            # as an expiry refusal rather than a bare rejection.
+            _token_digest, _issued_at_ns, expires_at_ns, _presenter_hash = claims
+            if now_ns >= expires_at_ns:
+                self._state.append(
+                    "permit_rejected",
+                    {"intent_hash": digest, "reason": "permit_expired"},
+                    now_ns,
+                )
+                return False
             # Intent binding (ported from upstream PR #355, Codex P1):
             # the authenticated token is also bound to the presented
             # intent HERE, before the store is consulted. The store's
