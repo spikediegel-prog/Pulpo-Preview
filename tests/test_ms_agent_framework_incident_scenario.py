@@ -143,7 +143,7 @@ from pulpo.directives import (
     GovernedDirectiveProjection,
 )
 from pulpo.state import InMemoryKernelState
-from tests.authority_support import HmacTestVerifier, signed_envelope, trust_for
+from tests.authority_support import HmacTestVerifier, signed_envelope, signed_policy_envelope, trust_for
 from tests.test_directives import OPERATOR, directive
 
 
@@ -537,6 +537,7 @@ class MsAgentFrameworkApprovalPathTests(unittest.TestCase):
             self.policy,
             secret=b"ms-agent-framework-scenario-kernel-secret",
             approval_verifier=self.verifier,
+            policy_envelope=signed_policy_envelope(self.policy, self.verifier),
             clock=lambda: NOW,
             **kwargs,
         )
@@ -1053,6 +1054,7 @@ class MsAgentFrameworkRevocationTests(unittest.TestCase):
             policy,
             secret=b"ms-agent-framework-directive-scenario-secret",
             approval_verifier=verifier,
+            policy_envelope=signed_policy_envelope(policy, verifier),
             clock=lambda: NOW,
             state=state,
         )
