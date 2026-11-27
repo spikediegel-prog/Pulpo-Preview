@@ -37,6 +37,7 @@ from .kernel import (
     policy_hash_for,
 )
 from .namecom import NameComCoreAdapter
+from .permit_gate import PermitGate, PermitRefused, require_permit, spend_permit
 from .performance_tuning import (
     AdaptiveAuditVerificationEngine,
     AuditPerformanceTuner,
@@ -101,6 +102,8 @@ __all__ = [
     "P256ApprovalVerifier",
     "P256CeremonyVerifier",
     "PerformanceProfile",
+    "PermitGate",
+    "PermitRefused",
     "Policy",
     "PolicyEnvelope",
     "PolicyEnvelopeError",
@@ -116,4 +119,6 @@ __all__ = [
     "TargetResolution",
     "artifact_hash",
     "evaluate_locked_target_with_approval",
+    "require_permit",
+    "spend_permit",
 ]
