@@ -1580,7 +1580,7 @@ class InstallCcDebTests(unittest.TestCase):
         # them, which is what the failure-path tests assert).
         self.bundle = self.root / "bundle"
         self.bundle.mkdir()
-        (self.bundle / "pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb").write_bytes(b"")
+        (self.bundle / "pulpo-control-center_0.1.0~ubuntu.preview.58+e3.dd7e502_amd64.deb").write_bytes(b"")
         (self.bundle / "python3-tk_3.12.3-1_amd64.deb").write_bytes(b"")
 
     def _source(self, snippet):
@@ -1606,10 +1606,10 @@ class InstallCcDebTests(unittest.TestCase):
         # statement -- verify() checks the statement against
         # them. A release change must update all three together.
         text = _read(self.SCRIPT)
-        self.assertIn('EXPECTED_VERSION="0.1.0~ubuntu.preview.50+e3.0625357"', text)
-        self.assertIn('EXPECTED_REVISION="0625357feddcb763b3861ac2eb771682582acd5e"', text)
+        self.assertIn('EXPECTED_VERSION="0.1.0~ubuntu.preview.58+e3.dd7e502"', text)
+        self.assertIn('EXPECTED_REVISION="dd7e502849498ed0d48c606e82baa92a40b93f16"', text)
         self.assertIn('PUBLISHER_FINGERPRINT="19B555C6055FD7B64B848DA67F7B8449ED6FEB20"', text)
-        self.assertIn('CC_DEB_NAME="pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb"', text)
+        self.assertIn('CC_DEB_NAME="pulpo-control-center_0.1.0~ubuntu.preview.58+e3.dd7e502_amd64.deb"', text)
 
     def test_verify_invocation(self):
         # The step must verify with the Control Center's own
@@ -1741,7 +1741,7 @@ class InstallCcDebTests(unittest.TestCase):
         result = self._source(
             'source "$1"; bundle_debs "%s"' % self.bundle)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb", result.stdout)
+        self.assertIn("pulpo-control-center_0.1.0~ubuntu.preview.58+e3.dd7e502_amd64.deb", result.stdout)
         self.assertIn("python3-tk_3.12.3-1_amd64.deb", result.stdout)
 
     def test_verify_release_fails_on_missing_bundle(self):
@@ -1767,7 +1767,7 @@ class InstallCcDebTests(unittest.TestCase):
             "#!/bin/bash\n"
             "echo '{\"verified\": true, \"fresh\": false, "
             "\"freshness\": \"expired\", \"notice\": "
-            "\"Release 0.1.0~ubuntu.preview.50+e3.0625357 is authentic "
+            "\"Release 0.1.0~ubuntu.preview.58+e3.dd7e502 is authentic "
             "but its statement expired.\"}'\n")
         stub.chmod(0o755)
         log_file = Path(self.tmp.name) / "install-cc-deb.log"
@@ -2202,7 +2202,7 @@ class BuildIntegrationTests(unittest.TestCase):
 
     def test_build_uses_the_release_cc_deb(self):
         text = _read(INSTALLER / "build-iso.sh")
-        self.assertIn("0625357", text)
+        self.assertIn("dd7e502", text)
         self.assertIn("Pulpo-Control-Center-Standalone", text)
         self.assertNotIn("b17b654", text)
 
@@ -2230,11 +2230,15 @@ class BuildIntegrationTests(unittest.TestCase):
         # but no pulpo icon was installed in the image, so GNOME
         # showed a generic icon. The build must install the
         # Pulpo icon into the hicolor theme and gate on it, so
-        # a regression fails the build loudly.
+        # a regression fails the build loudly. Build #37 shipped
+        # the icon file but a stale icon-theme.cache hid it, so
+        # the build must also refresh the hicolor cache after
+        # copying the icon in.
         text = _read(INSTALLER / "build-iso.sh")
         self.assertIn('mkdir -p "$ROOTFS/usr/share/icons/hicolor/512x512/apps"', text)
         self.assertIn('"$REPO_ROOT/installer/assets/pulpo-icon-512x512.png"', text)
         self.assertIn('"$ROOTFS/usr/share/icons/hicolor/512x512/apps/pulpo.png"', text)
+        self.assertIn('gtk-update-icon-cache -f "$ROOTFS/usr/share/icons/hicolor"', text)
         self.assertIn("usr/share/icons/hicolor/512x512/apps/pulpo.png", text)
 
     def test_build_installs_trust_launcher(self):
@@ -2859,7 +2863,7 @@ class VerifyCleanIsoTests(unittest.TestCase):
             "squashfs-root/usr/share/pulpo-installer/control-center/publisher.gpg",
             "squashfs-root/usr/share/pulpo-installer/control-center/ubuntu_release.py",
             "squashfs-root/usr/share/pulpo-installer/control-center/check_ubuntu_deb.py",
-            "squashfs-root/usr/share/pulpo-installer/control-center/pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb",
+            "squashfs-root/usr/share/pulpo-installer/control-center/pulpo-control-center_0.1.0~ubuntu.preview.58+e3.dd7e502_amd64.deb",
             "squashfs-root/etc/calamares/settings.conf",
             "squashfs-root/usr/lib/systemd/system/sshd-keygen@.service.d/disable-sshd-keygen-if-cloud-init-active.conf",
         ]
@@ -2970,7 +2974,7 @@ class VerifyCleanIsoTests(unittest.TestCase):
         (rootfs / "etc/calamares").mkdir(parents=True)
         for f in ("release.json", "publisher.gpg", "ubuntu_release.py",
                   "check_ubuntu_deb.py",
-                  "pulpo-control-center_0.1.0~ubuntu.preview.50+e3.0625357_amd64.deb"):
+                  "pulpo-control-center_0.1.0~ubuntu.preview.58+e3.dd7e502_amd64.deb"):
             (rootfs / "usr/share/pulpo-installer/control-center" / f).write_bytes(b"")
         settings = "shellprocess@pulpo-config\n"
         if dev:
