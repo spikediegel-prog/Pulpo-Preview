@@ -56,9 +56,402 @@ def _canonical(value: Any) -> bytes:
     return _CANONICAL_ENCODER.encode(value).encode()
 
 
-def _audit_record(previous_hash: str, event: str, payload: dict[str, Any], timestamp_ns: int) -> dict[str, Any]:
+class AuditSigningKey(Protocol):
+    """The signer/verifier seam for audit records.
+
+    A state backend holds one of these: it signs each appended
+    record's hash and verifies every signature on the chain at boot.
+    ``AuditSigner`` (HMAC) is the original implementation;
+    ``Ed25519AuditSigner`` adds the asymmetric era, and
+    ``CompositeAuditSigner`` verifies across eras during a
+    transition. Verification is the security-critical half: a
+    missing, malformed, or wrong-era signature must never verify.
+    """
+
+    algorithm: str
+
+    def sign(self, record_hash: str) -> str: ...
+
+    def verify(self, record_hash: str, signature: Any) -> bool: ...
+
+
+#: Audit signature algorithms, ordered oldest era first. The order is
+#: the era order: once a chain carries a signature from a later era,
+#: a signature from an earlier era is a downgrade and is refused at
+#: verification (see GovernanceKernel.verify_audit_report).
+AUDIT_SIGNATURE_ALGORITHMS = ("hmac-sha256", "ed25519")
+
+_ED25519_SIGNATURE_PREFIX = "ed25519:"
+
+
+def audit_signature_algorithm(signature: Any) -> str | None:
+    """Classify a stored audit signature value by era.
+
+    HMAC-era signatures are the bare 64-character lowercase hex of the
+    original record shape — byte-identical to every signature written
+    before the Ed25519 era existed, so existing chains classify
+    without any record being rewritten. Ed25519-era signatures carry
+    the explicit ``ed25519:`` tag over the 128-character hex of the
+    64-byte signature. Anything else — including a bare tag with no
+    well-formed signature behind it — is malformed and classifies as
+    None: it verifies under no era.
+    """
+
+    if not isinstance(signature, str) or not signature:
+        return None
+    if signature.startswith(_ED25519_SIGNATURE_PREFIX):
+        encoded = signature[len(_ED25519_SIGNATURE_PREFIX):]
+        if len(encoded) == 128 and all(
+            character in "0123456789abcdef" for character in encoded
+        ):
+            return "ed25519"
+        return None
+    if len(signature) == 64 and all(
+        character in "0123456789abcdef" for character in signature
+    ):
+        return "hmac-sha256"
+    return None
+
+
+class AuditSigner:
+    """HMAC-SHA256 signer/verifier for audit records (Phase 2, Item 1).
+
+    One signer per deployment, keyed by a dedicated ``audit-secret``
+    that is deliberately NOT the kernel secret: a single theft must not
+    yield both permit minting and undetectable history forgery. The
+    signature covers the record's own ``hash`` and is stored as a
+    sibling field, excluded from the hashed body — the exact pattern
+    ``AuditAnchor`` uses (``signing_payload()`` excludes ``signature``).
+    The field is algorithm-agile: the Ed25519 signer below succeeds
+    this class behind the same record shape without changing the
+    chain math. Verification is constant-time; a missing, non-string,
+    malformed, or wrong-era signature never verifies.
+    """
+
+    algorithm = "hmac-sha256"
+
+    def __init__(self, secret: bytes) -> None:
+        if not secret:
+            raise ValueError("audit secret must be non-empty")
+        self._secret = secret
+
+    def sign(self, record_hash: str) -> str:
+        if not isinstance(record_hash, str):
+            raise TypeError("record hash must be a string")
+        return hmac.new(self._secret, record_hash.encode("utf-8"), sha256).hexdigest()
+
+    def verify(self, record_hash: str, signature: Any) -> bool:
+        if audit_signature_algorithm(signature) != "hmac-sha256":
+            # A tagged Ed25519-era value, or anything malformed, is
+            # not an HMAC signature and never verifies as one.
+            return False
+        try:
+            expected = self.sign(record_hash)
+        except (AttributeError, TypeError, ValueError):
+            return False
+        return hmac.compare_digest(expected, signature)
+
+
+def _ed25519_private_key_class() -> Any:
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    except ImportError as exc:
+        raise RuntimeError(
+            "Ed25519 audit signing requires the pulpo[authority] extra"
+        ) from exc
+    return Ed25519PrivateKey
+
+
+def _ed25519_public_key_class() -> Any:
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    except ImportError as exc:
+        raise RuntimeError(
+            "Ed25519 audit verification requires the pulpo[authority] extra"
+        ) from exc
+    return Ed25519PublicKey
+
+
+class Ed25519AuditVerifier:
+    """Verification-only audit signer pinned to one Ed25519 public key.
+
+    This is the publishable half of the Ed25519 era: anyone holding
+    the public key — exported as a standalone artifact (see
+    ``Ed25519AuditSigner.public_artifact``) — can verify an
+    Ed25519-era chain without holding any deployment secret, the
+    property the symmetric HMAC era cannot offer. It holds no private
+    material and cannot sign.
+    """
+
+    algorithm = "ed25519"
+
+    def __init__(self, public_key: bytes) -> None:
+        if len(public_key) != 32:
+            raise ValueError("Ed25519 public_key must be exactly 32 bytes")
+        self._public_key_bytes = bytes(public_key)
+        self._public_key = _ed25519_public_key_class().from_public_bytes(
+            self._public_key_bytes
+        )
+        self.key_fingerprint = sha256(self._public_key_bytes).hexdigest()
+
+    @classmethod
+    def from_public_key_hex(cls, text: str) -> "Ed25519AuditVerifier":
+        if not isinstance(text, str):
+            raise TypeError("public key hex must be a string")
+        try:
+            public_key = bytes.fromhex(text.strip())
+        except ValueError as exc:
+            raise ValueError("public key hex is malformed") from exc
+        return cls(public_key)
+
+    @classmethod
+    def from_artifact(cls, artifact: dict[str, Any]) -> "Ed25519AuditVerifier":
+        """Build a verifier from a published verification-key artifact.
+
+        The artifact's fingerprint is checked against the key it
+        carries: a substituted key under a copied fingerprint (or the
+        reverse) is refused here, before any chain is trusted to it.
+        """
+
+        if not isinstance(artifact, dict):
+            raise TypeError("verification-key artifact must be a mapping")
+        if artifact.get("algorithm") != "ed25519":
+            raise ValueError("verification-key artifact is not an Ed25519 key")
+        verifier = cls.from_public_key_hex(artifact.get("public_key"))
+        fingerprint = artifact.get("key_fingerprint")
+        if fingerprint is not None and fingerprint != verifier.key_fingerprint:
+            raise ValueError(
+                "verification-key artifact fingerprint does not match its key"
+            )
+        return verifier
+
+    def public_key_bytes(self) -> bytes:
+        return self._public_key_bytes
+
+    def public_key_hex(self) -> str:
+        return self._public_key_bytes.hex()
+
+    def sign(self, record_hash: str) -> str:
+        raise RuntimeError("an Ed25519 audit verifier holds no signing key")
+
+    def verify(self, record_hash: str, signature: Any) -> bool:
+        if audit_signature_algorithm(signature) != "ed25519":
+            # A bare HMAC-era value, or anything malformed, is not an
+            # Ed25519 signature and never verifies as one.
+            return False
+        encoded = signature[len(_ED25519_SIGNATURE_PREFIX):]
+        if len(encoded) != 128 or any(
+            character not in "0123456789abcdef" for character in encoded
+        ):
+            return False
+        if not isinstance(record_hash, str):
+            return False
+        try:
+            from cryptography.exceptions import InvalidSignature
+
+            self._public_key.verify(
+                bytes.fromhex(encoded), record_hash.encode("utf-8")
+            )
+        except (InvalidSignature, ValueError):
+            return False
+        return True
+
+
+class Ed25519AuditSigner:
+    """Ed25519 signer/verifier for audit records.
+
+    The asymmetric successor to ``AuditSigner``: the signature still
+    covers the record's ``hash`` and is stored as the same sibling
+    field, but the stored value is tagged (``ed25519:<hex>``) so a
+    chain can carry both eras and verification can dispatch per
+    record. The private key is a 32-byte seed held as a custody file
+    (hex text in an owner-only file beside the state it attests —
+    the ``audit-secret`` pattern, with asymmetric custody: the file
+    is the deployment's signing key and must never be published);
+    the public key is exportable as a standalone artifact for
+    publication, so third parties verify with
+    ``Ed25519AuditVerifier`` and no secret at all.
+    """
+
+    algorithm = "ed25519"
+
+    def __init__(self, private_key: bytes) -> None:
+        if len(private_key) != 32:
+            raise ValueError("Ed25519 private_key must be exactly 32 bytes")
+        self._private_key = _ed25519_private_key_class().from_private_bytes(
+            bytes(private_key)
+        )
+        self._verifier = Ed25519AuditVerifier(self.public_key_bytes())
+
+    @classmethod
+    def generate(cls) -> "Ed25519AuditSigner":
+        private_key = _ed25519_private_key_class().generate()
+        from cryptography.hazmat.primitives import serialization
+
+        seed = private_key.private_bytes(
+            serialization.Encoding.Raw,
+            serialization.PrivateFormat.Raw,
+            serialization.NoEncryption(),
+        )
+        return cls(seed)
+
+    @classmethod
+    def from_custody_file(cls, path: str | PathLike[str]) -> "Ed25519AuditSigner":
+        """Load the signing key from its custody file.
+
+        The file holds the 32-byte seed as hex text (the deployment
+        secret-file shape). Loading never creates or repairs the
+        file: provisioning is an explicit operator act
+        (``save_custody_file``), mirroring the load-only half of the
+        ops secret custody split.
+        """
+
+        with open(path, "rb") as handle:
+            raw = handle.read()
+        try:
+            seed = bytes.fromhex(raw.decode("utf-8").strip())
+        except (UnicodeDecodeError, ValueError):
+            seed = raw.strip()
+        if len(seed) != 32:
+            raise ValueError("Ed25519 audit custody file is malformed")
+        return cls(seed)
+
+    def save_custody_file(self, path: str | PathLike[str]) -> None:
+        """Write the signing key to a new owner-only custody file.
+
+        Refuses to overwrite: a collision means a key already lives
+        there, and silently replacing a deployment's audit signing
+        key would orphan every chain it signed. The caller owns the
+        path; rotation is generate-new + re-provision, never an
+        in-place rewrite.
+        """
+
+        import os
+        import stat as _stat
+
+        seed = self._seed_bytes()
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        try:
+            os.fchmod(fd, _stat.S_IRUSR | _stat.S_IWUSR)
+            view = memoryview((seed.hex() + "\n").encode("utf-8"))
+            while view:
+                view = view[os.write(fd, view):]
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+
+    def _seed_bytes(self) -> bytes:
+        from cryptography.hazmat.primitives import serialization
+
+        return self._private_key.private_bytes(
+            serialization.Encoding.Raw,
+            serialization.PrivateFormat.Raw,
+            serialization.NoEncryption(),
+        )
+
+    def public_key_bytes(self) -> bytes:
+        from cryptography.hazmat.primitives import serialization
+
+        return self._private_key.public_key().public_bytes(
+            serialization.Encoding.Raw, serialization.PublicFormat.Raw
+        )
+
+    def public_key_hex(self) -> str:
+        return self._verifier.public_key_hex()
+
+    @property
+    def key_fingerprint(self) -> str:
+        return self._verifier.key_fingerprint
+
+    def public_artifact(self) -> dict[str, Any]:
+        """The publishable verification-key artifact for this signer.
+
+        Carries everything a third party needs to verify an
+        Ed25519-era chain and nothing that can sign: the algorithm,
+        the public key, and its fingerprint. Suitable for publication
+        at a well-known evidence URL.
+        """
+
+        return {
+            "schema": "pulpo.audit-verification-key.v1",
+            "algorithm": "ed25519",
+            "public_key": self.public_key_hex(),
+            "key_fingerprint": self.key_fingerprint,
+        }
+
+    def verifier(self) -> Ed25519AuditVerifier:
+        """The verification-only half of this signer."""
+
+        return self._verifier
+
+    def sign(self, record_hash: str) -> str:
+        if not isinstance(record_hash, str):
+            raise TypeError("record hash must be a string")
+        signature = self._private_key.sign(record_hash.encode("utf-8"))
+        return _ED25519_SIGNATURE_PREFIX + signature.hex()
+
+    def verify(self, record_hash: str, signature: Any) -> bool:
+        return self._verifier.verify(record_hash, signature)
+
+
+class CompositeAuditSigner:
+    """Dual-era audit signer: signs in the current era, verifies all.
+
+    The transition handle. ``signer`` (when given) signs every new
+    record — during an HMAC → Ed25519 transition it is the Ed25519
+    signer; with no signer the composite is verification-only.
+    ``verifiers`` carries one verifier per era the chain may contain
+    (the signer's own era is included automatically). Verification
+    dispatches on the record's own signature form, so a mixed chain
+    verifies end to end, while a record signed in an era the
+    deployment never configured verification for is refused — there
+    is nothing it could be verified against. Era monotonicity (no
+    downgrade after a transition) is enforced by the kernel's
+    verification pass, which classifies each signature with
+    ``audit_signature_algorithm``.
+    """
+
+    def __init__(
+        self,
+        signer: AuditSigningKey | None = None,
+        verifiers: Any = (),
+    ) -> None:
+        self._signer = signer
+        by_algorithm: dict[str, AuditSigningKey] = {}
+        for verifier in verifiers:
+            by_algorithm[verifier.algorithm] = verifier
+        if signer is not None:
+            by_algorithm.setdefault(signer.algorithm, signer)
+        self._verifiers = by_algorithm
+        self.algorithm = signer.algorithm if signer is not None else "dual-era"
+
+    def sign(self, record_hash: str) -> str:
+        if self._signer is None:
+            raise RuntimeError("this composite audit signer is verification-only")
+        return self._signer.sign(record_hash)
+
+    def verify(self, record_hash: str, signature: Any) -> bool:
+        algorithm = audit_signature_algorithm(signature)
+        if algorithm is None:
+            return False
+        verifier = self._verifiers.get(algorithm)
+        if verifier is None:
+            return False
+        return verifier.verify(record_hash, signature)
+
+
+def _audit_record(previous_hash: str, event: str, payload: dict[str, Any], timestamp_ns: int, signer: AuditSigningKey | None = None) -> dict[str, Any]:
     body = {"event": event, "payload": payload, "previous_hash": previous_hash, "timestamp_ns": timestamp_ns}
-    return {**body, "hash": sha256(_canonical(body)).hexdigest()}
+    record = {**body, "hash": sha256(_canonical(body)).hexdigest()}
+    if signer is not None:
+        # The signature is computed over the record hash and stored as a
+        # sibling field: it is NOT part of the hashed body, so the
+        # unkeyed chain math is unchanged and old verifiers recomputing
+        # the body still agree on the hash. Verification of the
+        # signature is the kernel's job (verify_audit), not this
+        # constructor's.
+        record["signature"] = signer.sign(record["hash"])
+    return record
 
 
 @dataclass(frozen=True)
@@ -106,7 +499,19 @@ class KernelState(Protocol):
 
 
 class InMemoryKernelState:
-    def __init__(self) -> None:
+    def __init__(self, audit_signer: AuditSigningKey | None = None, legacy_audit_records: int = 0) -> None:
+        # Audit signing (Phase 2, Item 1): when a signer is supplied,
+        # every appended record carries an HMAC over its hash. When no
+        # signer is supplied the backend stays in legacy mode — records
+        # are unsigned and a later kernel configured with a signer
+        # refuses the chain rather than silently trusting it.
+        # ``legacy_audit_records`` is the count of unsigned records at
+        # the head of the chain the backend inherits (for example from
+        # a pre-signing snapshot): verification skips them instead of
+        # treating the whole chain as unsigned. It is 0 for a fresh
+        # backend.
+        self.audit_signer = audit_signer
+        self.legacy_audit_records = legacy_audit_records
         self._issued: dict[str, str] = {}
         self._spent: set[str] = set()
         self._permit_context: dict[str, tuple[str | None, int, int | None, str | None]] = {}
@@ -266,7 +671,8 @@ class InMemoryKernelState:
     def append(self, event: str, payload: dict[str, Any], timestamp_ns: int) -> None:
         with self._audit_lock:
             previous = self._audit[-1]["hash"] if self._audit else "0" * 64
-            self._audit.append(_audit_record(previous, event, payload, timestamp_ns))
+            record = _audit_record(previous, event, payload, timestamp_ns, signer=self.audit_signer)
+            self._audit.append(record)
 
     def append_unique(
         self,
@@ -291,7 +697,8 @@ class InMemoryKernelState:
             if matches:
                 return matches[0]
             previous = self._audit[-1]["hash"] if self._audit else "0" * 64
-            self._audit.append(_audit_record(previous, event, payload, timestamp_ns))
+            record = _audit_record(previous, event, payload, timestamp_ns, signer=self.audit_signer)
+            self._audit.append(record)
             return None
 
 
@@ -393,18 +800,37 @@ def _recovery_checkpoint(connection: sqlite3.Connection) -> str:
 
 
 class SQLiteKernelState:
-    def __init__(self, path: str | PathLike[str], *, index_audit_events: bool = False,
+    def __init__(self, path: str | PathLike[str], *, audit_signer: AuditSigningKey | None = None,
+                 legacy_audit_records: int = 0, migrate_schema: bool = True,
+                 index_audit_events: bool = False,
                  expected_recovery_checkpoint: str | None = None) -> None:
         if expected_recovery_checkpoint is not None:
             _validate_recovery_checkpoint(expected_recovery_checkpoint)
             # Recovery must never turn a missing snapshot into a new empty state.
             path = Path(path).absolute().as_uri() + "?mode=rw"
+        elif not migrate_schema:
+            # A read-only open cannot create or migrate a state file: a
+            # missing path fails here instead of materializing an empty
+            # database, and an unmigrated schema is reported rather than
+            # rewritten. ``as_uri()`` already percent-encodes the path.
+            path = Path(path).absolute().as_uri() + "?mode=ro"
+        # Audit signing (Phase 2, Item 1): see InMemoryKernelState for
+        # the semantics. ``_audit_has_signature`` records whether the
+        # audit table carries the signature column after migration;
+        # it is set by _initialize_transaction before any read or
+        # append can observe the state.
+        self.audit_signer = audit_signer
+        self.legacy_audit_records = legacy_audit_records
+        self._migrate_schema = migrate_schema
+        self._read_only = expected_recovery_checkpoint is None and not migrate_schema
+        self._audit_has_signature = False
         self._connection = sqlite3.connect(path, factory=ObservedConnection,
-                                           uri=expected_recovery_checkpoint is not None)
+                                           uri=expected_recovery_checkpoint is not None or not migrate_schema)
         self._closed = False
         try:
             self._initialize(index_audit_events=index_audit_events,
-                             expected_recovery_checkpoint=expected_recovery_checkpoint)
+                             expected_recovery_checkpoint=expected_recovery_checkpoint,
+                             migrate_schema=migrate_schema)
         except BaseException:
             self.close()
             raise
@@ -434,7 +860,7 @@ class SQLiteKernelState:
             self._checked_audit_rows()
             return _recovery_checkpoint(self._connection)
 
-    def _initialize(self, *, index_audit_events: bool,
+    def _initialize(self, *, index_audit_events: bool, migrate_schema: bool = True,
                     expected_recovery_checkpoint: str | None = None) -> None:
         self._connection.execute("PRAGMA foreign_keys = ON")
         self._connection.execute("PRAGMA synchronous = FULL")
@@ -447,9 +873,9 @@ class SQLiteKernelState:
                 actual = _recovery_checkpoint(self._connection)
                 if not hmac.compare_digest(actual, expected_recovery_checkpoint):
                     raise StateRecoveryError("restored state does not match the trusted current checkpoint")
-            self._initialize_transaction(index_audit_events=index_audit_events)
+            self._initialize_transaction(index_audit_events=index_audit_events, migrate_schema=migrate_schema)
 
-    def _initialize_transaction(self, *, index_audit_events: bool) -> None:
+    def _initialize_transaction(self, *, index_audit_events: bool, migrate_schema: bool = True) -> None:
         tables = {row[0] for row in self._connection.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table'"
         )}
@@ -461,23 +887,34 @@ class SQLiteKernelState:
             CREATE TABLE IF NOT EXISTS approvals (approval_id TEXT PRIMARY KEY, nonce TEXT NOT NULL UNIQUE);
             CREATE TABLE IF NOT EXISTS directives (directive_id TEXT NOT NULL, version INTEGER NOT NULL, directive_hash TEXT NOT NULL, revoked INTEGER NOT NULL DEFAULT 0 CHECK (revoked IN (0, 1)), PRIMARY KEY (directive_id, version));
             CREATE TABLE IF NOT EXISTS permit_directives (permit TEXT PRIMARY KEY REFERENCES permits(permit) ON DELETE CASCADE, directive_id TEXT NOT NULL, directive_version INTEGER NOT NULL, directive_hash TEXT NOT NULL, directive_issued_at_ns INTEGER NOT NULL, directive_expires_at_ns INTEGER NOT NULL, parent_directive_hash TEXT);
-            CREATE TABLE IF NOT EXISTS audit (sequence INTEGER PRIMARY KEY, event TEXT NOT NULL, payload_json TEXT NOT NULL, previous_hash TEXT NOT NULL, timestamp_ns INTEGER NOT NULL, hash TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS audit (sequence INTEGER PRIMARY KEY, event TEXT NOT NULL, payload_json TEXT NOT NULL, previous_hash TEXT NOT NULL, timestamp_ns INTEGER NOT NULL, hash TEXT NOT NULL, signature TEXT);
             CREATE TABLE IF NOT EXISTS audit_verification_checkpoint (id INTEGER PRIMARY KEY CHECK (id = 1), checkpoint_json TEXT NOT NULL);
         """
-        for statement in schema.split(";"):
-            if statement.strip():
-                self._connection.execute(statement)
+        if migrate_schema:
+            for statement in schema.split(";"):
+                if statement.strip():
+                    self._connection.execute(statement)
+        else:
+            required = {"permits", "approvals", "directives", "permit_directives", "audit", "audit_verification_checkpoint"}
+            if not required <= tables:
+                raise ValueError("state schema requires migration; open with migration enabled")
         # Opt in for event-heavy histories: the index speeds filtered reads but
         # adds maintenance to every durable audit insert. Existing indexes stay.
-        if index_audit_events:
+        if index_audit_events and migrate_schema:
             self._connection.execute("CREATE INDEX IF NOT EXISTS audit_event_sequence ON audit(event, sequence)")
-        permit_columns = {row[1] for row in self._connection.execute("PRAGMA table_info(permits)")}
-        for name, kind in (("policy_hash", "TEXT"), ("issued_at_ns", "INTEGER"), ("expires_at_ns", "INTEGER"), ("issuer_hash", "TEXT")):
-            if name not in permit_columns:
-                self._connection.execute(f"ALTER TABLE permits ADD COLUMN {name} {kind}")
-        columns = {row[1] for row in self._connection.execute("PRAGMA table_info(permit_directives)").fetchall()}
-        if "parent_directive_hash" not in columns:
-            self._connection.execute("ALTER TABLE permit_directives ADD COLUMN parent_directive_hash TEXT")
+        if migrate_schema:
+            permit_columns = {row[1] for row in self._connection.execute("PRAGMA table_info(permits)")}
+            for name, kind in (("policy_hash", "TEXT"), ("issued_at_ns", "INTEGER"), ("expires_at_ns", "INTEGER"), ("issuer_hash", "TEXT")):
+                if name not in permit_columns:
+                    self._connection.execute(f"ALTER TABLE permits ADD COLUMN {name} {kind}")
+            columns = {row[1] for row in self._connection.execute("PRAGMA table_info(permit_directives)").fetchall()}
+            if "parent_directive_hash" not in columns:
+                self._connection.execute("ALTER TABLE permit_directives ADD COLUMN parent_directive_hash TEXT")
+        audit_columns = {row[1] for row in self._connection.execute("PRAGMA table_info(audit)")}
+        if migrate_schema and "signature" not in audit_columns:
+            self._connection.execute("ALTER TABLE audit ADD COLUMN signature TEXT")
+            audit_columns.add("signature")
+        self._audit_has_signature = "signature" in audit_columns
         if upgraded:
             versions = self._connection.execute("SELECT * FROM audit_integrity_schema").fetchall()
             if (versions != [(1, 1)]
@@ -511,6 +948,12 @@ class SQLiteKernelState:
             if not valid:
                 raise ValueError("legacy audit chain invalid")
             previous = digest
+        if not migrate_schema:
+            # The chain above is valid, but adoption writes the head,
+            # the integrity schema, and the audit triggers: a read-only
+            # open refuses rather than rewriting the schema it was
+            # asked only to inspect.
+            raise ValueError("state schema requires migration; open with migration enabled")
         self._connection.execute("""
             CREATE TABLE IF NOT EXISTS audit_head (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -584,6 +1027,8 @@ class SQLiteKernelState:
         """
         order = "DESC" if reverse else "ASC"
         columns = "event, payload_json, previous_hash, timestamp_ns, hash"
+        if self._audit_has_signature:
+            columns += ", signature"
         if event is None:
             cursor = self._connection.execute(
                 f"SELECT {columns} FROM audit ORDER BY sequence {order}"
@@ -593,13 +1038,39 @@ class SQLiteKernelState:
                 f"SELECT {columns} FROM audit WHERE event = ? ORDER BY sequence {order}",
                 (event,),
             )
-        for e, p, ph, ts, h in cursor:
-            yield {"event": e, "payload": json.loads(p), "previous_hash": ph, "timestamp_ns": ts, "hash": h}
+        for row in cursor:
+            record: dict[str, Any] = {"event": row[0], "payload": json.loads(row[1]), "previous_hash": row[2], "timestamp_ns": row[3], "hash": row[4]}
+            if self._audit_has_signature and row[5] is not None:
+                record["signature"] = row[5]
+            yield record
 
     @property
     def audit(self) -> list[dict[str, Any]]:
+        # Validation (head + row types) and the signature read share one
+        # transaction, so a concurrent append cannot shift the rows
+        # between the two reads.
+        if self._connection.in_transaction:
+            return self._audit_records_with_signatures()
+        with self._connection:
+            self._connection.execute("BEGIN")
+            return self._audit_records_with_signatures()
+
+    def _audit_records_with_signatures(self) -> list[dict[str, Any]]:
         rows = self._checked_audit_rows()
-        return [{"event": e, "payload": json.loads(p), "previous_hash": ph, "timestamp_ns": ts, "hash": h} for _,e,p,ph,ts,h in rows]
+        records = [{"event": e, "payload": json.loads(p), "previous_hash": ph, "timestamp_ns": ts, "hash": h} for _, e, p, ph, ts, h in rows]
+        if self._audit_has_signature:
+            signatures = [row[0] for row in self._connection.execute("SELECT signature FROM audit ORDER BY sequence")]
+            if len(signatures) != len(records):
+                raise ValueError("audit signature read inconsistent")
+            for record, signature in zip(records, signatures):
+                # The key exists only when a signature exists: an
+                # unsigned record carries no "signature" key at all
+                # (not None), so the record shape is identical to the
+                # pre-signing shape and hash recomputation over the
+                # body is unchanged.
+                if signature is not None:
+                    record["signature"] = signature
+        return records
 
     def audit_verification_rows(self) -> list[tuple[str, str, str, int, str]]:
         """Return raw immutable audit row bodies for optional decode/hash workers."""
@@ -627,6 +1098,12 @@ class SQLiteKernelState:
             # Validate even authenticated cached prefixes. Older optional
             # verifiers could publish a cache after coercing malformed values.
             self._validate_audit_row_types(rows)
+            # Signatures are verified over the same snapshot as the hash
+            # chain, before any cached prefix can short-circuit the boot:
+            # a wrong-secret or keyless verifier kernel refuses the
+            # signed chain here instead of trusting it.
+            if not self._verify_audit_signatures(rows):
+                return False
             cached = self._connection.execute(
                 "SELECT checkpoint_json FROM audit_verification_checkpoint WHERE id = 1"
             ).fetchone()
@@ -669,7 +1146,9 @@ class SQLiteKernelState:
                     previous = digest
             elif not full_verify():
                 return False
-            if rows:
+            if rows and not self._read_only:
+                # The cache is disposable: a read-only inspection
+                # open verifies without publishing it.
                 body = {"schema": "pulpo.audit-checkpoint.v1", "sequence": rows[-1][0],
                         "head": rows[-1][-1], "prefix_digest": sha256(_canonical(rows)).hexdigest()}
                 checkpoint = {**body, "mac": hmac.new(
@@ -680,6 +1159,34 @@ class SQLiteKernelState:
                     (_canonical(checkpoint).decode(),),
                 )
             return True
+
+    def _verify_audit_signatures(self, rows) -> bool:
+        """Cryptographic signature check for a boot-time chain read.
+
+        Mirrors the kernel report's per-record rules without era
+        monotonicity (that is the report's job, applied at kernel
+        construction through verify_audit_report): a present
+        signature must verify under the configured signer, and a
+        missing signature at or after the legacy prefix fails when a
+        signer is configured. A signature present with no signer
+        configured is refused, not ignored. Runs inside the caller's
+        BEGIN IMMEDIATE transaction, over the same snapshot as the
+        hash validation.
+        """
+        if not self._audit_has_signature:
+            return True
+        signatures = [row[0] for row in self._connection.execute("SELECT signature FROM audit ORDER BY sequence")]
+        if len(signatures) != len(rows):
+            return False
+        signer = self.audit_signer
+        for index, (row, signature) in enumerate(zip(rows, signatures)):
+            record_hash = row[5]
+            if signature is not None:
+                if signer is None or not signer.verify(record_hash, signature):
+                    return False
+            elif signer is not None and index >= self.legacy_audit_records:
+                return False
+        return True
 
     def approval_replay_reason(self, approval_id: str, nonce: str) -> str | None: return self._approval_replay_reason(approval_id, nonce)
     def ceremony_replay_reason(self, evidence_id: str) -> str | None:
@@ -888,17 +1395,31 @@ class SQLiteKernelState:
     def _append_many(self, events: list[tuple[str, dict[str, Any]]], timestamp_ns: int) -> None:
         # Callers hold BEGIN IMMEDIATE. Keep the tip local to this transaction:
         # another connection may advance it immediately after we commit.
+        if self.audit_signer is not None and not self._audit_has_signature:
+            # A signer-configured backend must never silently append
+            # unsigned records: the chain would then verify as unsigned
+            # under a signer that expects every record signed.
+            raise RuntimeError("audit signing is enabled but the state schema has no signature column")
         row = self._connection.execute("SELECT hash FROM audit ORDER BY sequence DESC LIMIT 1").fetchone()
         previous = row[0] if row else "0" * 64
         rows = []
         for event, payload in events:
-            record = _audit_record(previous, event, payload, timestamp_ns)
-            rows.append((event, _canonical(payload).decode(), previous, timestamp_ns, record["hash"]))
+            record = _audit_record(previous, event, payload, timestamp_ns, signer=self.audit_signer)
+            rows.append((event, _canonical(payload).decode(), previous, timestamp_ns, record["hash"], record.get("signature")))
             previous = record["hash"]
-        self._connection.executemany(
-            "INSERT INTO audit (event, payload_json, previous_hash, timestamp_ns, hash) VALUES (?, ?, ?, ?, ?)",
-            rows,
-        )
+        if self._audit_has_signature:
+            self._connection.executemany(
+                "INSERT INTO audit (event, payload_json, previous_hash, timestamp_ns, hash, signature) VALUES (?, ?, ?, ?, ?, ?)",
+                rows,
+            )
+        else:
+            # A pre-signature schema opened read-only: the insert
+            # itself is refused by the connection, but keep the
+            # statement valid against the columns that exist.
+            self._connection.executemany(
+                "INSERT INTO audit (event, payload_json, previous_hash, timestamp_ns, hash) VALUES (?, ?, ?, ?, ?)",
+                [row[:5] for row in rows],
+            )
 
     def close(self) -> None:
         if not self._closed:
@@ -934,7 +1455,10 @@ def capture_recovery_pin(path: str | PathLike[str]) -> str:
     try:
         previous = "0" * 64
         for record in state.audit:
-            body = {key: value for key, value in record.items() if key != "hash"}
+            # The signature is a sibling of ``hash``, excluded from the
+            # hashed body: recomputation must exclude it too, or a
+            # signed chain fails closed spuriously at pin capture.
+            body = {key: value for key, value in record.items() if key not in ("hash", "signature")}
             if (record["previous_hash"] != previous
                     or record["hash"] != _audit_record(body["previous_hash"], body["event"],
                                                        body["payload"], body["timestamp_ns"])["hash"]):

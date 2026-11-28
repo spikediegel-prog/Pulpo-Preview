@@ -16,7 +16,15 @@ from typing import Any, Callable, Protocol
 from .authority import ApprovalEnvelope, ApprovalVerifier, AuthorityTrust, PolicyEnvelope
 from .audit_parallel import AuditVerificationEngine, audit_row_has_valid_types
 from .ceremony import CeremonyEvidence, CeremonyTrust, CeremonyVerifier
-from .state import ApprovalUse, InMemoryKernelState, KernelState, SQLiteKernelState, StateClockError
+from .state import (
+    AUDIT_SIGNATURE_ALGORITHMS,
+    ApprovalUse,
+    InMemoryKernelState,
+    KernelState,
+    SQLiteKernelState,
+    StateClockError,
+    audit_signature_algorithm,
+)
 
 
 # Reuse the unchanged encoder configuration; per-call state stays in encode().
@@ -1321,6 +1329,15 @@ class GovernanceKernel:
         prove. Malformed records fail as ``audit_record_malformed``
         instead of raising, so callers that treat verification as a
         boolean (boot included) fail closed the same way.
+
+        Signatures carry an era (``AUDIT_SIGNATURE_ALGORITHMS``,
+        oldest first). A chain may transition to a later era at a
+        record boundary — the mixed chain verifies end to end under a
+        dual-era verifier — but eras never regress: once a record has
+        verified under a later era, a subsequent record claiming an
+        earlier era fails as ``audit_signature_downgrade`` on its era
+        claim alone, so a writer holding only the retired era's key
+        cannot extend a transitioned chain.
         """
 
         signer = getattr(self._state, "audit_signer", None)
@@ -1339,6 +1356,7 @@ class GovernanceKernel:
             "failed_record": None,
         }
         previous = "0" * 64
+        max_era_rank = -1
         try:
             records = self.audit
         except Exception:
@@ -1360,6 +1378,15 @@ class GovernanceKernel:
                 return report
             signature = record.get("signature") if isinstance(record, dict) else None
             if signature is not None:
+                algorithm = audit_signature_algorithm(signature)
+                era_rank = (
+                    AUDIT_SIGNATURE_ALGORITHMS.index(algorithm)
+                    if algorithm is not None
+                    else None
+                )
+                if era_rank is not None and era_rank < max_era_rank:
+                    report.update({"ok": False, "reason": "audit_signature_downgrade", "failed_record": index})
+                    return report
                 if signer is None or not signer.verify(record["hash"], signature):
                     # With no signer configured there is nothing a
                     # signature could be verified against, so a present
@@ -1367,6 +1394,8 @@ class GovernanceKernel:
                     # forgery-shaped anomaly: fail rather than ignore.
                     report.update({"ok": False, "reason": "audit_signature_invalid", "failed_record": index})
                     return report
+                if era_rank is not None:
+                    max_era_rank = max(max_era_rank, era_rank)
                 report["signed_records"] += 1
             elif signer is not None and index >= legacy_records:
                 report.update({"ok": False, "reason": "audit_signature_missing", "failed_record": index})
@@ -1377,24 +1406,25 @@ class GovernanceKernel:
         return report
 
     def verify_audit(self) -> bool:
+        # Boot verification is the signing-aware report: a present
+        # signature must verify, and a signer-configured chain must
+        # carry one on every record past the legacy prefix. The
+        # unkeyed loop this replaced could not see a tampered-and-
+        # rehashed signed record (its hash recomputes), so it let a
+        # forged signature through at boot.
+        #
+        # The audit-verification engine stays available for the
+        # unsigned chains it was built for: it verifies raw 5-tuples
+        # with no signature column, so it must never be the verifier
+        # of a signer-configured chain. (A signed chain opened
+        # keyless with an engine is likewise unkeyed at this layer;
+        # the report remains the check that sees signatures.)
         engine = self._audit_verification_engine
         raw_reader = getattr(self._state, "audit_verification_rows", None)
-        if engine is not None and callable(raw_reader):
+        signer = getattr(self._state, "audit_signer", None)
+        if engine is not None and callable(raw_reader) and signer is None:
             return engine.verify_rows(raw_reader())
-
-        previous = "0" * 64
-        for record in self.audit:
-            body = {key: value for key, value in record.items() if key != "hash"}
-            if not audit_row_has_valid_types((body.get("event"), "", body.get("previous_hash"),
-                                             body.get("timestamp_ns"), record.get("hash"))):
-                return False
-            if body["previous_hash"] != previous:
-                return False
-            expected = sha256(_canonical(body)).hexdigest()
-            if not hmac.compare_digest(record["hash"], expected):
-                return False
-            previous = record["hash"]
-        return True
+        return bool(self.verify_audit_report()["ok"])
 
     def directive_status(self, directive_id: str, version: int, directive_hash: str) -> str:
         """Facade read: the recorded status of one exact directive version."""
