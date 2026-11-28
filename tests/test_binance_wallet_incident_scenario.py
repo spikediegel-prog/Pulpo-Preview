@@ -86,10 +86,11 @@ rules): the derived incident report turns
 events, and denied decisions into near-miss records. A
 bare ``evaluate`` that returns ``require_approval`` --
 the kernel declining to mint without approval --
-appends a decision record to the canonical audit but is
-derived as a near-miss by the channel since the issue #375 fix. The scenario
-asserts both halves of that statement exactly as they
-hold; it does not smooth the second half over.
+appends a decision record to the canonical audit and is
+derived as a near-miss by the channel since the issue
+#375 fix (PR #413). The scenario asserts both halves of
+that statement exactly as they hold; it does not smooth
+the second half over.
 
 Boundary: this proves kernel behavior at this commit
 for these action classes (Verified, executable
@@ -630,7 +631,8 @@ class BinanceWalletIncidentScenarioTests(unittest.TestCase):
         self.assertEqual(3, len(denied_decisions))
         self.assertEqual(1, len(require_approval_decisions))
         self.assertEqual(
-            len(permit_rejected) + len(approval_rejected) + len(denied_decisions) + len(require_approval_decisions),
+            len(permit_rejected) + len(approval_rejected) + len(denied_decisions)
+            + len(require_approval_decisions),
             report.near_misses,
         )
         self.assertEqual(9, report.near_misses)
