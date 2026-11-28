@@ -655,6 +655,7 @@ class Issue153ConsequenceReconciliationV0(unittest.TestCase):
             receipt_hash=None,
             privacy_enabled=None,
             dns_state=None,
+            auto_renew_enabled=None,
         )
         result = self._reconcile_with_canonical_evidence(
             custody,

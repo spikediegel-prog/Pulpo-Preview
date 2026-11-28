@@ -42,8 +42,13 @@ Feeds (see docs/incident-channel.md for the full table):
 
     canonical audit -- purchase_consequence_unknown is an incident until a
         custody record for the same custody_attempt_id resolves it;
-        purchase_revalidation_failed, permit_rejected, decision/deny and
-        approval_rejected are near-misses (refused before any effect). A
+        purchase_revalidation_failed, permit_rejected, decision/deny,
+        decision/require_approval and approval_rejected are near-misses
+        (refused or held for approval before any effect). A decision/
+        require_approval is a bare evaluate that minted no permit: the act
+        was stopped, and the attempt surfaces here, per occurrence, so a
+        bare-evaluate-only attempt sequence is visible in owner-facing
+        near-miss reporting (issue #375; ported from canonical #413). A
         revalidation refusal consumes its custody attempt (by attempt id,
         else by order hash), so a refusal yields exactly one near-miss.
     custody store  -- one record per attempt_id, from the attempt's latest
@@ -411,8 +416,21 @@ def _derive_records(audit, custody, audit_valid):
                 lifecycle, lifecycle_at_ns, lifecycle_actor,
                 claim_classification=_claim_classification(
                     source="canonical_audit", merged=False, audit_valid=audit_valid)))
-        elif event == "decision" and payload.get("outcome") == "deny":
-            reason = payload.get("reason") or "denied"
+        elif event == "decision" and payload.get("outcome") in ("deny", "require_approval"):
+            # Per-record derivation, exactly as for deny: each decision
+            # audit record yields at most one near-miss, keyed by that
+            # record's own hash, so a require_approval decision is never
+            # double-counted -- it is a distinct audit record from any
+            # permit_rejected / approval_rejected / directive_denial
+            # record in _AUDIT_NEAR_MISS_EVENTS, and repeats count per
+            # occurrence (N require_approval decisions surface N
+            # near-misses). Visibility only: no permit is minted, no
+            # authorization semantics change (issue #375; ported from
+            # canonical #413).
+            if payload.get("outcome") == "deny":
+                reason = payload.get("reason") or "denied"
+            else:
+                reason = payload.get("reason") or "approval_required"
             record_id = f"near-miss:{record_hash}"
             lifecycle, lifecycle_at_ns, lifecycle_actor = _record_lifecycle(
                 lifecycle_states, record_id, "near_miss", timestamp_ns)
