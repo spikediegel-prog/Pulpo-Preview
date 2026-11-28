@@ -76,7 +76,10 @@ not assume the gateway survived the update.
 
 Status: known issue, confirmed live 2026-11-28. Root cause not yet
 isolated; the gateway must be re-verified after each update until the
-underlying reset is understood.
+underlying reset is understood. Resolved the same night by a restart,
+which restored the gateway (NetworkManager re-applied the saved
+connection), plus `sudo chmod 600` on the netplan file so the Control
+Center Apply can run.
 
 ### Saved network shows DHCP or empty while the system has a static address
 
@@ -225,6 +228,32 @@ VM does not respond, check whether the other is the one currently up.
   (`-i` + `IdentitiesOnly`); the LAN jump fails with permission denied
   if the key is not passed explicitly.
 - Beta is also reachable through the Dev VM as a jump host.
+- A fresh ISO install does not carry the SSH key. After a fresh install
+  from the ISO, SSH with the hatch key is denied until the key is
+  re-added to `~/.ssh/authorized_keys` on the new install (700 on
+  `.ssh`, 600 on the file). The key must never ship in a product image,
+  so it is not there by default. Symptom is "Permission denied
+  (publickey,password,keyboard-interactive)" even though sshd is running
+  and the key is being offered. Verify the offered key's fingerprint
+  with `ssh-keygen -lf ~/.ssh/id_ed25519.pub` and confirm it is in
+  `authorized_keys`. Also check the username: on the build #38 Beta
+  install the account is `spikedeigel` (a typo for `spikediegel`, from
+  the install) and the hostname is `spikedeigel-virtualmachine`. If the
+  key was added under the wrong name, SSH fails for the right name. That
+  account has no passwordless sudo, so `sudo` needs a password.
+- Beta's Tailscale node goes offline when the gateway is gone. Tailscale
+  needs a default route to reach the tailnet, so a missing gateway also
+  breaks Tailscale SSH even though the service is running. The LAN route
+  (192.168.250.20 via the Dev VM jump host) still works. After the build
+  #38 reinstall, Beta's Tailscale IP is 100.121.146.73 (hostname
+  spikedeigel-virtualmachine); the old 100.78.139.41 node is stale.
+- The jump-host script's nested ProxyCommand quoting:
+  `~/workspace/ssh_beta_via_dev.sh` reaches Beta on the LAN via the Dev
+  VM. Its nested ProxyCommand must use `%%h %%p` for the inner ssh —
+  plain `%h %p` gets expanded by the outer ssh to Beta's LAN address,
+  and the Tailscale proxy then closes the connection. Fixed 2026-11-28.
+  If the jump fails with "proxy closed connection", check that quoting
+  first.
 
 ### Pulling an ISO to Windows: use the LAN, not Tailscale
 
